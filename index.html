@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="ru" class="no-js">
+<html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Planner • Future Flow</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Weepl • Планер дел</title>
 
   <!-- Шрифты -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Стили -->
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles.css?v=1005">
 </head>
 
 <body>
@@ -21,162 +21,46 @@
   <template id="layout">
     <header class="topbar">
       <nav class="tabs">
-        <a href="#/" class="tab" data-route="#/">
-          <span class="icon">📋</span> <span>Задачи</span>
-        </a>
-        <a href="#/calendar" class="tab" data-route="#/calendar">
-          <span class="icon">📅</span> <span>Календарь</span>
-        </a>
-        <a href="#/settings" class="tab" data-route="#/settings">
-          <span class="icon">⚙️</span> <span>Настройки</span>
-        </a>
+        <a href="#/" class="tab" data-route="#/"><span>📋</span> Задачи</a>
+        <a href="#/calendar" class="tab" data-route="#/calendar"><span>📅</span> Календарь</a>
+        <a href="#/settings" class="tab" data-route="#/settings"><span>⚙️</span> Настройки</a>
       </nav>
     </header>
-
     <main id="view" class="view" tabindex="-1"></main>
-
-    <button id="fabAdd" class="fab" aria-label="Добавить задачу" title="Добавить (N)">
-      +
-    </button>
+    <button id="fabAdd" class="fab">+</button>
   </template>
 
   <!-- Home -->
   <template id="home-view">
-    <section class="section home">
-      <!-- Месяц по центру -->
-      <div class="home-month">
-        <button class="cal-nav" data-home-month="prev" aria-label="Предыдущий месяц">←</button>
-        <h1 id="homeMonth" class="h-impact">Месяц</h1>
-        <button class="cal-nav" data-home-month="next" aria-label="Следующий месяц">→</button>
+    <section class="section">
+      <div class="month-bar">
+        <button id="prevMonth">←</button>
+        <h1 id="homeMonth" class="h-impact"></h1>
+        <button id="nextMonth">→</button>
       </div>
-
-      <!-- Лента дат (пиллы) -->
-      <div id="dateStrip" class="date-strip" aria-label="Лента дат (неделя)"></div>
-
-      <!-- Список дел выбранной даты -->
-      <div class="today-wrap">
-        <div class="today-head">
-          <div class="today-title h-impact" id="todayTitle" style="font-size:20px">Сегодня</div>
-          <!-- при необходимости добавим быстрые фильтры/поиск -->
-        </div>
-
-        <!-- Внутри сохраняем старый #taskList, чтобы текущий app.js не сломался -->
-        <div id="todayList" class="today-list scroll-snap">
-          <div id="taskList" class="task-list"></div>
-        </div>
-      </div>
+      <div id="dateStrip" class="date-strip"></div>
+      <h2 id="todayTitle" class="h2">Сегодня</h2>
+      <div id="taskList" class="task-list"></div>
     </section>
   </template>
 
   <!-- Calendar -->
   <template id="calendar-view">
     <section class="section">
-      <div class="calendar-head">
-        <button class="cal-nav" data-cal="prev">←</button>
-        <h1 id="calTitle" class="h-impact">Месяц</h1>
-        <button class="cal-nav" data-cal="next">→</button>
-      </div>
-      <div id="calendarGrid" class="calendar-grid"></div>
-      <div id="calendarTasks" class="calendar-tasks"></div>
+      <h1>Календарь</h1>
+      <p>Здесь будет календарь позже.</p>
     </section>
   </template>
 
   <!-- Settings -->
   <template id="settings-view">
     <section class="section">
-      <h1 class="h-impact">Настройки</h1>
-      <div class="settings-card">
-        <div class="row">
-          <span>Тема</span>
-          <select id="setTheme">
-            <option value="light">Светлая</option>
-            <option value="dark">Тёмная</option>
-          </select>
-        </div>
-        <div class="row">
-          <span>Акцентная тема</span>
-          <select id="setAccent">
-            <option value="rose">Розовая</option>
-            <option value="blue">Синяя</option>
-            <option value="violet">Фиолетовая</option>
-            <option value="mint">Мятная</option>
-            <option value="lemon">Жёлтая</option>
-            <option value="coral">Коралл</option>
-            <option value="azure">Голубая</option>
-            <option value="orchid">Орхидея</option>
-            <option value="sky">Небесная</option>
-            <option value="lime">Лайм</option>
-          </select>
-        </div>
-        <div class="row">
-          <button id="btnExport" class="btn">Экспорт JSON</button>
-          <label class="btn-outline">
-            Импорт JSON
-            <input id="fileImport" type="file" accept="application/json" hidden>
-          </label>
-        </div>
-      </div>
+      <h1>Настройки</h1>
+      <p>Темы, цвета и всё остальное скоро добавим.</p>
     </section>
   </template>
 
-  <!-- Modal -->
-  <dialog id="taskModal" class="modal">
-    <form id="taskForm" class="modal-body" method="dialog">
-      <header class="modal-head">
-        <h2 class="h-impact" id="modalTitle">Новая задача</h2>
-        <button type="button" class="icon-btn" data-close>&times;</button>
-      </header>
-
-      <label class="field">
-        <span>Название</span>
-        <input id="fTitle" name="title" required placeholder="Введите задачу..." />
-      </label>
-
-      <div class="grid2">
-        <label class="field">
-          <span>Дата</span>
-          <input id="fDate" name="date" type="date" />
-        </label>
-        <label class="field">
-          <span>Время</span>
-          <input id="fTime" name="time" type="time" />
-        </label>
-      </div>
-
-      <label class="field">
-        <span>Важность</span>
-        <select id="fPriority" name="priority">
-          <option value="low">Низкая</option>
-          <option value="medium">Средняя</option>
-          <option value="high">Высокая</option>
-          <option value="critical">Критическая</option>
-        </select>
-      </label>
-
-      <label class="field">
-        <span>SMART</span>
-        <select id="fSmart" name="smart">
-          <option value="S">Specific</option>
-          <option value="M">Measurable</option>
-          <option value="A">Achievable</option>
-          <option value="R">Relevant</option>
-          <option value="T">Time-bound</option>
-        </select>
-      </label>
-
-      <label class="field">
-        <span>Комментарий</span>
-        <textarea id="fNote" name="note" rows="2" placeholder="Добавьте заметку..."></textarea>
-      </label>
-
-      <footer class="modal-foot">
-        <button type="button" class="btn-outline" data-close>Отмена</button>
-        <button type="submit" class="btn">Сохранить</button>
-      </footer>
-    </form>
-  </dialog>
-
   <!-- JS -->
-  <script src="./app.js?v=999" defer></script>
+  <script src="./app.js?v=1005"></script>
 </body>
 </html>
