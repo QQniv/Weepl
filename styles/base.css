@@ -1,0 +1,153 @@
+/* ===============================
+   FS Planner • Base Styles
+   - CSS Reset (modern)
+   - Tokens (colors, spacing, fonts, radii, shadows)
+   - Typography & base elements
+   - Theme (light/dark)
+   =============================== */
+
+/* 1) Reset / Normalize-ish */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+html, body, h1, h2, h3, h4, h5, h6, p,
+ul, ol, li, figure, figcaption, blockquote, dl, dd { margin: 0; padding: 0; }
+ul[role='list'], ol[role='list'] { list-style: none; }
+html:focus-within { scroll-behavior: smooth; }
+body { min-height: 100dvh; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+img, picture, video, canvas, svg { display: block; max-width: 100%; }
+input, button, textarea, select { font: inherit; color: inherit; }
+button { border: 0; background: none; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* 2) Design Tokens */
+:root {
+  /* Brand */
+  --brand: #1a73e8;
+  --brand-600: #1669d4;
+  --brand-700: #135bb7;
+
+  /* Palette (light) */
+  --bg: #0b0e13;
+  --surface: #10141b;
+  --surface-2: #151a22;
+  --text: #e8edf5;
+  --muted: #9aa6b2;
+  --border: #2a3340;
+  --accent: var(--brand);
+  --focus: #8ab4ff;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+
+  /* Elevation */
+  --shadow-1: 0 2px 8px rgba(0,0,0,.25);
+  --shadow-2: 0 8px 24px rgba(0,0,0,.35);
+
+  /* Typography */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --fs-xxs: 10px;
+  --fs-xs: 12px;
+  --fs-sm: 14px;
+  --fs-md: 16px;
+  --fs-lg: 18px;
+  --fs-xl: 22px;
+  --fs-2xl: 28px;
+  --fs-3xl: 36px;
+
+  /* Spacing (4-pt-ish) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Radii */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  /* Z-index scale */
+  --z-base: 1;
+  --z-sticky: 100;
+  --z-popover: 300;
+  --z-modal: 600;
+  --z-toast: 900;
+
+  /* Component sizes */
+  --ctrl-h: 44px;
+  --container-max: 1200px;
+}
+
+/* Auto-theme by prefers-color-scheme (light baseline replaced if user forces dark attr) */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f7f9fc;
+    --surface: #ffffff;
+    --surface-2: #f0f3f7;
+    --text: #0d1117;
+    --muted: #596273;
+    --border: #d6deea;
+    --shadow-1: 0 2px 8px rgba(17,24,39,.08);
+    --shadow-2: 0 10px 30px rgba(17,24,39,.12);
+  }
+}
+
+/* Force dark via attribute */
+html[data-theme="dark"] {
+  --bg: #0b0e13;
+  --surface: #10141b;
+  --surface-2: #151a22;
+  --text: #e8edf5;
+  --muted: #9aa6b2;
+  --border: #2a3340;
+  --shadow-1: 0 2px 8px rgba(0,0,0,.25);
+  --shadow-2: 0 8px 24px rgba(0,0,0,.35);
+}
+
+/* 3) Base Elements */
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-md);
+  line-height: 1.45;
+}
+
+h1 { font-size: var(--fs-3xl); font-weight: 700; letter-spacing: -0.02em; }
+h2 { font-size: var(--fs-2xl); font-weight: 700; letter-spacing: -0.01em; }
+h3 { font-size: var(--fs-xl); font-weight: 600; }
+h4 { font-size: var(--fs-lg); font-weight: 600; }
+p  { color: var(--text); }
+.small, small { font-size: var(--fs-sm); color: var(--muted); }
+
+hr { border: 0; height: 1px; background: var(--border); margin: var(--space-6) 0; }
+
+/* 4) Utilities (generic helpers) */
+.u-container { width: min(100% - 32px, var(--container-max)); margin-inline: auto; }
+.u-flex { display: flex; gap: var(--space-3); }
+.u-center { display: grid; place-items: center; }
+.u-row { display: flex; align-items: center; gap: var(--space-3); }
+.u-col { display: flex; flex-direction: column; gap: var(--space-3); }
+.u-muted { color: var(--muted); }
+.u-hidden { display: none !important; }
+.u-divider { height: 1px; background: var(--border); }
+
+/* 5) Scrollbars (nice but subtle) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar { height: 10px; width: 10px; }
+*::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--r-pill); }
+*::-webkit-scrollbar-track { background: transparent; }
