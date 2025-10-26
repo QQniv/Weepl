@@ -1,7 +1,27 @@
 console.log('APP LOADED');
 document.title = 'Weepl • JS загружен';/* Planner • Future Flow — app.js v2.1 (compat, safe render) */
 'use strict';
-
+// ==== DEBUG HUD ====
+(function(){
+  const HUD = document.createElement('div');
+  HUD.id = 'DEBUG_HUD';
+  HUD.style.cssText = 'position:fixed;right:8px;bottom:8px;z-index:99999;background:#111;color:#fff;padding:8px 10px;border-radius:8px;font:12px/1.3 ui-monospace,monospace;opacity:.9;max-width:60vw';
+  HUD.innerHTML = 'booting…';
+  document.addEventListener('DOMContentLoaded', ()=> document.body.appendChild(HUD));
+  function log(s){ const el=document.getElementById('DEBUG_HUD'); if(el){ el.innerHTML = String(s).replace(/\n/g,'<br>'); } }
+  window.__hud = { log };
+  window.addEventListener('error', e=> log('JS error: '+ e.message));
+  window.addEventListener('unhandledrejection', e=> log('Promise error: '+ (e.reason && e.reason.message || e.reason)));
+  setInterval(()=>{
+    const hasLayout = !!document.getElementById('layout');
+    const hasApp = !!document.getElementById('app');
+    const hasView = !!document.getElementById('view');
+    __hud.log(
+      'hash='+location.hash+'<br>'+
+      'layout:'+hasLayout+' app:'+hasApp+' view:'+hasView
+    );
+  }, 800);
+})();
 /* ========== Store ========== */
 var STORE_KEY = 'planner.futureflow.v1';
 var DEFAULTS = { settings: { theme: 'light', accent: 'blue', weekStart: 1 }, tasks: [] };
