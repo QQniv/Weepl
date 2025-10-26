@@ -1,45 +1,14 @@
-/* ===============================
+/* =========================================
    Responsive
-   Breakpoints: 1200, 992, 768, 560
-   =============================== */
+   ========================================= */
 
-/* <= 1200px */
-@media (max-width: 1200px) {
-  .grid--4 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+/* Small phones */
+@media (max-width: 380px){
+  .date-card{ width: 72px; }
+  .phone__body{ padding: 14px 12px 86px; }
 }
 
-/* <= 992px */
-@media (max-width: 992px) {
-  .shell { grid-template-columns: 220px 1fr; }
-  .grid--3 { grid-template-columns: repeat(2, minmax(0,1fr)); }
-}
-
-/* <= 768px (tablet/large phone) */
-@media (max-width: 768px) {
-  .header__inner { padding: 0 var(--space-3); }
-  .shell { grid-template-columns: 1fr; padding: var(--space-3); }
-  .sidebar { order: 2; }
-  .content { order: 1; padding: var(--space-4); }
-  .grid--4, .grid--3 { grid-template-columns: 1fr; }
-
-  .timeline { grid-template-columns: 72px 1fr; }
-  .timeline__time, .timeline__slot { height: 52px; }
-}
-
-/* <= 560px (phone) */
-@media (max-width: 560px) {
-  :root { --ctrl-h: 42px; }
-  h1 { font-size: 28px; }
-  h2 { font-size: 22px; }
-  .header__inner { height: 56px; }
-  .content { padding: var(--space-3); }
-  .btn { padding: 0 14px; }
-  .fab { right: 16px; bottom: 16px; width: 56px; height: 56px; }
-}
-
-/* Print (не мешаем фону) */
-@media print {
-  html, body { background: white; color: #111; }
-  .sidebar, .appbar, .fab, .scrim, .modal { display: none !important; }
-  .content { border: none; box-shadow: none; }
+/* Larger than phone (center card tighter) */
+@media (min-width: 768px){
+  .phone{ max-width: 440px; }
 }
