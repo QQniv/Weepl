@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#0e1114" />
+  <title>Планер — Сегодня</title>
+
+  <!-- Основные стили (будут в следующем коммите) -->
+  <link rel="preload" href="styles/main.css" as="style" />
+  <link rel="stylesheet" href="styles/main.css" />
+
+  <!-- Без внешних шрифтов для скорости; system-ui достаточно -->
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- Верхняя панель -->
+    <header class="appbar">
+      <button class="icon" id="btnMenu" aria-label="Меню">☰</button>
+      <div class="title" id="appTitle">Сегодня</div>
+      <button class="icon" id="btnBell" aria-label="Уведомления">🔔</button>
+    </header>
+
+    <!-- Месяц + переключение -->
+    <div class="section month">
+      <button class="nav-arrow" id="prev" aria-label="Предыдущий день">‹</button>
+      <div class="month-label"><span class="muted">Месяц:</span> <b id="monthLabel"></b></div>
+      <button class="nav-arrow" id="next" aria-label="Следующий день">›</button>
+    </div>
+
+    <!-- Лента дней (реф: округлые таблетки с бейджем «сегодня») -->
+    <div class="section days" id="dayStrip" aria-label="Выбор дня"></div>
+
+    <!-- Таймлайн задач и событий -->
+    <main class="panel">
+      <section class="timeline" id="taskList" aria-label="Список задач и событий"></section>
+    </main>
+
+    <!-- Нижняя навигация -->
+    <nav class="nav" aria-label="Навигация">
+      <button class="tab active" data-screen="today" aria-current="page" title="Сегодня">🏠</button>
+      <button class="tab" data-screen="calendar" title="Календарь (скоро)">📅</button>
+      <button class="tab" data-screen="projects" title="Проекты (скоро)">🗂</button>
+      <button class="tab" data-screen="settings" title="Настройки">⚙️</button>
+    </nav>
+
+    <!-- Большая кнопка добавления -->
+    <button class="fab" id="fab" aria-label="Добавить">＋</button>
+  </div>
+
+  <!-- Конфетти (на «Готово») -->
+  <canvas id="confettiCanvas"></canvas>
+
+  <!-- Шторка добавления -->
+  <div class="backdrop" id="bd" aria-hidden="true"></div>
+  <aside class="sheet" id="sheet" aria-labelledby="sheetTitle" aria-modal="true" role="dialog">
+    <div class="handle" aria-hidden="true"></div>
+    <div class="body">
+      <h2 id="sheetTitle" class="sr-only">Добавить задачу/событие</h2>
+
+      <div class="field">
+        <div class="label">Название</div>
+        <input id="f_title" class="input" placeholder="Например: Сдать отчёт по практике" />
+      </div>
+
+      <div class="field">
+        <div class="label">Приоритет (Эйзенхауэр)</div>
+        <div class="chips" id="f_eisen">
+          <button class="chip" data-cat="A">A · Срочно/важно</button>
+          <button class="chip" data-cat="B">B · Важно</button>
+          <button class="chip" data-cat="C">C · Срочно</button>
+          <button class="chip" data-cat="D">D · Отложить</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="label">Тип</div>
+        <div class="seg" id="f_type">
+          <button data-type="task" aria-pressed="true">Задача</button>
+          <button data-type="slot">Событие</button>
+        </div>
+        <div class="hint">Событие имеет период и может запустить фокус-таймер.</div>
+      </div>
+
+      <div class="field" id="taskTimeBlock">
+        <div class="label">Когда (для задачи)</div>
+        <div class="seg" id="f_when">
+          <button data-mode="today" aria-pressed="true">Сегодня</button>
+          <button data-mode="pick">Выбрать дату</button>
+          <button data-mode="inbox">Inbox</button>
+        </div>
+        <div class="row">
+          <div class="field grow">
+            <div class="label">Дата</div>
+            <input id="f_date" type="date" class="input" />
+          </div>
+          <div class="field">
+            <div class="label">Время</div>
+            <input id="f_time" type="time" class="input" />
+          </div>
+        </div>
+      </div>
+
+      <div class="field" id="slotTimeBlock" hidden>
+        <div class="label">Период (для события)</div>
+        <div class="row">
+          <div class="field grow">
+            <div class="label">Начало: дата</div>
+            <input id="f_start_date" type="date" class="input" />
+          </div>
+          <div class="field">
+            <div class="label">Начало: время</div>
+            <input id="f_start_time" type="time" class="input" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="field grow">
+            <div class="label">Конец: дата</div>
+            <input id="f_end_date" type="date" class="input" />
+          </div>
+          <div class="field">
+            <div class="label">Конец: время</div>
+            <input id="f_end_time" type="time" class="input" />
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="label">Уведомление</div>
+        <select id="f_notify" class="input">
+          <option value="none">Без уведомления</option>
+          <option value="at">В момент события</option>
+          <option value="5">За 5 минут</option>
+          <option value="15">За 15 минут</option>
+          <option value="30">За 30 минут</option>
+          <option value="60">За 1 час</option>
+          <option value="1440">За 1 день</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <div class="label">Быстрый ввод</div>
+        <input id="f_quick" class="input" placeholder="завтра 18:00 купить продукты" />
+      </div>
+
+      <div class="footer">
+        <button class="btn" id="btnCancel">Отмена</button>
+        <button class="btn primary" id="btnCreate">Создать</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Онбординг -->
+  <div class="ob-wrap" id="obWrap" role="dialog" aria-modal="true" hidden>
+    <div class="ob-card">
+      <div id="obStep"></div>
+      <div class="ob-dots" id="obDots"></div>
+      <div class="ob-btm">
+        <button class="ob-btn" id="obSkip">Пропустить</button>
+        <button class="ob-btn primary" id="obNext">Дальше</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Фокус-таймер -->
+  <div class="ft-wrap" id="ftWrap" hidden>
+    <div class="ft-card">
+      <div class="ft-top">
+        <div class="ft-title">Фокус</div>
+        <div id="ftTime">00:00</div>
+      </div>
+      <div class="ft-canvas"><canvas id="ftCanvas" width="360" height="360"></canvas></div>
+      <div class="ft-btm">
+        <button class="ft-btn" id="ftStop">Стоп</button>
+        <button class="ft-btn primary" id="ftPause">Пауза</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Логика (подгружу отдельным коммитом) -->
+  <script defer src="scripts/main.js"></script>
+</body>
+</html>
