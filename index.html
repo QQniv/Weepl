@@ -42,9 +42,29 @@
 
   <!-- Home -->
   <template id="home-view">
-    <section class="section">
-      <h1 class="h-impact">Сегодня</h1>
-      <div id="taskList" class="task-list"></div>
+    <section class="section home">
+      <!-- Месяц по центру -->
+      <div class="home-month">
+        <button class="cal-nav" data-home-month="prev" aria-label="Предыдущий месяц">←</button>
+        <h1 id="homeMonth" class="h-impact">Месяц</h1>
+        <button class="cal-nav" data-home-month="next" aria-label="Следующий месяц">→</button>
+      </div>
+
+      <!-- Лента дат (пиллы) -->
+      <div id="dateStrip" class="date-strip" aria-label="Лента дат (неделя)"></div>
+
+      <!-- Список дел выбранной даты -->
+      <div class="today-wrap">
+        <div class="today-head">
+          <div class="today-title h-impact" id="todayTitle" style="font-size:20px">Сегодня</div>
+          <!-- при необходимости добавим быстрые фильтры/поиск -->
+        </div>
+
+        <!-- Внутри сохраняем старый #taskList, чтобы текущий app.js не сломался -->
+        <div id="todayList" class="today-list scroll-snap">
+          <div id="taskList" class="task-list"></div>
+        </div>
+      </div>
     </section>
   </template>
 
@@ -157,6 +177,6 @@
   </dialog>
 
   <!-- JS -->
-  <script src="./app.js" defer></script>
+  <script src="./app.js?v=2" defer></script>
 </body>
 </html>
