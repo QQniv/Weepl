@@ -1,6 +1,5 @@
-/* styles/main.css
-   Главная (Today): тема 60-30-10, светлая/тёмная, таймлайн, дни, FAB, шторка добавления,
-   онбординг и фокус-таймер. Без внешних шрифтов — system-ui. */
+/* styles/main.css v1.0.2
+   Главная (Today): тема 60-30-10, светлая/тёмная, таймлайн, дни, FAB, шторка, онбординг, фокус-таймер. */
 
 /* =========================
    THEME TOKENS (правило 60-30-10)
@@ -89,19 +88,23 @@ body,.app,.panel,.nav,.tab,.fab,.sheet,.day,.item,.input,select,.badge,.chip{
   padding:4px 0 0;
 }
 .timeline{position:relative;padding:0 16px}
+/* сдвинул линию левее, чтобы не лезла на колонку времени */
 .timeline::before{
-  content:"";position:absolute;left:34px;top:0;bottom:24px;width:2px;background:var(--line);
+  content:"";position:absolute;left:24px;top:0;bottom:24px;width:2px;background:var(--line);
 }
 .item{
-  display:grid;grid-template-columns:70px 1fr auto;gap:14px;align-items:flex-start;
+  display:grid;grid-template-columns:96px 1fr auto; /* шире колонка времени */
+  gap:14px;align-items:flex-start;
   padding:14px 12px;margin:10px 0;background:var(--surface);
   border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);
 }
 .item.big{background:linear-gradient(0deg,var(--accent-weak),var(--accent-weak));border-color:transparent;box-shadow:var(--shadow-strong)}
-.time{width:70px;text-align:right;padding-right:10px;font-weight:700;color:var(--text)}
+.time{width:96px;text-align:right;padding-right:10px;font-weight:700;color:var(--text);position:relative;z-index:2}
 .dot{
-  position:absolute;left:30px;width:10px;height:10px;border-radius:999px;background:var(--accent);transform:translateY(18px);
-  box-shadow:0 0 0 4px rgba(59,119,255,.18);
+  position:absolute;left:20px; /* левее колонки времени */
+  width:10px;height:10px;border-radius:999px;background:var(--accent);
+  transform:translateY(18px);box-shadow:0 0 0 4px rgba(59,119,255,.18);
+  z-index:1;pointer-events:none;
 }
 .titleRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .title{font-weight:800}
@@ -138,9 +141,13 @@ body,.app,.panel,.nav,.tab,.fab,.sheet,.day,.item,.input,select,.badge,.chip{
 /* ===== SHEET (Add) ===== */
 .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:.25s}
 .sheet{
-  position:fixed;left:0;right:0;bottom:-100%;max-width:520px;margin:0 auto;background:var(--surface);
+  position:fixed;left:0;right:0;bottom:0; /* было bottom:-100% — из-за этого её не было видно */
+  max-width:520px;margin:0 auto;background:var(--surface);
   border-top-left-radius:26px;border-top-right-radius:26px;border:1px solid var(--line);
-  box-shadow:0 -24px 64px rgba(0,0,0,.35);transform:translateY(100%);transition:.38s cubic-bezier(.18,.88,.22,1.05);z-index:6
+  box-shadow:0 -24px 64px rgba(0,0,0,.35);
+  transform:translateY(100%); /* скрыта за пределами экрана */
+  will-change:transform;
+  transition:.38s cubic-bezier(.18,.88,.22,1.05);z-index:6
 }
 .backdrop.open{opacity:1;pointer-events:auto}
 .sheet.open{transform:translateY(0)}
