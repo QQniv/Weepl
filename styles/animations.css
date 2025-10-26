@@ -1,0 +1,20 @@
+/* =========================================
+   Animations to match smooth feel
+   ========================================= */
+
+@keyframes card-pop{
+  0%{ transform: scale(.98); opacity: 0; }
+  100%{ transform: scale(1); opacity: 1; }
+}
+@keyframes fade-up{
+  from{ transform: translateY(6px); opacity: 0; }
+  to{ transform: translateY(0); opacity: 1; }
+}
+
+.anim-pop{ animation: card-pop .18s ease both; }
+.anim-fade{ animation: fade-up .22s ease both; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
+}
