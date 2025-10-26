@@ -1,0 +1,174 @@
+/* ===============================
+   Components: buttons, inputs, tabs,
+   badges, chips, list, event/task cards
+   =============================== */
+
+/* Buttons */
+.btn {
+  --btn-bg: var(--surface-2);
+  --btn-text: var(--text);
+  --btn-bd: var(--border);
+
+  height: var(--ctrl-h);
+  padding: 0 var(--space-4);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--btn-bd);
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: transform .12s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+  will-change: transform;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-1); }
+.btn:active { transform: translateY(0); box-shadow: none; }
+.btn--primary { --btn-bg: var(--accent); --btn-bd: transparent; }
+.btn--danger  { --btn-bg: var(--danger); --btn-bd: transparent; }
+.btn--ghost   { background: transparent; border-color: var(--border); }
+
+.btn--icon { width: var(--ctrl-h); padding: 0; justify-content: center; }
+
+/* Inputs */
+.input, .select, .textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--text);
+  padding: 0 var(--space-4);
+  height: var(--ctrl-h);
+}
+.textarea { min-height: 120px; padding: var(--space-3) var(--space-4); resize: vertical; }
+.input::placeholder, .textarea::placeholder { color: var(--muted); }
+
+/* Field group */
+.field { display: grid; gap: var(--space-2); }
+.field__label { font-size: var(--fs-sm); color: var(--muted); }
+
+/* Tabs */
+.tabs { display: flex; gap: var(--space-2); background: var(--surface); padding: var(--space-2); border-radius: var(--r-pill); border: 1px solid var(--border); }
+.tab {
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  color: var(--muted);
+  transition: background .2s ease, color .2s ease;
+}
+.tab.is-active { background: var(--accent); color: white; }
+
+/* Badges / Chips */
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 10px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: var(--fs-xs);
+}
+.badge--success { background: color-mix(in lch, var(--success), transparent 75%); color: #0b3; border-color: transparent; }
+.badge--warn    { background: color-mix(in lch, var(--warning), transparent 80%); color: #b56; border-color: transparent; }
+.badge--danger  { background: color-mix(in lch, var(--danger),  transparent 80%); color: #b33; border-color: transparent; }
+
+/* Lists */
+.list { display: grid; gap: var(--space-2); }
+.item {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+
+/* Event / Task cards */
+.event, .task {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-1);
+}
+.event__title, .task__title { font-weight: 600; }
+.event__meta, .task__meta   { font-size: var(--fs-sm); color: var(--muted); }
+
+/* Убираем “синие точки” у событий по умолчанию (по твоей просьбе) */
+.event__bullet { display: none; }
+.event--with-bullet .event__bullet {
+  display: inline-block;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent);
+}
+
+/* Time slot labels centered (дублируем для совместимости) */
+.time-slot { display: grid; place-items: center; color: var(--muted); }
+
+/* Floating Action Button (+) */
+.fab {
+  position: fixed; right: 24px; bottom: 24px;
+  width: 64px; height: 64px; border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  display: grid; place-items: center;
+  box-shadow: var(--shadow-2);
+  z-index: var(--z-popover);
+  transition: transform .15s ease, box-shadow .2s ease, opacity .2s ease;
+}
+.fab:active { transform: translateY(1px); box-shadow: var(--shadow-1); }
+.fab.is-disabled { opacity: .5; pointer-events: none; }
+
+/* Navbar / App tabs (bottom) */
+.appbar {
+  position: sticky; bottom: 0;
+  height: 64px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: grid; grid-auto-flow: column; gap: var(--space-2);
+}
+.appbar__btn {
+  display: grid; place-items: center;
+  color: var(--muted);
+}
+.appbar__btn.is-active { color: var(--text); }
+
+/* Toasts */
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--r-pill);
+  padding: 10px 14px;
+  box-shadow: var(--shadow-2);
+  z-index: var(--z-toast);
+}
+
+/* Settings list */
+.settings {
+  display: grid; gap: var(--space-3);
+}
+.settings__row {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+/* Switch */
+.switch {
+  --sw-w: 48px; --sw-h: 28px;
+  position: relative; width: var(--sw-w); height: var(--sw-h);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  transition: background .2s ease, border-color .2s ease;
+}
+.switch__dot {
+  position: absolute; top: 50%; left: 2px; transform: translateY(-50%);
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--accent);
+  transition: left .2s ease;
+}
+.switch.is-on .switch__dot { left: calc(var(--sw-w) - 26px); }
