@@ -1,4 +1,5 @@
-/* Planner • Future Flow — app.js v2.1 (compat, safe render) */
+console.log('APP LOADED');
+document.title = 'Weepl • JS загружен';/* Planner • Future Flow — app.js v2.1 (compat, safe render) */
 'use strict';
 
 /* ========== Store ========== */
