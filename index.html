@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Планер — Сегодня</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/styles.css">
+<meta name="theme-color" content="#0D0F10">
+</head>
+<body>
+<div class="app">
+  <header class="appbar">
+    <div class="icon">☰</div>
+    <div class="title" id="appTitle">Сегодня</div>
+    <div class="icon" id="btnBell">🔔</div>
+  </header>
+
+  <!-- ====== SCREEN: TODAY ====== -->
+  <div id="screenToday" class="screen active">
+    <div class="section month">
+      <button id="prev">‹</button>
+      <div id="monthLabel" style="font-weight:700"></div>
+      <button id="next">›</button>
+    </div>
+    <div class="section days" id="dayStrip"></div>
+    <div class="panel" id="taskList"></div>
+  </div>
+
+  <!-- ====== SCREEN: SETTINGS ====== -->
+  <div id="screenSettings" class="screen">
+    <div class="settings">
+      <div class="set-card">
+        <div class="set-h">Обучение</div>
+        <div class="set-row">
+          <div>Пройти обучение заново</div>
+          <button class="btn" id="btnStartTutorial">Открыть</button>
+        </div>
+        <div class="set-row">
+          <div>Сбросить флаг «обучение пройдено»</div>
+          <button class="btn" id="btnResetTutorial">Сбросить</button>
+        </div>
+      </div>
+
+      <div class="set-card">
+        <div class="set-h">Оформление</div>
+        <div class="set-row" style="align-items:center">
+          <div>Тема</div>
+          <div class="switcher" id="themeSeg">
+            <button data-mode="light">Светлая</button>
+            <button data-mode="dark">Тёмная</button>
+          </div>
+        </div>
+        <div class="set-row" style="flex-direction:column;align-items:flex-start">
+          <div>Акцентный цвет</div>
+          <div class="swatch-grid" id="accentGrid"></div>
+        </div>
+      </div>
+
+      <div class="set-card">
+        <div class="set-h">Мелочи</div>
+        <div class="set-row">
+          <div>Лёгкая вибрация при действиях</div>
+          <div class="switcher" id="hapticsSeg">
+            <button data-haptics="off">Выкл</button>
+            <button data-haptics="on">Вкл</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <div>Звук действий</div>
+          <div class="switcher" id="soundsSeg">
+            <button data-sounds="off">Выкл</button>
+            <button data-sounds="on">Вкл</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav">
+    <button class="tab active" data-screen="today" title="Сегодня">🏠</button>
+    <button class="tab" data-screen="calendar" title="Календарь (скоро)">📅</button>
+    <button class="tab" data-screen="projects" title="Проекты (скоро)">🗂</button>
+    <button class="tab" data-screen="settings" title="Настройки">⚙️</button>
+  </div>
+
+  <button class="fab" id="fab">＋</button>
+</div>
+
+<canvas id="confettiCanvas"></canvas>
+
+<!-- ====== ADD/EDIT SHEET ====== -->
+<div class="backdrop" id="bd"></div>
+<div class="sheet" id="sheet">
+  <div class="handle"></div>
+  <div class="body">
+    <div class="field">
+      <div class="label">Название</div>
+      <input id="f_title" class="input" placeholder="Например: Сдать отчёт по практике"/>
+    </div>
+
+    <div class="field">
+      <div class="label">Приоритет (Эйзенхауэр)</div>
+      <div class="chips" id="f_eisen">
+        <button class="chip" data-cat="A" title="Срочно и важно">A · Срочно/важно</button>
+        <button class="chip" data-cat="B" title="Важно, не срочно">B · Важно</button>
+        <button class="chip" data-cat="C" title="Срочно, не важно">C · Срочно</button>
+        <button class="chip" data-cat="D" title="Ни срочно, ни важно">D · Отложить</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="label">Тип</div>
+      <div class="seg" id="f_type">
+        <button data-type="task" aria-pressed="true">Задача</button>
+        <button data-type="slot">Событие</button>
+      </div>
+      <div class="hint">Событие — имеет период начала и конца и предлагает фокус-таймер.</div>
+    </div>
+
+    <div class="field" id="taskTimeBlock">
+      <div class="label">Когда (для задачи)</div>
+      <div class="seg" id="f_when">
+        <button data-mode="today" aria-pressed="true">Сегодня</button>
+        <button data-mode="pick">Выбрать дату</button>
+        <button data-mode="inbox">Inbox</button>
+      </div>
+      <div class="row">
+        <div class="field" style="flex:1">
+          <div class="label">Дата</div>
+          <input id="f_date" type="date" class="input"/>
+        </div>
+        <div class="field" style="flex:.9">
+          <div class="label">Время</div>
+          <input id="f_time" type="time" class="input"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="field" id="slotTimeBlock" style="display:none">
+      <div class="label">Период (для события)</div>
+      <div class="row">
+        <div class="field" style="flex:1">
+          <div class="label">Начало: дата</div>
+          <input id="f_start_date" type="date" class="input"/>
+        </div>
+        <div class="field" style="flex:.9">
+          <div class="label">Начало: время</div>
+          <input id="f_start_time" type="time" class="input"/>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field" style="flex:1">
+          <div class="label">Конец: дата</div>
+          <input id="f_end_date" type="date" class="input"/>
+        </div>
+        <div class="field" style="flex:.9">
+          <div class="label">Конец: время</div>
+          <input id="f_end_time" type="time" class="input"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="label">Уведомление</div>
+      <select id="f_notify" class="input">
+        <option value="none">Без уведомления</option>
+        <option value="at">В момент события</option>
+        <option value="5">За 5 минут</option>
+        <option value="15">За 15 минут</option>
+        <option value="30">За 30 минут</option>
+        <option value="60">За 1 час</option>
+        <option value="1440">За 1 день</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <div class="label">Быстрый ввод</div>
+      <input id="f_quick" class="input" placeholder="завтра 18:00 купить продукты"/>
+    </div>
+
+    <div class="field">
+      <div class="smart-head" id="smartHead">
+        <div><strong>SMART</strong> — уточнить цель задачи</div>
+        <div>▾</div>
+      </div>
+      <div class="smart-wrap" id="smartWrap">
+        <div class="smart-grid">
+          <input id="sm_s" class="input" placeholder="S — Что конкретно сделать?"/>
+          <input id="sm_m" class="input" placeholder="M — Как измерю результат?"/>
+          <input id="sm_a" class="input" placeholder="A — Чем обеспечу достижимость?"/>
+          <input id="sm_r" class="input" placeholder="R — Зачем это важно?"/>
+          <input id="sm_t" class="input" placeholder="T — Срок (синхронизирован с дедлайном)"/>
+        </div>
+        <div class="hint">Заполни хотя бы 2–3 пункта — мозгу легче.</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <button class="btn" id="btnCancel">Отмена</button>
+      <button class="btn primary" id="btnCreate">Создать</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== ONBOARDING (one-time) ====== -->
+<div class="ob-wrap" id="obWrap" role="dialog" aria-modal="true">
+  <div class="ob-card">
+    <div id="obStep"></div>
+    <div class="ob-dots" id="obDots"></div>
+    <div class="ob-btm">
+      <button class="ob-btn" id="obSkip">Пропустить</button>
+      <button class="ob-btn primary" id="obNext">Дальше</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== FOCUS TIMER ====== -->
+<div class="ft-wrap" id="ftWrap">
+  <div class="ft-card">
+    <div class="ft-top"><div class="ft-ttl">Фокус</div><div id="ftTime">00:00</div></div>
+    <div class="ft-canvas"><canvas id="ftCanvas" width="360" height="360"></canvas></div>
+    <div class="ft-btm">
+      <button class="ft-btn" id="ftStop">Стоп</button>
+      <button class="ft-btn primary" id="ftPause">Пауза</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+// PWA SW
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+</body>
+</html>
