@@ -1,357 +1,246 @@
 <!doctype html>
-<html lang="ru" data-theme="light" data-accent="violet" data-accentstyle="solid">
+<html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="color-scheme" content="light dark" />
-  <meta name="theme-color" content="#ffffff" />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Weepl • Планировщик</title>
-  <meta name="description" content="Weepl — умный планировщик: задачи, события, календарь, статистика." />
-
-  <!-- Шрифты -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Anton:wght@400&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-
-  <!-- Стили -->
   <link rel="stylesheet" href="styles.css" />
-
-  <!-- Favicon (минимал) -->
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ccircle cx=%2750%27 cy=%2750%27 r=%2746%27 fill=%27%237b61ff%27/%3E%3Ctext x=%2750%27 y=%2758%27 text-anchor=%27middle%27 font-size=%2762%27 font-family=%27Anton%27 fill=%27%23fff%27%3EW%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Заголовки: Impact / Anton; текст: Inter как гармоничный компаньон -->
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 </head>
-<body>
-
-  <!-- ====== ROOT APP WRAPPER ====== -->
-  <div id="app" class="home section">
-
-    <!-- ====== HEADER: месяц + стрелки ====== -->
-    <header class="month-bar">
-      <button class="month-btn" id="btnPrevMonth" aria-label="Предыдущий месяц">←</button>
-      <h1 class="h-impact" id="monthTitle">Октябрь 2025 г.</h1>
-      <button class="month-btn" id="btnNextMonth" aria-label="Следующий месяц">→</button>
-    </header>
-
-    <!-- ====== Пояс дней (strip) ====== -->
-    <div class="date-strip" id="dateStrip">
-      <!-- JS заполнит карточками .date-pill -->
-      <!-- пример статической карточки для начального рендера -->
-      <div class="date-pill">
-        <div class="wk">Пн</div>
-        <div class="daynum">27</div>
-        <div class="mon">Окт.</div>
-      </div>
-      <div class="date-pill active">
-        <div class="wk">Вт</div>
-        <div class="daynum">28</div>
-        <div class="mon">Окт.</div>
-      </div>
-      <div class="date-pill">
-        <div class="wk">Ср</div>
-        <div class="daynum">29</div>
-        <div class="mon">Окт.</div>
-      </div>
+<body class="theme-light">
+  <!-- Вью: Задачи (главная) -->
+  <header id="topbar" class="topbar">
+    <h1 id="monthTitle" class="month-title">Октябрь 2025 г.</h1>
+    <div class="month-nav">
+      <button id="mPrev" class="icon-btn" aria-label="Предыдущий месяц">←</button>
+      <button id="mNext" class="icon-btn" aria-label="Следующий месяц">→</button>
     </div>
+  </header>
 
-    <!-- ====== СЕКЦИЯ «Сегодня» (карточка) ====== -->
-    <section class="section">
-      <div class="tasks-card" id="todayCard">
-        <div class="tasks-head">
-          <div>
-            <div class="title h-impact" style="font-size:1.15rem">Сегодня</div>
-            <div class="muted" id="todayCounter">Задач: 0</div>
-          </div>
-          <div class="row gap">
-            <button class="btn-outline" id="btnAddTaskTop">+ Задача</button>
-            <button class="btn-outline" id="btnAddEventTop">+ Событие</button>
-          </div>
-        </div>
+  <main id="viewContainer">
+    <!-- VIEW: TODAY -------------------------------------------------------->
+    <section id="view-today" class="view is-active" aria-label="Главный экран">
+      <!-- Барабан дат ТОЛЬКО здесь -->
+      <div id="dateScroller" class="date-scroller" role="tablist" aria-label="Дни недели"></div>
 
-        <!-- Таймлайн событий (06:00–20:00) -->
-        <div class="day-grid" id="dayGrid">
-          <div class="time-col" id="timeTicks">
-            <!-- JS вставит .tick по часам -->
-            <div class="tick">06:00</div>
-            <div class="tick">07:00</div>
-            <div class="tick">08:00</div>
-            <div class="tick">09:00</div>
-          </div>
-          <div class="events-col" id="eventsCol">
-            <!-- красная/акцентная линия «сейчас» -->
-            <div class="now-line" id="nowLine" style="top: 120px;"></div>
-            <!-- Пример статического блока события для пустого состояния -->
-            <div class="event" style="--top:140px;--h:64px">
-              <div class="title">Демо-событие</div>
-              <div class="time">09:30 – 10:10</div>
-            </div>
-          </div>
-        </div>
+      <!-- Таймлайн (события блоками по времени) -->
+      <section class="timeline-wrap">
+        <div id="timeline" class="timeline" aria-label="Временная шкала 06–20"></div>
+      </section>
 
-        <!-- Список задач (скроллируемый) -->
-        <h3 class="h-sub">Задачи</h3>
-        <div class="tasks-scroll">
-          <div class="task-list" id="taskList">
-            <!-- Пример строки задачи (для initial skeleton) -->
-            <div class="t-item" data-id="demo">
-              <div class="row1">
-                <div class="t-title">Пример задачи</div>
-                <div class="task-ctl">
-                  <button class="icon-btn" title="Выполнить">✓</button>
-                  <button class="icon-btn" title="Перенести">↔</button>
-                  <button class="icon-btn" title="Удалить">🗑</button>
-                </div>
-              </div>
-              <div class="t-meta">приоритет: средний</div>
-            </div>
-          </div>
-        </div>
+      <!-- Список задач (скролл внутри) -->
+      <section class="tasklist-wrap">
+        <header class="section-head">
+          <h2>Задачи</h2>
+          <div id="tasksKpi" class="kpi"></div>
+        </header>
+        <ul id="taskList" class="task-list" aria-live="polite"></ul>
+      </section>
+    </section>
+
+    <!-- VIEW: CALENDAR ----------------------------------------------------->
+    <section id="view-calendar" class="view" aria-label="Календарь">
+      <!-- В календаре НЕТ барабана дат; только крупная сетка месяца -->
+      <header class="cal-head">
+        <button id="calPrev" class="icon-btn" aria-label="Предыдущий месяц">←</button>
+        <h2 id="calTitle" class="month-title">Октябрь 2025 г.</h2>
+        <button id="calNext" class="icon-btn" aria-label="Следующий месяц">→</button>
+      </header>
+
+      <div class="cal-weekdays">
+        <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+      </div>
+
+      <!-- сетка, целиком помещается в экран, отдельная прокрутка при малой высоте -->
+      <div id="calendarWrap" class="calendar-wrap">
+        <div id="calendarGrid" class="calendar-grid" role="grid" aria-label="Сетка месяца"></div>
       </div>
     </section>
 
-    <!-- ====== VIEW: Календарь ====== -->
-    <section class="section" id="viewCalendar" style="display:none">
-      <div class="calhead">
-        <button class="month-btn" id="calPrev">←</button>
-        <h2 class="h-impact" id="calTitle">Октябрь 2025</h2>
-        <button class="month-btn" id="calNext">→</button>
-      </div>
-      <div class="calendar-grid" id="calendarGrid">
-        <div class="cell head">Пн</div><div class="cell head">Вт</div><div class="cell head">Ср</div>
-        <div class="cell head">Чт</div><div class="cell head">Пт</div><div class="cell head">Сб</div><div class="cell head">Вс</div>
-        <!-- JS заполнит днями -->
-      </div>
-      <div class="center muted" id="calEmpty">Выберите день, чтобы увидеть задачи и события.</div>
-    </section>
-
-    <!-- ====== VIEW: Статистика ====== -->
-    <section class="section" id="viewStats" style="display:none">
-      <h2 class="h-impact" style="margin:.25rem .15rem .7rem">Статистика</h2>
+    <!-- VIEW: STATS -------------------------------------------------------->
+    <section id="view-stats" class="view" aria-label="Статистика">
+      <h2 class="screen-title">Статистика</h2>
       <div class="stats-grid">
-        <div class="card center">
-          <div class="ring" id="ring">
-            <svg class="ring-svg" viewBox="0 0 120 120" aria-hidden="true">
-              <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
-              <circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52"></circle>
+        <div class="card">
+          <div class="ring" aria-hidden="true">
+            <svg viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="52" class="ring-bg"></circle>
+              <circle cx="60" cy="60" r="52" class="ring-fg" id="ringFg"></circle>
             </svg>
-            <div class="ring-val" id="ringVal">0%</div>
+            <div class="ring-center">
+              <span id="ringPct" class="ring-pct">0%</span>
+            </div>
           </div>
-          <div class="muted">Выполнено за неделю</div>
+          <div class="card-caption">Выполнено за неделю</div>
         </div>
-
-        <div class="card center">
-          <div class="kpi"><span id="kpi7">0/0</span></div>
-          <small class="muted">За 7 дней</small>
+        <div class="card kpi-card">
+          <div class="kpi-big"><span id="kpi7Done">0</span> / <span id="kpi7Total">0</span></div>
+          <div class="card-caption">За 7 дней</div>
         </div>
-
-        <div class="card center">
-          <div class="kpi"><span id="kpiMon">0/0</span></div>
-          <small class="muted">За месяц</small>
+        <div class="card kpi-card">
+          <div class="kpi-big"><span id="kpi30Done">0</span> / <span id="kpi30Total">0</span></div>
+          <div class="card-caption">За месяц</div>
         </div>
-
-        <div class="card center">
-          <div class="kpi"><span id="streak">0</span> дн.</div>
-          <small class="muted">Серия выполнения</small>
+        <div class="card kpi-card">
+          <div class="kpi-big"><span id="streakVal">0</span> дн.</div>
+          <div class="card-caption">Серия выполнения</div>
         </div>
-
-        <div class="card barcard" style="grid-column:1/-1">
-          <div class="bar-head">
-            <div class="h-impact" style="font-size:1rem">Выполнено по дням</div>
-            <div class="muted">последние 7 дней</div>
-          </div>
-          <div class="bars" id="bars"></div>
-          <div class="bar-labels">
-            <span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span><span>Пн</span>
-          </div>
+        <div class="card card-wide">
+          <header class="card-row">
+            <h3>Выполнено по дням</h3>
+            <span class="muted">последние 7 дней</span>
+          </header>
+          <div id="bar7" class="bars-7"></div>
         </div>
       </div>
     </section>
 
-    <!-- ====== VIEW: Настройки ====== -->
-    <section class="section" id="viewSettings" style="display:none">
-      <h2 class="h-impact" style="margin:.25rem .15rem .7rem">Настройки</h2>
+    <!-- VIEW: SETTINGS ----------------------------------------------------->
+    <section id="view-settings" class="view" aria-label="Настройки">
+      <h2 class="screen-title">Настройки</h2>
 
-      <div class="settings-section">
-        <div class="section-title">Тема и акценты</div>
-        <div class="settings-list">
-
-          <div class="item">
-            <div class="left">
-              <div class="label">Тёмная тема</div>
-              <div class="sub">переключается мгновенно</div>
-            </div>
-            <label class="switch right">
-              <input type="checkbox" id="toggleDark">
+      <div class="prefs">
+        <div class="pref-row">
+          <div class="pref-title">Тема</div>
+          <div class="pref-control">
+            <label class="switch">
+              <input id="themeToggle" type="checkbox" />
               <span class="slider"></span>
             </label>
+            <span id="themeLabel" class="muted">Светлая</span>
           </div>
-
-          <div class="item">
-            <div class="left">
-              <div class="label">Цвет акцента</div>
-              <div class="sub">preset или свой цвет</div>
-            </div>
-            <div class="right">
-              <select id="accentPreset">
-                <option value="violet">Фиолетовый</option>
-                <option value="blue">Синий</option>
-                <option value="rose">Розовый</option>
-                <option value="mint">Мята</option>
-                <option value="lemon">Лимон</option>
-                <option value="coral">Коралл</option>
-                <option value="azure">Лазурь</option>
-                <option value="orchid">Орхидея</option>
-                <option value="sky">Небесный</option>
-                <option value="lime">Лайм</option>
-                <option value="custom">Свой…</option>
-              </select>
-              <input type="color" id="accentCustom" value="#7b61ff" title="Свой цвет">
-            </div>
-          </div>
-
-          <div class="item">
-            <div class="left">
-              <div class="label">Стиль акцента</div>
-              <div class="sub">обычный / неон / металлик</div>
-            </div>
-            <div class="right">
-              <select id="accentStyle">
-                <option value="solid">Обычный</option>
-                <option value="neon">Неон</option>
-                <option value="metal">Металлик</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="item">
-            <div class="left">
-              <div class="label">Размер шрифта</div>
-              <div class="sub">по вкусу</div>
-            </div>
-            <div class="right">
-              <select id="fontScale">
-                <option value="1">Стандарт</option>
-                <option value="2">Крупнее</option>
-                <option value="3">Крупный</option>
-              </select>
-            </div>
-          </div>
-
         </div>
-      </div>
 
-      <div class="settings-section">
-        <div class="section-title">Поведение</div>
-        <div class="settings-list">
-          <div class="item">
-            <div class="left">
-              <div class="label">Свайпы задач</div>
-              <div class="sub">вправо — выполнено, влево — перенос</div>
-            </div>
-            <div class="right muted">включено</div>
+        <div class="pref-row">
+          <div class="pref-title">Акцент</div>
+          <div class="pref-control">
+            <input id="accentPicker" type="color" value="#5b5bf0" />
+            <button id="accentPreset" class="btn ghost">Палитра</button>
+          </div>
+        </div>
+
+        <div class="pref-row">
+          <div class="pref-title">Размер текста</div>
+          <div class="pref-control">
+            <input id="fontScale" type="range" min="90" max="115" step="5" value="100" />
+            <span id="fontScaleVal" class="muted">100%</span>
+          </div>
+        </div>
+
+        <div class="pref-row">
+          <div class="pref-title">Стиль акцентов</div>
+          <div class="pref-control">
+            <label><input type="checkbox" id="fxNeon" /> неоновое свечение</label>
+            <label><input type="checkbox" id="fxMetal" /> «металличность»</label>
           </div>
         </div>
       </div>
     </section>
+  </main>
 
-  </div> <!-- /#app -->
+  <!-- FAB -->
+  <button id="fab" class="fab" aria-label="Добавить">+</button>
 
-  <!-- ====== НИЖНЯЯ ПАНЕЛЬ + FAB ====== -->
-  <nav class="bottombar" id="tabbar">
-    <a class="navbtn active" data-view="home" id="tabHome" aria-label="Задачи">
-      <!-- иконка список -->
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 6h12M8 12h12M8 18h12M4 6h0M4 12h0M4 18h0" stroke-width="2" stroke-linecap="round"/><circle cx="4" cy="6" r="1.5" fill="currentColor"/><circle cx="4" cy="12" r="1.5" fill="currentColor"/><circle cx="4" cy="18" r="1.5" fill="currentColor"/></svg>
-    </a>
-    <a class="navbtn" data-view="calendar" id="tabCalendar" aria-label="Календарь">
-      <!-- иконка календарь -->
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="16" rx="2" stroke-width="2"/><path d="M16 3v4M8 3v4M3 10h18" stroke-width="2" stroke-linecap="round"/></svg>
-    </a>
-
-    <button class="fab" id="fab" aria-label="Добавить">+</button>
-
-    <a class="navbtn" data-view="stats" id="tabStats" aria-label="Статистика">
-      <!-- иконка столбцы -->
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="10" width="4" height="10" rx="1" stroke-width="2"/><rect x="10" y="6" width="4" height="14" rx="1" stroke-width="2"/><rect x="17" y="13" width="4" height="7" rx="1" stroke-width="2"/></svg>
-    </a>
-    <a class="navbtn" data-view="settings" id="tabSettings" aria-label="Настройки">
-      <!-- иконка шестерёнка -->
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke-width="2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 3.3l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.08a1.65 1.65 0 0 0 1.82-.33l.06-.06A2 2 0 1 1 21 7.04l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c0 .66.39 1.26 1 1.51.29.12.61.19.94.19A2 2 0 1 1 22 12h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke-width="1.2"/></svg>
-    </a>
+  <!-- Bottom Nav -->
+  <nav class="tabbar" aria-label="Навигация">
+    <button class="tab is-active" data-view="view-today" aria-label="Список">
+      <span class="i i-list"></span>
+    </button>
+    <button class="tab" data-view="view-calendar" aria-label="Календарь">
+      <span class="i i-cal"></span>
+    </button>
+    <button class="tab" data-view="view-stats" aria-label="Статистика">
+      <span class="i i-stats"></span>
+    </button>
+    <button class="tab" data-view="view-settings" aria-label="Настройки">
+      <span class="i i-gear"></span>
+    </button>
   </nav>
 
-  <!-- ====== MODAL: Добавить (задача/событие) ====== -->
+  <!-- MODAL: Add item -->
   <dialog id="dlgAdd" class="modal">
-    <div class="modal-body">
-      <div class="modal-head">
-        <h3 class="h-impact" style="font-size:1.1rem">Быстрое добавление</h3>
-        <button class="icon-btn" id="dlgAddClose">✕</button>
+    <form method="dialog" class="modal-card" id="addForm">
+      <header class="modal-head">
+        <h3>Новое</h3>
+      </header>
+
+      <div class="field-row">
+        <label class="seg">
+          <input type="radio" name="kind" value="task" checked />
+          <span>Задача</span>
+        </label>
+        <label class="seg">
+          <input type="radio" name="kind" value="event" />
+          <span>Событие</span>
+        </label>
       </div>
 
-      <div class="grid2" style="margin-top:.5rem">
-        <button class="btn" id="openAddTask">+ Задача</button>
-        <button class="btn" id="openAddEvent">+ Событие</button>
+      <label class="field">
+        <span>Название</span>
+        <input name="title" required placeholder="Что сделать?" />
+      </label>
+
+      <div class="grid-2">
+        <label class="field">
+          <span>Дата</span>
+          <input type="date" name="date" required />
+        </label>
+        <label class="field">
+          <span>Время</span>
+          <input type="time" name="time" value="08:00" />
+        </label>
       </div>
 
-      <hr style="border:none;border-top:1px solid var(--border);margin:1rem 0 .5rem" />
+      <div class="grid-2 when-event">
+        <label class="field">
+          <span>Длительность (мин)</span>
+          <input type="number" name="duration" min="15" step="15" value="60" />
+        </label>
+        <label class="field">
+          <span>Приоритет</span>
+          <select name="priority">
+            <option value="low">низкий</option>
+            <option value="medium" selected>средний</option>
+            <option value="high">высокий</option>
+          </select>
+        </label>
+      </div>
 
-      <!-- Форма задачи -->
-      <form id="formTask" class="fade-in">
-        <div class="field"><label>Название</label><input id="taskTitle" placeholder="Что сделать?"></div>
-        <div class="grid2">
-          <div class="field"><label>Дата</label><input type="date" id="taskDate"></div>
-          <div class="field"><label>Время</label><input type="time" id="taskTime"></div>
-        </div>
-        <div class="field"><label>Приоритет</label>
-          <select id="taskPriority"><option>Низкий</option><option selected>Средний</option><option>Высокий</option></select>
-        </div>
-        <div class="field"><label>Комментарий</label><textarea id="taskNote" rows="2" placeholder="Опционально"></textarea></div>
-        <div class="modal-foot">
-          <button type="button" class="btn-outline" id="cancelTask">Отмена</button>
-          <button type="submit" class="btn">Сохранить</button>
-        </div>
-      </form>
+      <label class="field">
+        <span>Комментарий</span>
+        <textarea name="note" rows="2" placeholder="Опционально"></textarea>
+      </label>
 
-      <!-- Форма события -->
-      <form id="formEvent" class="fade-in" style="display:none">
-        <div class="field"><label>Название</label><input id="eventTitle" placeholder="Название события"></div>
-        <div class="grid2">
-          <div class="field"><label>Дата</label><input type="date" id="eventDate"></div>
-          <div class="field"><label>Начало</label><input type="time" id="eventStart" step="900"></div>
-        </div>
-        <div class="grid2">
-          <div class="field"><label>Конец</label><input type="time" id="eventEnd" step="900"></div>
-          <div class="field"><label>Приоритет</label>
-            <select id="eventPriority"><option>Низкий</option><option selected>Средний</option><option>Высокий</option></select>
-          </div>
-        </div>
-        <div class="field"><label>Локация (опц.)</label><input id="eventLocation" placeholder="Где?"></div>
-        <div class="field"><label>Комментарий</label><textarea id="eventNote" rows="2" placeholder="Опционально"></textarea></div>
-        <div class="modal-foot">
-          <button type="button" class="btn-outline" id="cancelEvent">Отмена</button>
-          <button type="submit" class="btn">Сохранить</button>
-        </div>
-      </form>
-    </div>
+      <footer class="modal-foot">
+        <button value="cancel" class="btn ghost">Отмена</button>
+        <button type="submit" class="btn primary">Сохранить</button>
+      </footer>
+    </form>
   </dialog>
 
-  <!-- ====== MODAL: Перенос дедлайна ====== -->
-  <dialog id="dlgReschedule" class="modal">
-    <div class="modal-body">
-      <div class="modal-head">
-        <h3 class="h-impact" style="font-size:1.1rem">Перенести</h3>
-        <button class="icon-btn" id="dlgRescheduleClose">✕</button>
+  <!-- MODAL: Reschedule -->
+  <dialog id="dlgMove" class="modal">
+    <form method="dialog" class="modal-card" id="moveForm">
+      <header class="modal-head"><h3>Перенос</h3></header>
+      <div class="grid-2">
+        <label class="field">
+          <span>Новая дата</span>
+          <input type="date" name="mdate" required />
+        </label>
+        <label class="field">
+          <span>Время</span>
+          <input type="time" name="mtime" value="08:00" />
+        </label>
       </div>
-      <div class="grid2">
-        <div class="field"><label>Новая дата</label><input type="date" id="moveDate"></div>
-        <div class="field"><label>Новое время</label><input type="time" id="moveTime" step="900"></div>
-      </div>
-      <div class="modal-foot">
-        <button class="btn-outline" id="moveCancel">Отмена</button>
-        <button class="btn" id="moveApply">Применить</button>
-      </div>
-    </div>
+      <footer class="modal-foot">
+        <button value="cancel" class="btn ghost">Отмена</button>
+        <button type="submit" class="btn primary">Перенести</button>
+      </footer>
+    </form>
   </dialog>
 
-  <!-- ====== Скрипт приложения ====== -->
-  <script defer src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
