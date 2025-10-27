@@ -1,4 +1,4 @@
-/* ===================== THEME TOKENS ===================== */
+/* ===================== THEME TOKENS (v2.9 FULL) ===================== */
 :root{
   --bg:#f7f8fc;
   --fg:#0f1115;
@@ -6,15 +6,17 @@
   --card:#ffffff;
   --border:#e5e6ee;
 
-  --accent:#7b61ff;                 /* базовый акцент */
-  --accent-contrast:#ffffff;        /* цвет текста на акценте */
-  --accent-surface:none;            /* градиент металлик (подменяется стилем) */
+  --accent:#7b61ff;                 /* базовый акцент (меняется темизацией/кастомом) */
+  --accent-contrast:#ffffff;
+  --accent-surface:none;            /* градиент для «металлика» */
 
   --radius:18px;
-  --scale:1;                        /* масштаб интерфейса */
+  --scale:1;
 
   --impact:'Anton',sans-serif;
   --font:'Manrope',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,sans-serif;
+
+  --tabbar-h:74px;                  /* высота нижней панели */
 }
 
 /* тёмная тема */
@@ -36,7 +38,7 @@
 :root[data-accent="orchid"]{--accent:#b85cff}
 :root[data-accent="sky"]   {--accent:#4ccfff}
 :root[data-accent="lime"]  {--accent:#a9ff48;--accent-contrast:#202020}
-/* если выбран custom — app.js уже перезаписывает --accent напрямую */
+/* custom — цвет кладётся в --accent из JS */
 
 /* стилевые режимы акцента */
 :root[data-accentStyle="solid"]{ --accent-surface:none; }
@@ -45,7 +47,6 @@
                  0 6px 22px rgba(0,0,0,.22);
 }
 :root[data-accentStyle="metal"]{
-  /* лёгкая «металличность» — блик поверх акцентного цвета */
   --accent-surface: linear-gradient(135deg,
        color-mix(in srgb, var(--accent) 92%, #ffffff 8%) 0%,
        color-mix(in srgb, var(--accent) 100%, #ffffff 0%) 35%,
@@ -67,31 +68,37 @@ body{
 }
 h1,h2,h3{margin:0;color:var(--fg)}
 p{margin:.25rem 0}
-.section{padding:.75rem .75rem 5.5rem}
+.section{padding:.75rem .75rem calc(var(--tabbar-h) + 2.5rem)}
 
 /* ===================== BOTTOM BAR & FAB ===================== */
 .bottombar{
-  position:fixed;left:0;right:0;bottom:0;height:4rem;z-index:20;
+  position:fixed;left:0;right:0;bottom:0;height:var(--tabbar-h);z-index:20;
   background:var(--card);border-top:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-around;
   backdrop-filter:saturate(120%) blur(10px);
 }
 .navbtn{
-  width:3.25rem;height:3.25rem;border-radius:50%;
+  width:3.25rem;height:3.25rem;border-radius:14px;
   display:flex;align-items:center;justify-content:center;
-  color:#8f8f98;text-decoration:none;transition:color .2s;
+  color:#8f8f98;text-decoration:none;transition:color .2s, background .2s, transform .15s;
 }
-.navbtn.active,.navbtn:hover{color:var(--accent)}
+.navbtn svg{width:24px;height:24px;display:block}
+.navbtn.active,.navbtn:hover{
+  color:var(--accent);
+  background:color-mix(in srgb, var(--accent) 14%, transparent);
+  transform:translateY(-2px);
+}
+:root[data-accentStyle="neon"] .navbtn.active{ box-shadow: var(--neon-shadow); }
 
 .fab{
-  position:fixed;left:50%;transform:translateX(-50%);bottom:2rem;z-index:30;
+  position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tabbar-h)/2);z-index:30;
   width:3.75rem;height:3.75rem;border-radius:50%;border:none;cursor:pointer;
   background:var(--accent);color:var(--accent-contrast);font-size:2rem;line-height:1;
-  box-shadow:0 12px 28px rgba(0,0,0,.22);
+  box-shadow:0 18px 45px color-mix(in srgb, var(--accent) 35%, transparent);
   transition:transform .15s ease, box-shadow .2s ease, filter .2s;
   background-image:var(--accent-surface);
 }
-.fab:active{transform:translateX(-50%) scale(.96);box-shadow:0 8px 20px rgba(0,0,0,.22)}
+.fab:active{transform:translateX(-50%) scale(.96)}
 :root[data-accentStyle="neon"] .fab{ box-shadow:var(--neon-shadow); }
 
 /* ===================== HOME (HEADER) ===================== */
@@ -119,12 +126,13 @@ p{margin:.25rem 0}
   flex:0 0 auto;min-width:5.5rem;scroll-snap-align:center;
   background:var(--card);border-radius:1.4rem;padding:.75rem .85rem;text-align:center;color:var(--fg);
   box-shadow:0 10px 26px rgba(0,0,0,.06);transition:transform .18s, background .18s, color .18s;
+  border:1px solid var(--border);
 }
 .date-pill .wk{font-size:.75rem;opacity:.7;text-transform:uppercase}
 .date-pill .daynum{font-size:1.6rem;line-height:1.1;font-weight:900;margin:.25rem 0 .15rem}
 .date-pill .mon{font-size:.75rem;opacity:.7;text-transform:capitalize}
 .date-pill.active{
-  background:var(--accent); color:var(--accent-contrast);
+  background:var(--accent); color:var(--accent-contrast); border-color:transparent;
   transform:translateY(-2px); background-image:var(--accent-surface);
 }
 :root[data-accentStyle="neon"] .date-pill.active{ box-shadow: var(--neon-shadow); }
@@ -144,7 +152,7 @@ p{margin:.25rem 0}
 .tasks-scroll{max-height:calc(100vh - 17rem);overflow:auto;padding:.25rem .15rem .5rem .25rem}
 @media (min-width:700px){ .h-impact{font-size:2rem} .tasks-scroll{max-height:calc(100vh - 19rem)} }
 
-/* ===================== LEGACY TASKS ===================== */
+/* ===================== LEGACY TASKS (карточки-строки) ===================== */
 .task-list{display:flex;flex-direction:column;gap:.6rem;padding:0 .15rem}
 .task{
   display:flex;align-items:center;gap:.6rem;background:var(--card);border-radius:var(--radius);
@@ -156,12 +164,13 @@ p{margin:.25rem 0}
 .icon-btn:hover{color:var(--accent)}
 .muted{color:var(--muted)}
 
-/* ===================== TIMELINE (со свайп-подложками) ===================== */
+/* ===================== TIMELINE (список задач с жестами) ===================== */
 .timeline{position:relative;padding-left:1.1rem}
 .timeline:before{content:"";position:absolute;left:.38rem;top:0;bottom:0;width:2px;background:var(--border)}
 .t-item{
   position:relative;border-radius:.9rem;padding:.65rem .75rem;margin:.15rem 0;background:transparent;
   transition:transform .18s ease, opacity .18s ease;
+  touch-action: pan-y; /* важное: свайпы по X, скролл по Y */
 }
 .t-item::before,.t-item::after{
   content:"";position:absolute;inset:0;border-radius:.9rem;z-index:-1;opacity:0;transition:opacity .15s;
@@ -178,11 +187,6 @@ p{margin:.25rem 0}
 .t-meta{font-size:.78rem;color:var(--muted);margin-top:.2rem}
 .task-ctl{display:flex;gap:.35rem;margin-left:.4rem}
 
-/* ===================== DOTS & LEGEND ===================== */
-.dot{width:.38rem;height:.38rem;border-radius:50%}
-.lg{display:inline-block;width:.62rem;height:.62rem;border-radius:50%;margin-right:.25rem;vertical-align:middle}
-.lg-low{background:#bfbfbf}.lg-med{background:var(--accent)}.lg-high{background:#ff4fa3}.lg-crit{background:#8a2be2}
-
 /* ===================== CALENDAR ===================== */
 .calendar-head,.calhead{display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.5rem 0 .6rem}
 .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:.5rem;padding:0 .15rem .9rem}
@@ -196,6 +200,7 @@ p{margin:.25rem 0}
 .cell.selected{background:var(--accent);color:var(--accent-contrast);background-image:var(--accent-surface)}
 .dhead{font-weight:900}
 .dots{display:flex;gap:.2rem;margin-top:.15rem}
+.dot{width:.38rem;height:.38rem;border-radius:50%}
 
 /* ===================== STATS ===================== */
 .stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.65rem;padding:0 .15rem .65rem}
@@ -211,10 +216,19 @@ p{margin:.25rem 0}
 .bars{display:flex;align-items:flex-end;gap:.35rem;height:6.25rem;margin-top:.6rem}
 .bar{flex:1;background:var(--accent);border-radius:.25rem .25rem 0 0;transition:height .5s;background-image:var(--accent-surface)}
 .bar-labels{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-top:.25rem}
+
+/* — круговая диаграмма: процент ровно по центру — */
 .ring{position:relative;width:6.25rem;height:6.25rem}
 .ring-svg{transform:rotate(-90deg);width:100%;height:100%}
 .ring-bg{fill:none;stroke:var(--border);stroke-width:8}
 .ring-fg{fill:none;stroke:var(--accent);stroke-width:8;stroke-dasharray:326;stroke-dashoffset:326;stroke-linecap:round;transition:stroke-dashoffset 1s ease}
+.ring-val{
+  position:absolute;inset:0;display:grid;place-items:center;
+  font-family:var(--impact);
+  font-size:clamp(18px, 6.2vw, 28px);
+  color:var(--fg);
+  text-shadow:0 1px 0 rgba(255,255,255,.6);
+}
 
 /* ===================== SETTINGS ===================== */
 .settings-section{margin:0 .15rem 1.25rem}
@@ -262,11 +276,43 @@ p{margin:.25rem 0}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .center{text-align:center}
 
-/* неоновые подсветки некоторых элементов при active */
-:root[data-accentStyle="neon"] .date-pill.active,
-:root[data-accentStyle="neon"] .bar{ box-shadow: var(--neon-shadow); }
+/* ===================== DAY GRID (EVENTS) — 06:00–20:00, шаг 15м ===================== */
+/* — это задел под «события», уже можно позиционировать блоки сверху JS — */
+.day-grid{
+  --start:6;  /* часы начала */
+  --end:20;   /* часы конца */
+  --hour-h:48px;                    /* высота часа */
+  display:grid;grid-template-columns:60px 1fr;gap:10px;margin:.6rem 0 .2rem;
+}
+.time-col{display:grid;align-content:start}
+.time-col .tick{
+  height:var(--hour-h);display:flex;align-items:flex-start;justify-content:flex-end;
+  color:var(--muted);font-size:.8rem;padding-top:2px;padding-right:4px;
+}
+.events-col{
+  position:relative;min-height:calc((var(--end) - var(--start)) * var(--hour-h));
+  border:1px solid var(--border);border-radius:14px;background:var(--card);overflow:hidden;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0, transparent calc(var(--hour-h) - 1px), var(--border) var(--hour-h)
+    );
+}
+.now-line{position:absolute;left:0;right:0;height:2px;background:var(--accent);box-shadow:var(--neon)}
+.event{
+  position:absolute;left:8px;right:8px;
+  top: var(--top, 0px); height: var(--h, 36px);
+  background: color-mix(in srgb, var(--accent) 12%, #fff);
+  border:1px solid color-mix(in srgb, var(--accent) 30%, #dde0ea);
+  border-radius:14px;padding:10px 12px;box-shadow:0 10px 24px rgba(0,0,0,.06);
+  display:flex;flex-direction:column;gap:6px
+}
+.event .title{font-weight:800}
+.event .time{font-size:.78rem;color:var(--muted)}
+.event.now{outline:2px solid var(--accent)}
 
 /* ===================== RESPONSIVE ===================== */
 @media (min-width:700px){
   .stats-grid{grid-template-columns:repeat(4,1fr)}
+  .date-strip{justify-content:center}
 }
