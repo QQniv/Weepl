@@ -1,246 +1,386 @@
-<!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Weepl • Планировщик</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <!-- Заголовки: Impact / Anton; текст: Inter как гармоничный компаньон -->
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-</head>
-<body class="theme-light">
-  <!-- Вью: Задачи (главная) -->
-  <header id="topbar" class="topbar">
-    <h1 id="monthTitle" class="month-title">Октябрь 2025 г.</h1>
-    <div class="month-nav">
-      <button id="mPrev" class="icon-btn" aria-label="Предыдущий месяц">←</button>
-      <button id="mNext" class="icon-btn" aria-label="Следующий месяц">→</button>
-    </div>
-  </header>
+/* Weepl App.js — safe build v1.5.1 */
+(() => {
+  const $ = (s, r=document) => r.querySelector(s);
+  const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+  const fmt2 = n => String(n).padStart(2,'0');
+  const toKey = d => `${d.getFullYear()}-${fmt2(d.getMonth()+1)}-${fmt2(d.getDate())}`;
+  const fromKey = k => { const [Y,M,D]=k.split('-').map(Number); return new Date(Y, M-1, D); };
+  const startDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const addDays = (d,n)=> new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+  const RU_MON = ["январь","февраль","март","апрель","май","июнь","июль","август","сентябрь","октябрь","ноябрь","декабрь"];
+  const RU_DOW = ["вс","пн","вт","ср","чт","пт","сб"];
+  const sum = a => a.reduce((x,y)=>x+y,0);
+  const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
 
-  <main id="viewContainer">
-    <!-- VIEW: TODAY -------------------------------------------------------->
-    <section id="view-today" class="view is-active" aria-label="Главный экран">
-      <!-- Барабан дат ТОЛЬКО здесь -->
-      <div id="dateScroller" class="date-scroller" role="tablist" aria-label="Дни недели"></div>
+  const storeKey = 'weepl_v1';
+  const state = {
+    selectedDate: startDay(new Date()),
+    monthCursor: startDay(new Date()),
+    items: [],
+    settings: { accent: '#5b5bf0' }
+  };
 
-      <!-- Таймлайн (события блоками по времени) -->
-      <section class="timeline-wrap">
-        <div id="timeline" class="timeline" aria-label="Временная шкала 06–20"></div>
-      </section>
-
-      <!-- Список задач (скролл внутри) -->
-      <section class="tasklist-wrap">
-        <header class="section-head">
-          <h2>Задачи</h2>
-          <div id="tasksKpi" class="kpi"></div>
-        </header>
-        <ul id="taskList" class="task-list" aria-live="polite"></ul>
-      </section>
-    </section>
-
-    <!-- VIEW: CALENDAR ----------------------------------------------------->
-    <section id="view-calendar" class="view" aria-label="Календарь">
-      <!-- В календаре НЕТ барабана дат; только крупная сетка месяца -->
-      <header class="cal-head">
-        <button id="calPrev" class="icon-btn" aria-label="Предыдущий месяц">←</button>
-        <h2 id="calTitle" class="month-title">Октябрь 2025 г.</h2>
-        <button id="calNext" class="icon-btn" aria-label="Следующий месяц">→</button>
-      </header>
-
-      <div class="cal-weekdays">
-        <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
-      </div>
-
-      <!-- сетка, целиком помещается в экран, отдельная прокрутка при малой высоте -->
-      <div id="calendarWrap" class="calendar-wrap">
-        <div id="calendarGrid" class="calendar-grid" role="grid" aria-label="Сетка месяца"></div>
+  // Mount template inside #viewContainer
+  const root = $('#viewContainer');
+  if (!root) { console.error('❌ viewContainer not found'); return; }
+  root.innerHTML = `
+    <section id="todayView" class="view is-active">
+      <div class="date-scroller" id="dateScroller"></div>
+      <div class="timeline-wrap"><div class="timeline" id="timeline"></div></div>
+      <div class="tasklist-wrap">
+        <div class="section-head"><h2>Задачи</h2><div id="kpiCounter"></div></div>
+        <ul class="task-list" id="taskList"></ul>
       </div>
     </section>
 
-    <!-- VIEW: STATS -------------------------------------------------------->
-    <section id="view-stats" class="view" aria-label="Статистика">
-      <h2 class="screen-title">Статистика</h2>
-      <div class="stats-grid">
-        <div class="card">
-          <div class="ring" aria-hidden="true">
-            <svg viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="52" class="ring-bg"></circle>
-              <circle cx="60" cy="60" r="52" class="ring-fg" id="ringFg"></circle>
-            </svg>
-            <div class="ring-center">
-              <span id="ringPct" class="ring-pct">0%</span>
-            </div>
+    <section id="calendarView" class="view">
+      <div class="cal-head">
+        <button class="icon-btn" id="calPrev">◀</button>
+        <h2 class="month-title" id="calTitle">—</h2>
+        <button class="icon-btn" id="calNext">▶</button>
+      </div>
+      <div class="cal-weekdays">${RU_DOW.map(d=>`<div>${d.toUpperCase()}</div>`).join('')}</div>
+      <div class="calendar-wrap"><div class="calendar-grid" id="calendarGrid"></div></div>
+    </section>
+
+    <section id="statsView" class="view">
+      <h2 class="screen-title" style="padding:6px 6px 0 6px;">Статистика</h2>
+      <div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;padding:10px;">
+        <div class="card" style="background:#fff;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);padding:12px;text-align:center">
+          <div class="ring">
+            <svg viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="52"/><circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52"/></svg>
+            <div class="ring-center"><div class="ring-pct" id="ringPct">0%</div></div>
           </div>
           <div class="card-caption">Выполнено за неделю</div>
         </div>
-        <div class="card kpi-card">
-          <div class="kpi-big"><span id="kpi7Done">0</span> / <span id="kpi7Total">0</span></div>
-          <div class="card-caption">За 7 дней</div>
+        <div class="card" style="background:#fff;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);padding:12px">
+          <b id="stat7">0 / 0</b><div class="card-caption">За 7 дней</div>
         </div>
-        <div class="card kpi-card">
-          <div class="kpi-big"><span id="kpi30Done">0</span> / <span id="kpi30Total">0</span></div>
-          <div class="card-caption">За месяц</div>
+        <div class="card" style="background:#fff;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);padding:12px">
+          <b id="stat30">0 / 0</b><div class="card-caption">За месяц</div>
         </div>
-        <div class="card kpi-card">
-          <div class="kpi-big"><span id="streakVal">0</span> дн.</div>
-          <div class="card-caption">Серия выполнения</div>
+        <div class="card" style="background:#fff;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);padding:12px">
+          <b id="streak">0</b><div class="card-caption">Серия выполнения</div>
         </div>
-        <div class="card card-wide">
-          <header class="card-row">
-            <h3>Выполнено по дням</h3>
-            <span class="muted">последние 7 дней</span>
-          </header>
-          <div id="bar7" class="bars-7"></div>
-        </div>
+      </div>
+      <div style="padding:0 10px 80px"><canvas id="miniBars" height="120" style="width:100%"></canvas></div>
+    </section>
+
+    <section id="settingsView" class="view">
+      <h2 class="screen-title" style="padding:6px 10px 0">Настройки</h2>
+      <div class="card" style="background:#fff;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);padding:12px;margin:10px">
+        <div class="field"><label>Акцентный цвет</label> <input type="color" id="accentPicker" value="#5b5bf0"></div>
+        <div class="field-row"><label class="muted" style="min-width:140px;">Неон-эффект</label> <input type="checkbox" id="neonToggle"></div>
+        <div class="field-row"><label class="muted" style="min-width:140px;">Металличность</label> <input type="checkbox" id="metalToggle"></div>
+        <div class="field"><label>Масштаб текста</label> <input type="range" id="fontScale" min="0.9" max="1.2" step="0.01" value="1"></div>
       </div>
     </section>
 
-    <!-- VIEW: SETTINGS ----------------------------------------------------->
-    <section id="view-settings" class="view" aria-label="Настройки">
-      <h2 class="screen-title">Настройки</h2>
+    <dialog class="modal" id="addDialog"></dialog>
+    <dialog class="modal" id="reschedDialog"></dialog>
+  `;
 
-      <div class="prefs">
-        <div class="pref-row">
-          <div class="pref-title">Тема</div>
-          <div class="pref-control">
-            <label class="switch">
-              <input id="themeToggle" type="checkbox" />
-              <span class="slider"></span>
-            </label>
-            <span id="themeLabel" class="muted">Светлая</span>
+  // Topbar refs
+  const topTitle = $('#topTitle');
+  const navPrev = $('#navPrev');
+  const navNext = $('#navNext');
+
+  // View refs
+  const scroller = $('#dateScroller');
+  const timeline = $('#timeline');
+  const taskList = $('#taskList');
+  const kpi = $('#kpiCounter');
+
+  const calTitle = $('#calTitle');
+  const calGrid  = $('#calendarGrid');
+  const calPrev  = $('#calPrev');
+  const calNext  = $('#calNext');
+
+  const ringFg = $('#ringFg');
+  const ringPct = $('#ringPct');
+
+  const tabbar = $('#tabbar');
+  const views = {
+    today: $('#todayView'),
+    calendar: $('#calendarView'),
+    stats: $('#statsView'),
+    settings: $('#settingsView'),
+  };
+
+  const fab = $('#fab');
+
+  // Load state
+  try {
+    const raw = localStorage.getItem(storeKey);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data.selectedDate) state.selectedDate = fromKey(data.selectedDate);
+      if (data.monthCursor) state.monthCursor = fromKey(data.monthCursor);
+      if (Array.isArray(data.items)) state.items = data.items;
+      if (data.settings) state.settings = {...state.settings, ...data.settings};
+    }
+  } catch(e){ console.warn('state load fail', e); }
+
+  // Seed demo if no items for selected day (чтобы не выглядеть пусто)
+  const todayKey = toKey(state.selectedDate);
+  if (!state.items.some(i => i.dateKey === todayKey)) {
+    state.items.push(
+      {id:'d1', type:'event', dateKey:todayKey, title:'Встреча', start:'10:00', durationMin:90, priority:'high'},
+      {id:'d2', type:'task',  dateKey:todayKey, title:'Прочитать 20 страниц', priority:'medium', done:false},
+      {id:'d3', type:'task',  dateKey:todayKey, title:'Тренировка', priority:'low',    done:false},
+    );
+    persist();
+  }
+
+  // Utilities
+  const capMonth = d => { const m = RU_MON[d.getMonth()]; return m[0].toUpperCase()+m.slice(1); };
+  const getAccent = () => state.settings.accent || '#5b5bf0';
+  const setAccent = v => { document.documentElement.style.setProperty('--accent', v); state.settings.accent=v; persist(); };
+
+  function persist(){
+    localStorage.setItem(storeKey, JSON.stringify({
+      ...state,
+      selectedDate: toKey(state.selectedDate),
+      monthCursor: toKey(state.monthCursor)
+    }));
+  }
+
+  // Rendering
+  function renderTop(){
+    topTitle.textContent = `${capMonth(state.selectedDate)} ${state.selectedDate.getFullYear()} г.`;
+  }
+
+  function renderScroller(){
+    scroller.innerHTML = '';
+    const center = state.selectedDate;
+    const start = addDays(center, -3);
+    for(let i=0;i<7;i++){
+      const d = addDays(start, i);
+      const b = document.createElement('button');
+      b.className = 'date-pill'+(toKey(d)===toKey(center)?' is-active':'');
+      b.innerHTML = `<div class="dow">${RU_DOW[d.getDay()].toUpperCase()}</div><div class="day" style="font:800 22px/1.1 Impact">${d.getDate()}</div><div class="mon">${RU_MON[d.getMonth()].slice(0,3)}.</div>`;
+      b.addEventListener('click', ()=>{ state.selectedDate=startDay(d); persist(); renderAllToday(); });
+      scroller.appendChild(b);
+    }
+  }
+
+  const DAY_START = 6*60; // 06:00
+  const DAY_END   = 22*60;
+
+  function renderTimeline(){
+    // высоту делаем адаптивной (16 часов * 60px) — 960px
+    timeline.style.height = `${(DAY_END - DAY_START)}px`;
+    timeline.innerHTML = '';
+    // часовые метки
+    for (let h=6; h<=22; h++){
+      const y = h*60 - DAY_START;
+      const lbl = document.createElement('div');
+      lbl.className = 'time-label';
+      lbl.style.top = `${y}px`;
+      lbl.textContent = `${fmt2(h)}:00`;
+      timeline.appendChild(lbl);
+    }
+    // события
+    const items = state.items.filter(i => i.type==='event' && i.dateKey===toKey(state.selectedDate));
+    items.forEach(ev=>{
+      const [hh,mm] = (ev.start||'06:00').split(':').map(Number);
+      const top = (hh*60+mm) - DAY_START;
+      const h   = Math.max(30, ev.durationMin||60);
+      const el = document.createElement('div');
+      el.className='event';
+      el.style.cssText = `position:absolute;left:56px;right:12px;top:${top}px;height:${h}px;background:rgba(91,91,240,.12);border-left:3px solid ${getAccent()};border-radius:8px;padding:6px 8px;`;
+      el.innerHTML = `<div class="ttl" style="font-weight:700">${ev.title}</div><div class="meta" style="color:#667">${ev.start} • ${ev.durationMin||60} мин</div>`;
+      timeline.appendChild(el);
+    });
+  }
+
+  function renderTasks(){
+    taskList.innerHTML='';
+    const tasks = state.items.filter(i => i.type==='task' && i.dateKey===toKey(state.selectedDate));
+    kpi.textContent = tasks.length? `Задач: ${tasks.filter(t=>t.done).length} / ${tasks.length}` : '';
+    tasks.forEach(t=>{
+      const li = document.createElement('li');
+      li.className = 'task-row'+(t.done?' task-done':'');
+      li.dataset.id = t.id;
+      li.innerHTML = `
+        <div class="title" style="font-weight:700">${t.title}</div>
+        <div class="meta"  style="color:#667">приоритет: ${t.priority||'medium'}</div>
+        <div class="task-actions">
+          <button class="icon-small" data-act="done">✓</button>
+          <button class="icon-small" data-act="move">↔</button>
+          <button class="icon-small" data-act="del">🗑</button>
+        </div>`;
+      taskList.appendChild(li);
+
+      li.querySelector('[data-act="done"]').onclick = ()=>toggleDone(t.id);
+      li.querySelector('[data-act="del"]').onclick  = ()=>delItem(t.id);
+      li.querySelector('[data-act="move"]').onclick = ()=>openReschedule(t);
+
+      // swipe: вправо — done, влево — перенести
+      attachSwipe(li,{right:()=>toggleDone(t.id), left:()=>openReschedule(t)});
+    });
+  }
+
+  function renderCalendar(){
+    calTitle.textContent = `${capMonth(state.monthCursor)} ${state.monthCursor.getFullYear()} г.`;
+    calGrid.innerHTML='';
+    const first = new Date(state.monthCursor.getFullYear(), state.monthCursor.getMonth(), 1);
+    const start = new Date(first); start.setDate(1 - ((first.getDay()+6)%7)); // monday grid
+    for(let i=0;i<42;i++){
+      const d = addDays(start,i);
+      const c = document.createElement('button');
+      c.className = 'cal-cell';
+      if (d.getMonth()!==state.monthCursor.getMonth()) c.classList.add('is-out');
+      if (toKey(d)===toKey(new Date())) c.classList.add('is-today');
+      if (toKey(d)===toKey(state.selectedDate)) c.classList.add('is-selected');
+      c.textContent = d.getDate();
+      c.onclick = ()=>{ state.selectedDate=startDay(d); persist(); switchTab('today'); };
+      calGrid.appendChild(c);
+    }
+  }
+
+  function renderStats(){
+    const last7 = [...Array(7)].map((_,i)=>addDays(new Date(), -6+i));
+    const done7 = last7.map(d => state.items.filter(x=>x.type==='task' && x.dateKey===toKey(d) && x.done).length);
+    const all7  = last7.map(d => state.items.filter(x=>x.type==='task' && x.dateKey===toKey(d)).length);
+    const s7=sum(done7), a7=sum(all7);
+    $('#stat7').textContent = `${s7} / ${a7}`;
+    $('#stat30').textContent = `${s7} / ${a7}`; // упрощённо
+    const pct = a7? Math.round(s7/a7*100) : 0;
+    ringPct.textContent = `${pct}%`;
+    const C = 2*Math.PI*52;
+    ringFg.style.strokeDasharray = C;
+    ringFg.style.strokeDashoffset = C - C*pct/100;
+
+    const cv = $('#miniBars'), ctx = cv.getContext && cv.getContext('2d');
+    if (ctx){ const w = cv.width = cv.clientWidth||300; const h = cv.height;
+      ctx.clearRect(0,0,w,h); const bw=Math.floor(w/9); const max=Math.max(1,...done7);
+      ctx.fillStyle = getAccent();
+      done7.forEach((v,i)=>{ const x=(i+1)*bw, bh=(v/max)*(h-24); ctx.fillRect(x,h-8-bh,bw*0.6,bh); });
+    }
+  }
+
+  function renderAllToday(){ renderTop(); renderScroller(); renderTimeline(); renderTasks(); }
+
+  // CRUD
+  function toggleDone(id){ const it = state.items.find(x=>x.id===id); if(!it) return; it.done=!it.done; persist(); renderAllToday(); renderStats(); }
+  function delItem(id){ state.items = state.items.filter(x=>x.id!==id); persist(); renderAllToday(); renderStats(); }
+
+  // Swipe helper
+  function attachSwipe(el,{left,right}){
+    let x0=0,dx=0,act=false;
+    const start = e=>{ x0=(e.touches?e.touches[0].clientX:e.clientX); dx=0; act=true; el.style.transition='none'; };
+    const move  = e=>{ if(!act) return; const x=(e.touches?e.touches[0].clientX:e.clientX); dx=x-x0; el.style.transform=`translateX(${dx}px)`; };
+    const end   = ()=>{ if(!act) return; act=false; el.style.transition=''; const fired=Math.abs(dx)>80; el.style.transform=''; if(!fired) return; dx>0? right&&right() : left&&left(); };
+    el.addEventListener('touchstart',start,{passive:true});
+    el.addEventListener('touchmove',move,{passive:true});
+    el.addEventListener('touchend',end);
+    el.addEventListener('mousedown',start);
+    window.addEventListener('mousemove',move);
+    window.addEventListener('mouseup',end);
+  }
+
+  // Reschedule dialog (минимал)
+  let rsId=null;
+  function openReschedule(item){
+    rsId=item.id;
+    const dlg = $('#reschedDialog');
+    dlg.innerHTML = `
+      <div class="modal-card">
+        <div class="modal-head" style="display:flex;justify-content:space-between;align-items:center">
+          <h3 style="margin:0">Перенести</h3><button class="icon-btn" id="rsClose">✕</button>
+        </div>
+        <div class="grid-2">
+          <div class="field"><label>Дата</label><input type="date" id="rsDate" value="${item.dateKey}"></div>
+          <div class="field"><label>Время</label><input type="time" id="rsTime" value="${item.start||'06:00'}"></div>
+        </div>
+        <div class="modal-foot" style="display:flex;justify-content:flex-end;gap:8px">
+          <button class="icon-btn" id="rsCancel">Отмена</button>
+          <button class="icon-btn" id="rsApply">Применить</button>
+        </div>
+      </div>`;
+    dlg.showModal();
+    $('#rsClose').onclick = $('#rsCancel').onclick = ()=>{ dlg.close(); rsId=null; renderTasks(); };
+    $('#rsApply').onclick = ()=>{
+      const it = state.items.find(x=>x.id===rsId); if(!it) return;
+      it.dateKey = $('#rsDate').value;
+      if (it.type==='event') it.start = $('#rsTime').value;
+      persist(); dlg.close(); rsId=null; renderAllToday();
+    };
+  }
+
+  // Add dialog (минимал)
+  function openAdd(){
+    const dlg = $('#addDialog');
+    dlg.innerHTML = `
+      <div class="modal-card">
+        <div class="modal-head" style="display:flex;justify-content:space-between;align-items:center">
+          <h3 style="margin:0">Новое</h3><button class="icon-btn" id="dlgClose">✕</button>
+        </div>
+        <div class="field-row seg" style="display:flex;gap:8px">
+          <label><input type="radio" name="kind" value="task" checked> Задача</label>
+          <label><input type="radio" name="kind" value="event"> Событие</label>
+        </div>
+        <div class="field"><label>Название</label><input id="title"></div>
+        <div class="grid-2">
+          <div class="field"><label>Дата</label><input type="date" id="date" value="${toKey(state.selectedDate)}"></div>
+          <div class="field"><label>Приоритет</label>
+            <select id="prio"><option value="low">Низкий</option><option value="medium" selected>Средний</option><option value="high">Высокий</option></select>
           </div>
         </div>
-
-        <div class="pref-row">
-          <div class="pref-title">Акцент</div>
-          <div class="pref-control">
-            <input id="accentPicker" type="color" value="#5b5bf0" />
-            <button id="accentPreset" class="btn ghost">Палитра</button>
-          </div>
+        <div id="evBlk" class="grid-2">
+          <div class="field"><label>Начало</label><input type="time" id="start" value="06:00"></div>
+          <div class="field"><label>Длительность (мин)</label><input type="number" id="dur" min="15" step="15" value="60"></div>
         </div>
-
-        <div class="pref-row">
-          <div class="pref-title">Размер текста</div>
-          <div class="pref-control">
-            <input id="fontScale" type="range" min="90" max="115" step="5" value="100" />
-            <span id="fontScaleVal" class="muted">100%</span>
-          </div>
+        <div class="modal-foot" style="display:flex;justify-content:flex-end;gap:8px">
+          <button class="icon-btn" id="dlgCancel">Отмена</button>
+          <button class="icon-btn" id="dlgSave">Сохранить</button>
         </div>
+      </div>`;
+    dlg.showModal();
+    const toggle = ()=>{ const kind = $('input[name="kind"]:checked', dlg).value; $('#evBlk').style.display = kind==='event'?'grid':'none'; };
+    dlg.addEventListener('change', e=>{ if(e.target.name==='kind') toggle(); });
+    toggle();
+    $('#dlgClose').onclick = $('#dlgCancel').onclick = ()=>dlg.close();
+    $('#dlgSave').onclick = ()=>{
+      const kind = $('input[name="kind"]:checked', dlg).value;
+      const title = $('#title', dlg).value.trim(); if(!title) return dlg.close();
+      const data = { id: String(Date.now()+Math.random()), type:kind, title, dateKey: $('#date',dlg).value, priority: $('#prio',dlg).value, done:false };
+      if (kind==='event'){ data.start = $('#start',dlg).value; data.durationMin = clamp(parseInt($('#dur',dlg).value||60,10),15,24*60); }
+      state.items.push(data); persist(); dlg.close(); renderAllToday();
+    };
+  }
 
-        <div class="pref-row">
-          <div class="pref-title">Стиль акцентов</div>
-          <div class="pref-control">
-            <label><input type="checkbox" id="fxNeon" /> неоновое свечение</label>
-            <label><input type="checkbox" id="fxMetal" /> «металличность»</label>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
+  // Navigation
+  function switchTab(tab){
+    Object.entries(views).forEach(([k,v])=>v.classList.toggle('is-active', k===tab));
+    $$('.tab', tabbar).forEach(b=>b.classList.toggle('is-active', b.dataset.tab===tab));
+    if (tab==='today') renderAllToday();
+    if (tab==='calendar') renderCalendar();
+    if (tab==='stats') renderStats();
+    persist();
+  }
 
-  <!-- FAB -->
-  <button id="fab" class="fab" aria-label="Добавить">+</button>
+  // Events
+  navPrev.onclick = ()=>{ state.selectedDate = addDays(state.selectedDate, -1); persist(); renderAllToday(); };
+  navNext.onclick = ()=>{ state.selectedDate = addDays(state.selectedDate,  1); persist(); renderAllToday(); };
+  calPrev.onclick = ()=>{ const d=state.monthCursor; state.monthCursor=new Date(d.getFullYear(), d.getMonth()-1, 1); persist(); renderCalendar(); };
+  calNext.onclick = ()=>{ const d=state.monthCursor; state.monthCursor=new Date(d.getFullYear(), d.getMonth()+1, 1); persist(); renderCalendar(); };
+  tabbar.onclick = e=>{ const b=e.target.closest('[data-tab]'); if(!b) return; switchTab(b.dataset.tab); };
+  fab.onclick = openAdd;
 
-  <!-- Bottom Nav -->
-  <nav class="tabbar" aria-label="Навигация">
-    <button class="tab is-active" data-view="view-today" aria-label="Список">
-      <span class="i i-list"></span>
-    </button>
-    <button class="tab" data-view="view-calendar" aria-label="Календарь">
-      <span class="i i-cal"></span>
-    </button>
-    <button class="tab" data-view="view-stats" aria-label="Статистика">
-      <span class="i i-stats"></span>
-    </button>
-    <button class="tab" data-view="view-settings" aria-label="Настройки">
-      <span class="i i-gear"></span>
-    </button>
-  </nav>
+  // Settings
+  const accentPicker = $('#accentPicker');
+  const neonToggle = $('#neonToggle');
+  const metalToggle= $('#metalToggle');
+  const fontScale  = $('#fontScale');
 
-  <!-- MODAL: Add item -->
-  <dialog id="dlgAdd" class="modal">
-    <form method="dialog" class="modal-card" id="addForm">
-      <header class="modal-head">
-        <h3>Новое</h3>
-      </header>
+  if (accentPicker){ accentPicker.value = state.settings.accent || '#5b5bf0'; accentPicker.oninput = e=> setAccent(e.target.value); }
+  if (neonToggle){ neonToggle.onchange = e=> document.body.classList.toggle('neon', e.target.checked); }
+  if (metalToggle){ metalToggle.onchange = e=> document.body.classList.toggle('metallic', e.target.checked); }
+  if (fontScale){ fontScale.oninput = e=>{ document.body.style.fontSize = (16*parseFloat(e.target.value))+'px'; }; }
 
-      <div class="field-row">
-        <label class="seg">
-          <input type="radio" name="kind" value="task" checked />
-          <span>Задача</span>
-        </label>
-        <label class="seg">
-          <input type="radio" name="kind" value="event" />
-          <span>Событие</span>
-        </label>
-      </div>
-
-      <label class="field">
-        <span>Название</span>
-        <input name="title" required placeholder="Что сделать?" />
-      </label>
-
-      <div class="grid-2">
-        <label class="field">
-          <span>Дата</span>
-          <input type="date" name="date" required />
-        </label>
-        <label class="field">
-          <span>Время</span>
-          <input type="time" name="time" value="08:00" />
-        </label>
-      </div>
-
-      <div class="grid-2 when-event">
-        <label class="field">
-          <span>Длительность (мин)</span>
-          <input type="number" name="duration" min="15" step="15" value="60" />
-        </label>
-        <label class="field">
-          <span>Приоритет</span>
-          <select name="priority">
-            <option value="low">низкий</option>
-            <option value="medium" selected>средний</option>
-            <option value="high">высокий</option>
-          </select>
-        </label>
-      </div>
-
-      <label class="field">
-        <span>Комментарий</span>
-        <textarea name="note" rows="2" placeholder="Опционально"></textarea>
-      </label>
-
-      <footer class="modal-foot">
-        <button value="cancel" class="btn ghost">Отмена</button>
-        <button type="submit" class="btn primary">Сохранить</button>
-      </footer>
-    </form>
-  </dialog>
-
-  <!-- MODAL: Reschedule -->
-  <dialog id="dlgMove" class="modal">
-    <form method="dialog" class="modal-card" id="moveForm">
-      <header class="modal-head"><h3>Перенос</h3></header>
-      <div class="grid-2">
-        <label class="field">
-          <span>Новая дата</span>
-          <input type="date" name="mdate" required />
-        </label>
-        <label class="field">
-          <span>Время</span>
-          <input type="time" name="mtime" value="08:00" />
-        </label>
-      </div>
-      <footer class="modal-foot">
-        <button value="cancel" class="btn ghost">Отмена</button>
-        <button type="submit" class="btn primary">Перенести</button>
-      </footer>
-    </form>
-  </dialog>
-
-  <script src="app.js"></script>
-</body>
-</html>
+  // Init
+  setAccent(state.settings.accent);
+  renderAllToday();
+})();
