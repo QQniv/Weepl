@@ -1,594 +1,526 @@
-/* ================= WEEPL v2.8 =================
-   - FIX: при свайпе влево и отмене задача не пропадает (reset визуала)
-   - Персонализация:
-       • Свой акцентный цвет (color picker) + пресеты
-       • Режим акцента: обычный / неон / металлик
-       • Масштаб текста: Мал / Станд / Крупн
-   - Домашняя: сегодня по центру, таймлайн + свайпы
-   - Календарь, статистика, настройки, импорт/экспорт
-================================================= */
+/* ===================== WEEPL v3.0 =====================
+ - Главная:
+    • Пояс дат, сегодня по центру
+    • Секции: События (таймлайн 06–20, шаг 15 м) + Задачи (скролл)
+    • Свайпы задач: вправо — done, влево — перенос (FIX: отмена не скрывает)
+ - Добавление:
+    • Быстрый диалог: Задача / Событие
+ - Календарь, Статистика:
+    • Кольцо с процентом по центру
+ - Навигация нижней панелью
+ - Настройки: тема/акцент/стиль/масштаб (persist)
+======================================================= */
 
-// ---------- STATE ----------
+const qs  = (s,p=document)=>p.querySelector(s);
+const qsa = (s,p=document)=>[...p.querySelectorAll(s)];
+const esc = s => String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+const sameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+const toISO = d=>new Date(d.getFullYear(),d.getMonth(),d.getDate()).toISOString().slice(0,10);
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x;};
+const addMonths=(d,n)=>{const x=new Date(d);x.setMonth(x.getMonth()+n);return x;};
+const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+const timeToMin = t => { if(!t) return null; const m=/^(\d{1,2}):(\d{2})$/.exec(t.trim()); return m?+m[1]*60+ +m[2]:null; };
+
+const H_START = 6, H_END = 20, HOUR_PX = 48, SLOT_MIN = 15;
+
 let state = {
   view: 'home',
-  tasks: JSON.parse(localStorage.getItem('tasks') || '[]'),
-  settings: JSON.parse(localStorage.getItem('settings') || '{}'),
-  currentDate: new Date()
+  currentDate: new Date(),
+  tasks: JSON.parse(localStorage.getItem('tasks')||'[]'),
+  events: JSON.parse(localStorage.getItem('events')||'[]'),
+  settings: JSON.parse(localStorage.getItem('settings')||'{}')
 };
 
-// ---------- HELPERS ----------
-const qs  = (s, p=document) => p.querySelector(s);
-const qsa = (s, p=document) => [...p.querySelectorAll(s)];
-const esc = s => String(s||'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
-const sameDay = (a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
-const toISO = d => new Date(d.getFullYear(),d.getMonth(),d.getDate()).toISOString().slice(0,10);
-const addDays = (d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x;};
-const addMonths = (d,n)=>{const x=new Date(d);x.setMonth(x.getMonth()+n);return x;};
-const priName = {low:'Низкий',medium:'Средний',high:'Высокий',critical:'Критический'};
-const priColor = p => ({low:'#bfbfbf',medium:'var(--accent)',high:'#ff4fa3',critical:'#8a2be2'})[p]||'var(--accent)';
-const timeToMin = (t)=>{ if(!t) return 24*60+1; const m=/^(\d{1,2}):(\d{2})$/.exec(t.trim()); return m?(+m[1])*60+(+m[2]):24*60+1; };
+function saveTasks(){ localStorage.setItem('tasks', JSON.stringify(state.tasks)); }
+function saveEvents(){ localStorage.setItem('events', JSON.stringify(state.events)); }
+function saveSettings(){ localStorage.setItem('settings', JSON.stringify(state.settings)); }
 
-// ---------- BOOT ----------
 window.addEventListener('DOMContentLoaded', () => {
-  state.currentDate = new Date(); // по умолчанию — сегодня
-  mountLayout();
-  applySettings();
-  navigate(location.hash || '#/');
-  window.addEventListener('hashchange', ()=> navigate(location.hash || '#/'));
+  wireStaticUI();
+  applySettingsUI();
+  initNav();
+  initAddDialogs();
+  initRescheduleDialog();
+  renderAll();              // первый рендер
+  centerTodayInStrip();     // центрируем текущую дату
+  startNowTicker();         // позиция «сейчас» в событиях
 });
 
-// ---------- LAYOUT ----------
-function mountLayout(){
-  const app = qs('#app');
-  app.innerHTML = `
-    <main id="view" class="section"></main>
-
-    <button id="fabAdd" class="fab" aria-label="Добавить">+</button>
-
-    <nav class="bottombar" role="navigation" aria-label="Основная навигация">
-      <a class="navbtn" href="#/"          title="Задачи">${iconTasks()}</a>
-      <a class="navbtn" href="#/calendar"  title="Календарь">${iconCalendar()}</a>
-      <a class="navbtn" href="#/stats"     title="Статистика">${iconStats()}</a>
-      <a class="navbtn" href="#/settings"  title="Настройки">${iconGear()}</a>
-    </nav>
-
-    <!-- Перенос дедлайна -->
-    <dialog id="resModal" class="modal">
-      <div class="modal-body">
-        <div class="modal-head">
-          <h3 class="h-impact" style="font-size:22px">Перенести дедлайн</h3>
-          <button class="icon-btn" data-close>✖</button>
-        </div>
-        <div class="grid2">
-          <button class="btn" data-res="+1d">+ 1 день</button>
-          <button class="btn" data-res="+1w">+ 1 неделя</button>
-        </div>
-        <div class="grid2" style="margin-top:10px">
-          <input type="date" id="resDate">
-          <input type="time" id="resTime">
-        </div>
-        <div class="modal-foot">
-          <button class="btn-outline" data-close>Отмена</button>
-          <button class="btn" id="resApply">Применить</button>
-        </div>
-      </div>
-    </dialog>
-
-    <!-- Добавление задачи -->
-    <dialog id="taskModal" class="modal">
-      <form id="taskForm" method="dialog">
-        <div class="modal-body">
-          <div class="modal-head">
-            <h3 class="h-impact" style="font-size:22px">Новая задача</h3>
-            <button data-close type="button" class="icon-btn">✖</button>
-          </div>
-
-          <div class="field"><label>Название</label><input id="fTitle" name="title" required/></div>
-          <div class="grid2">
-            <div class="field"><label>Дата</label><input id="fDate" type="date" name="date"/></div>
-            <div class="field"><label>Время</label><input id="fTime" type="time" name="time"/></div>
-          </div>
-          <div class="grid2">
-            <div class="field">
-              <label>Важность</label>
-              <select id="fPriority" name="priority">
-                <option value="low">Низкая</option>
-                <option value="medium" selected>Средняя</option>
-                <option value="high">Высокая</option>
-                <option value="critical">Критическая</option>
-              </select>
-            </div>
-            <div class="field"><label>SMART</label><input id="fSmart" name="smart" placeholder="Specific/Measurable/..."></div>
-          </div>
-          <div class="field"><label>Комментарий</label><textarea id="fNote" name="note" rows="2"></textarea></div>
-
-          <div class="modal-foot">
-            <button data-close type="button" class="btn-outline">Отмена</button>
-            <button type="submit" class="btn">Сохранить</button>
-          </div>
-        </div>
-      </form>
-    </dialog>
-  `;
-  qs('#fabAdd').onclick = openModal;
+/* ============== NAVIGATION (bottom bar & views) ============== */
+function setView(view){
+  state.view=view;
+  // таббар
+  qsa('.bottombar .navbtn').forEach(a=>a.classList.toggle('active', a.dataset.view===view));
+  // секции
+  const show = id => qs(id).style.display='block';
+  const hide = id => qs(id).style.display='none';
+  // главная — это всё, что внутри #app (блоки по умолчанию)
+  // у нас отдельные контейнеры для Calendar/Stats/Settings
+  if(view==='home'){
+    qsa('#app > .section').forEach(s=>s.style.display='block');
+    hide('#viewCalendar'); hide('#viewStats'); hide('#viewSettings');
+  }else{
+    qsa('#app > .section').forEach(s=>s.style.display='none');
+    if(view==='calendar') { show('#viewCalendar'); renderCalendar(); }
+    if(view==='stats')    { show('#viewStats');    renderStats(); }
+    if(view==='settings') { show('#viewSettings'); bindSettingsControls(); }
+  }
+}
+function initNav(){
+  // нижняя панель
+  qs('#tabHome').onclick     =()=> setView('home');
+  qs('#tabCalendar').onclick =()=> setView('calendar');
+  qs('#tabStats').onclick    =()=> setView('stats');
+  qs('#tabSettings').onclick =()=> setView('settings');
+  // FAB
+  qs('#fab').onclick = ()=> openAddDialog();
+  // заголовок месяца (на главной)
+  qs('#btnPrevMonth')?.addEventListener('click',()=>{ state.currentDate=addMonths(state.currentDate,-1); renderAll(); });
+  qs('#btnNextMonth')?.addEventListener('click',()=>{ state.currentDate=addMonths(state.currentDate, 1); renderAll(); });
 }
 
-// ---------- ROUTER ----------
-function navigate(hash){
-  const view = (hash.replace('#/','') || 'home');
-  state.view = view;
-  qsa('.navbtn').forEach(a => a.classList.toggle('active', a.getAttribute('href') === hash));
-  const root = qs('#view');
-
-  if(view==='calendar'){ mountCalendar(root); return; }
-  if(view==='settings'){ mountSettings(root); return; }
-  if(view==='stats'){    mountStats(root);    return; }
-  mountHome(root);
+/* =================== HOME RENDER =================== */
+function renderAll(){
+  renderMonthHeader();
+  renderDateStrip();
+  renderDayGrid();     // события
+  renderTasksList();   // задачи
+  renderCalendar();    // календарь может быть скрыт, но подготовим
+  renderStats();       // обновим проценты
 }
 
-// ---------- HOME ----------
-function mountHome(root){
-  root.innerHTML = `
-    <section class="home fade-in">
-      <div class="month-bar">
-        <button class="month-btn" id="btnPrev" aria-label="Предыдущий месяц">←</button>
-        <h2 id="homeMonth" class="h-impact"></h2>
-        <button class="month-btn" id="btnNext" aria-label="Следующий месяц">→</button>
-      </div>
-
-      <div id="dateStrip" class="date-strip"></div>
-
-      <div class="tasks-card">
-        <div class="tasks-head">
-          <div>
-            <div class="title h-sub" style="margin:0">Сегодня</div>
-            <div class="muted" id="tasksMeta"></div>
-          </div>
-        </div>
-        <div class="tasks-scroll">
-          <div id="taskTimeline" class="timeline"></div>
-        </div>
-      </div>
-    </section>
-  `;
-
-  qs('#btnPrev').onclick = ()=>{ state.currentDate = addMonths(state.currentDate,-1); mountHome(root); };
-  qs('#btnNext').onclick = ()=>{ state.currentDate = addMonths(state.currentDate, 1); mountHome(root); };
-
-  updateHomeHeader();
-  renderDateStrip(true);          // центрировать активную
-  renderTasksTimeline(state.currentDate);
+function renderMonthHeader(){
+  const t = state.currentDate.toLocaleString('ru-RU',{month:'long', year:'numeric'});
+  const el = qs('#monthTitle'); if(el) el.textContent = t.charAt(0).toUpperCase()+t.slice(1);
 }
 
-function updateHomeHeader(){
-  qs('#homeMonth').textContent = state.currentDate.toLocaleString('ru-RU',{month:'long',year:'numeric'});
-}
-
-function renderDateStrip(centerActive=false){
-  const strip = qs('#dateStrip'); strip.innerHTML='';
+function renderDateStrip(){
+  const strip = qs('#dateStrip'); if(!strip) return;
+  strip.innerHTML='';
   const y=state.currentDate.getFullYear(), m=state.currentDate.getMonth();
   const days = new Date(y,m+1,0).getDate();
   const today = new Date();
 
   for(let i=1;i<=days;i++){
-    const d = new Date(y,m,i);
-    const isActive = sameDay(d,state.currentDate) || (sameDay(d,today) && sameDay(state.currentDate,today));
-    const el = document.createElement('div');
-    el.className = 'date-pill' + (isActive?' active':'');
-    el.innerHTML = `
+    const d=new Date(y,m,i);
+    const pill=document.createElement('div');
+    pill.className='date-pill'+(sameDay(d,state.currentDate)?' active':'');
+    pill.innerHTML = `
       <div class="wk">${d.toLocaleDateString('ru-RU',{weekday:'short'})}</div>
       <div class="daynum">${i}</div>
       <div class="mon">${d.toLocaleDateString('ru-RU',{month:'short'})}</div>`;
-    el.onclick = ()=>{ state.currentDate=d; updateHomeHeader(); renderDateStrip(); renderTasksTimeline(d); };
-    strip.appendChild(el);
+    pill.onclick=()=>{ state.currentDate=d; renderAll(); centerActiveInStrip(); };
+    strip.appendChild(pill);
   }
-
-  if(centerActive){
-    const active = qs('.date-pill.active', strip);
-    if(active){
-      const offset = active.offsetLeft - (strip.clientWidth/2 - active.clientWidth/2);
-      strip.scrollTo({left: Math.max(offset,0), behavior: 'auto'});
-    }
+}
+function centerTodayInStrip(){ centerActiveInStrip(true); }
+function centerActiveInStrip(initialize=false){
+  const strip=qs('#dateStrip'); if(!strip) return;
+  const active=qs('.date-pill.active',strip);
+  if(active){
+    const offset = active.offsetLeft - (strip.clientWidth/2 - active.clientWidth/2);
+    strip.scrollTo({left: Math.max(offset,0), behavior: initialize?'auto':'smooth'});
   }
 }
 
-function renderTasksTimeline(d){
-  const box = qs('#taskTimeline');
-  const iso = toISO(d);
-  const tasks = state.tasks
-    .filter(t=>t.date===iso)
-    .sort((a,b)=> timeToMin(a.time) - timeToMin(b.time));
+/* =================== EVENTS TIMELINE (06–20) =================== */
+function renderDayGrid(){
+  // время-тики
+  const ticks=qs('#timeTicks'); const col=qs('#eventsCol'); if(!ticks||!col) return;
+  ticks.innerHTML='';
+  for(let h=H_START; h<=H_END; h++){
+    const tick=document.createElement('div');
+    tick.className='tick';
+    tick.textContent = `${String(h).padStart(2,'0')}:00`;
+    ticks.appendChild(tick);
+  }
 
-  qs('#tasksMeta').textContent = tasks.length ? `Задач: ${tasks.length}` : 'Нет задач на эту дату.';
+  // «сейчас» линия
+  const nowLine = qs('#nowLine');
+  const now = new Date();
+  if(sameDay(now, state.currentDate) && now.getHours()>=H_START && now.getHours()<=H_END){
+    const mins = (now.getHours()-H_START)*60 + now.getMinutes();
+    nowLine.style.display='block';
+    nowLine.style.top = `${mins/60*HOUR_PX}px`;
+  }else{
+    nowLine.style.display='none';
+  }
 
-  if(!tasks.length){ box.innerHTML=''; return; }
+  // события этого дня
+  col.innerHTML = nowLine.outerHTML; // вставим линию обратно первым ребёнком
+  const iso = toISO(state.currentDate);
+  const dayEvents = state.events
+    .filter(e=>e.date===iso)
+    .map(e=>({ ...e, s: timeToMin(e.start), eMin: timeToMin(e.end) }))
+    .filter(e=> e.s!=null && e.eMin!=null && e.eMin>e.s)
+    .sort((a,b)=> a.s-b.s);
 
-  box.innerHTML = tasks.map(t=>timelineItem(t)).join('');
-  qsa('.btn-done', box).forEach(b => b.onclick = e => toggleDone(e.target.dataset.id));
-  qsa('.btn-del',  box).forEach(b => b.onclick = e => deleteTask(e.target.dataset.id));
-  qsa('.t-item',   box).forEach(el => attachSwipe(el));
+  // позиционирование
+  dayEvents.forEach(ev=>{
+    const topPx = ((ev.s - H_START*60)/60)*HOUR_PX;
+    const heightPx = Math.max((ev.eMin - ev.s)/60*HOUR_PX, HOUR_PX*(SLOT_MIN/60));
+    const div=document.createElement('div');
+    div.className='event';
+    div.style.setProperty('--top', `${topPx}px`);
+    div.style.setProperty('--h', `${heightPx}px`);
+    div.innerHTML = `<div class="title">${esc(ev.title)}</div>
+                     <div class="time">${ev.start} – ${ev.end}</div>`;
+    // клик — перенести (пока без свайпа для событий)
+    div.onclick=()=> openReschedule(ev.id, 'event');
+    col.appendChild(div);
+  });
 }
 
-function timelineItem(t){
-  const done = t.done ? ' done' : '';
-  const meta = [
-    t.time || '—',
-    `приоритет: ${priName[t.priority]||'—'}`,
-    t.smart ? `SMART: ${esc(t.smart)}` : null
-  ].filter(Boolean).join(' • ');
+/* =================== TASKS LIST (свайпы) =================== */
+function renderTasksList(){
+  const list = qs('#taskList'); if(!list) return;
+  const iso = toISO(state.currentDate);
+  const arr = state.tasks.filter(t=>t.date===iso).sort((a,b)=>{
+    const am = timeToMin(a.time)??1441, bm = timeToMin(b.time)??1441;
+    return am-bm;
+  });
 
-  return `<div class="t-item${done}" data-id="${t.id}" style="touch-action: pan-y;">
-    <div class="row1">
-      <div class="t-title">${esc(t.title)}</div>
-      <div class="task-ctl">
-        <button class="icon-btn btn-done" data-id="${t.id}" title="Готово">✔</button>
-        <button class="icon-btn btn-del"  data-id="${t.id}" title="Удалить">🗑</button>
+  qs('#todayCounter').textContent = `Задач: ${arr.length}`;
+
+  if(arr.length===0){ list.innerHTML=''; return; }
+
+  list.innerHTML = arr.map(t=>{
+    const meta = [t.time||'—', `приоритет: ${t.priority||'средний'}`].join(' • ');
+    return `<div class="t-item${t.done?' done':''}" data-id="${t.id}" style="touch-action: pan-y;">
+      <div class="row1">
+        <div class="t-title">${esc(t.title)}</div>
+        <div class="task-ctl">
+          <button class="icon-btn" data-act="done" data-id="${t.id}" title="Готово">✔</button>
+          <button class="icon-btn" data-act="move" data-id="${t.id}" title="Перенести">↔</button>
+          <button class="icon-btn" data-act="del"  data-id="${t.id}" title="Удалить">🗑</button>
+        </div>
       </div>
-    </div>
-    <div class="t-meta">${meta}</div>
-  </div>`;
+      <div class="t-meta">${meta}</div>
+    </div>`;
+  }).join('');
+
+  // кнопки
+  qsa('.task-ctl .icon-btn', list).forEach(b=>{
+    const id=b.dataset.id, act=b.dataset.act;
+    if(act==='done') b.onclick=()=> toggleDoneTask(id);
+    if(act==='del')  b.onclick=()=> deleteTask(id);
+    if(act==='move') b.onclick=()=> openReschedule(id,'task');
+  });
+
+  // свайпы
+  qsa('.t-item', list).forEach(attachSwipe);
 }
 
-// ---------- SWIPE ----------
+function toggleDoneTask(id){
+  const t=state.tasks.find(x=>x.id===id); if(!t) return;
+  t.done=!t.done; saveTasks(); renderTasksList(); renderStats();
+}
+function deleteTask(id){
+  state.tasks=state.tasks.filter(t=>t.id!==id); saveTasks(); renderTasksList(); renderStats();
+}
+
+/* ============== SWIPE (tasks) ============== */
 function attachSwipe(el){
   let startX=0, curX=0, dragging=false, id=el.dataset.id;
-  const THRESH = 64;
+  const THRESH=64;
 
-  const onStart = (x)=>{ dragging=true; startX=x; el.style.transition='none'; };
-  const onMove  = (x)=>{
+  const onStart=x=>{ dragging=true; startX=x; el.style.transition='none'; };
+  const onMove =x=>{
     if(!dragging) return;
-    curX = x - startX;
-    const dx = Math.max(Math.min(curX, 120), -120);
-    el.style.transform = `translateX(${dx}px)`;
-    el.style.opacity   = `${1 - Math.min(Math.abs(dx)/220, .4)}`;
+    curX=x-startX;
+    const dx=clamp(curX,-120,120);
+    el.style.transform=`translateX(${dx}px)`; el.style.opacity=String(1-Math.min(Math.abs(dx)/220,.4));
   };
-  const onEnd = ()=>{
+  const onEnd =()=>{
     if(!dragging) return;
     el.style.transition='transform .18s, opacity .18s';
-    if(curX > THRESH){
-      el.style.transform='translateX(100%)'; el.style.opacity='0';
-      setTimeout(()=> toggleDone(id), 140);
-    }else if(curX < -THRESH){
-      // показываем модалку, но НЕ удаляем и не скрываем элемент насовсем
-      showReschedule(id, /*fromSwipe*/ true);
-    }else{
-      resetSwipeVisual(id);
-    }
+    if(curX>THRESH){ el.style.transform='translateX(100%)'; el.style.opacity='0'; setTimeout(()=>toggleDoneTask(id),140); }
+    else if(curX<-THRESH){ openReschedule(id,'task', /*fromSwipe*/true); }  // FIX: не скрываем
+    else resetSwipeVisual(id);
     dragging=false; startX=curX=0;
   };
 
   el.addEventListener('mousedown',e=>onStart(e.clientX));
   window.addEventListener('mousemove',e=>onMove(e.clientX));
   window.addEventListener('mouseup', onEnd);
-
   el.addEventListener('touchstart',e=>onStart(e.touches[0].clientX),{passive:true});
   el.addEventListener('touchmove', e=>onMove(e.touches[0].clientX),{passive:true});
   el.addEventListener('touchend', onEnd);
 }
 
 function resetSwipeVisual(id){
-  const el = document.querySelector(`.t-item[data-id="${CSS.escape(id)}"]`);
-  if(el){
-    el.style.transition='transform .18s, opacity .18s';
-    el.style.transform='translateX(0)';
-    el.style.opacity='1';
-  }
+  const el=document.querySelector(`.t-item[data-id="${CSS.escape(id)}"]`);
+  if(el){ el.style.transition='transform .18s, opacity .18s'; el.style.transform='translateX(0)'; el.style.opacity='1'; }
 }
 
-// ---------- RESCHEDULE ----------
-let rescheduleId = null;
-function showReschedule(id, fromSwipe=false){
-  rescheduleId = id;
-  const t = state.tasks.find(x=>x.id===id);
-  const dlg = qs('#resModal');
-  const dateInput = qs('#resDate'), timeInput = qs('#resTime');
-
-  dateInput.value = t?.date || toISO(state.currentDate);
-  timeInput.value = t?.time || '';
-
-  // если модалка открыта после свайпа влево — сразу вернуть карточку на место визуально
-  if(fromSwipe) resetSwipeVisual(id);
-
+/* =================== ADD DIALOGS =================== */
+function wireStaticUI(){
+  // топ-кнопки на карточке «Сегодня»
+  qs('#btnAddTaskTop')?.addEventListener('click',()=> openAddDialog('task'));
+  qs('#btnAddEventTop')?.addEventListener('click',()=> openAddDialog('event'));
+}
+function openAddDialog(tab='choice'){
+  const dlg=qs('#dlgAdd'); if(!dlg) return;
   dlg.showModal();
+  showAddTab(tab);
+}
+function showAddTab(tab){
+  const fTask=qs('#formTask'), fEvent=qs('#formEvent');
+  if(tab==='task'){ fTask.style.display='block'; fEvent.style.display='none'; }
+  else if(tab==='event'){ fTask.style.display='none'; fEvent.style.display='block'; }
+  else{ fTask.style.display='block'; fEvent.style.display='none'; }
+}
+function initAddDialogs(){
+  const dlg=qs('#dlgAdd'); if(!dlg) return;
+  // переключатели
+  qs('#dlgAddClose').onclick = ()=> dlg.close();
+  qs('#openAddTask').onclick = ()=> showAddTab('task');
+  qs('#openAddEvent').onclick= ()=> showAddTab('event');
+  qs('#cancelTask').onclick  = ()=> dlg.close();
+  qs('#cancelEvent').onclick = ()=> dlg.close();
+  // заполнение дат по умолчанию
+  const todayISO = toISO(state.currentDate);
+  qs('#taskDate').value = todayISO;
+  qs('#eventDate').value = todayISO;
 
-  const closeAll = ()=>{ dlg.close(); resetSwipeVisual(id); };
-  qsa('[data-close]', dlg).forEach(b=> b.onclick=closeAll);
-  dlg.addEventListener('cancel', closeAll, {once:true}); // ESC / клик по фону
-
-  qsa('[data-res]', dlg).forEach(b=> b.onclick = ()=>{
-    const tx = state.tasks.find(x=>x.id===id); if(!tx) return;
-    const base = new Date(tx.date || toISO(new Date()));
-    if(b.dataset.res==='+1d') tx.date = toISO(addDays(base,1));
-    if(b.dataset.res==='+1w') tx.date = toISO(addDays(base,7));
-    saveTasks(); closeAll(); navigate('#/');
-  });
-
-  qs('#resApply').onclick = ()=>{
-    const tx = state.tasks.find(x=>x.id===id);
-    if(tx){
-      if(dateInput.value) tx.date = dateInput.value;
-      tx.time = timeInput.value || '';
-      saveTasks();
-    }
-    closeAll(); navigate('#/');
+  // submit: task
+  qs('#formTask').onsubmit = e=>{
+    e.preventDefault();
+    const title = qs('#taskTitle').value.trim();
+    if(!title) return;
+    const t = {
+      id: cryptoRandom(),
+      title,
+      date: qs('#taskDate').value || todayISO,
+      time: qs('#taskTime').value || '',
+      priority: mapPriority(qs('#taskPriority').value),
+      note: qs('#taskNote').value || '',
+      done:false
+    };
+    state.tasks.push(t); saveTasks(); dlg.close(); renderTasksList(); renderStats();
+  };
+  // submit: event
+  qs('#formEvent').onsubmit = e=>{
+    e.preventDefault();
+    const title = qs('#eventTitle').value.trim();
+    if(!title) return;
+    const start = qs('#eventStart').value;
+    const end   = qs('#eventEnd').value;
+    if(!start || !end) { alert('Укажи время начала и конца'); return; }
+    if(timeToMin(end) <= timeToMin(start)){ alert('Время конца должно быть позже начала'); return; }
+    const ev = {
+      id: cryptoRandom(),
+      title,
+      date: qs('#eventDate').value || todayISO,
+      start, end,
+      priority: mapPriority(qs('#eventPriority').value),
+      location: qs('#eventLocation').value || '',
+      note: qs('#eventNote').value || ''
+    };
+    state.events.push(ev); saveEvents(); dlg.close(); renderDayGrid();
   };
 }
+function mapPriority(txt){
+  const t=txt.toLowerCase();
+  if(t.startsWith('низ')) return 'low';
+  if(t.startsWith('выс')) return 'high';
+  if(t.startsWith('крит')) return 'critical';
+  return 'medium';
+}
+function cryptoRandom(){
+  if(window.crypto?.getRandomValues){
+    const arr=new Uint32Array(2); crypto.getRandomValues(arr);
+    return (Date.now().toString(36)+arr[0].toString(36)+arr[1].toString(36)).slice(0,16);
+  }
+  return Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+}
 
-// ---------- CALENDAR ----------
-function mountCalendar(root){
-  const d=state.currentDate;
-  root.innerHTML = `
-    <section class="fade-in">
-      <div class="calendar-head">
-        <button class="month-btn" id="calPrev">←</button>
-        <h2 id="calTitle" class="h-impact"></h2>
-        <button class="month-btn" id="calNext">→</button>
-      </div>
-      <div id="calendarGrid" class="calendar-grid"></div>
-      <div class="legend">
-        <span><i class="lg lg-low"></i> Низкий</span>
-        <span><i class="lg lg-med"></i> Средний</span>
-        <span><i class="lg lg-high"></i> Высокий</span>
-        <span><i class="lg lg-crit"></i> Критический</span>
-      </div>
-    </section>
-  `;
+/* =================== RESCHEDULE (task & event) =================== */
+let resTarget = { id:null, kind:null }; // kind: 'task'|'event'
+function initRescheduleDialog(){
+  const dlg=qs('#dlgReschedule'); if(!dlg) return;
+  qs('#dlgRescheduleClose').onclick = ()=> closeReschedule();
+  qs('#moveCancel').onclick         = ()=> closeReschedule();
+  qs('#moveApply').onclick          = applyReschedule;
+}
+function openReschedule(id, kind, fromSwipe=false){
+  resTarget={id,kind};
+  const dlg=qs('#dlgReschedule'); if(!dlg) return;
+  // заполним текущие
+  if(kind==='task'){
+    const t=state.tasks.find(x=>x.id===id); if(!t) return;
+    qs('#moveDate').value = t.date || toISO(state.currentDate);
+    qs('#moveTime').value = t.time || '';
+    if(fromSwipe) resetSwipeVisual(id);
+  }else{
+    const e=state.events.find(x=>x.id===id); if(!e) return;
+    qs('#moveDate').value = e.date || toISO(state.currentDate);
+    qs('#moveTime').value = e.start || '';
+  }
+  dlg.showModal();
+}
+function closeReschedule(){
+  const dlg=qs('#dlgReschedule'); dlg?.close();
+  // визуально обязательно вернуть карточку задачи на место (фикс бага)
+  if(resTarget.kind==='task') resetSwipeVisual(resTarget.id);
+  resTarget={id:null,kind:null};
+}
+function applyReschedule(){
+  const date=qs('#moveDate').value, time=qs('#moveTime').value;
+  if(resTarget.kind==='task'){
+    const t=state.tasks.find(x=>x.id===resTarget.id); if(!t) return;
+    if(date) t.date=date;
+    if(time) t.time=time;
+    saveTasks(); renderTasksList();
+  }else if(resTarget.kind==='event'){
+    const e=state.events.find(x=>x.id===resTarget.id); if(!e) return;
+    if(date) e.date=date;
+    if(time){ // сдвигаем интервал, сохраняя длительность
+      const dur = timeToMin(e.end) - timeToMin(e.start);
+      e.start=time;
+      const endMin = timeToMin(time)+dur;
+      const hh=String(Math.floor(endMin/60)).padStart(2,'0');
+      const mm=String(endMin%60).padStart(2,'0');
+      e.end = `${hh}:${mm}`;
+    }
+    saveEvents(); renderDayGrid();
+  }
+  closeReschedule();
+}
 
-  qs('#calTitle').textContent = d.toLocaleString('ru-RU',{month:'long',year:'numeric'});
-  qs('#calPrev').onclick=()=>{ state.currentDate=addMonths(state.currentDate,-1); mountCalendar(root); };
-  qs('#calNext').onclick=()=>{ state.currentDate=addMonths(state.currentDate, 1); mountCalendar(root); };
+/* =================== CALENDAR =================== */
+function renderCalendar(){
+  const grid=qs('#calendarGrid'); const title=qs('#calTitle'); if(!grid||!title) return;
+  grid.innerHTML='';
+  const d=state.currentDate, y=d.getFullYear(), m=d.getMonth();
+  title.textContent = d.toLocaleString('ru-RU',{month:'long',year:'numeric'});
 
-  const grid=qs('#calendarGrid');
-  const names=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
-  names.forEach(n=>{ const c=document.createElement('div'); c.className='cell head'; c.textContent=n; grid.appendChild(c); });
-
-  const y=d.getFullYear(), m=d.getMonth();
+  // заголовок дней недели уже в разметке
   const first=new Date(y,m,1);
-  const offset=(first.getDay()+6)%7;
+  const offset=(first.getDay()+6)%7; // Пн=0
   for(let i=0;i<offset;i++){ const e=document.createElement('div'); e.className='cell'; grid.appendChild(e); }
 
   const days=new Date(y,m+1,0).getDate();
   for(let i=1;i<=days;i++){
-    const date=new Date(y,m,i);
-    const iso=toISO(date);
-    const tasks=state.tasks.filter(t=>t.date===iso);
-    const c=document.createElement('div'); c.className='cell daycell';
-    c.innerHTML=`<div class="dhead">${i}</div><div class="dots">${tasks.map(t=>`<span class="dot" style="background:${priColor(t.priority)}"></span>`).join('')}</div>`;
+    const date=new Date(y,m,i), iso=toISO(date);
+    const dayTasks=state.tasks.filter(t=>t.date===iso);
+    const c=document.createElement('div'); c.className='cell';
+    c.innerHTML=`<div class="dhead">${i}</div>
+                 <div class="dots">${dayTasks.map(t=>`<span class="dot" style="background:${priorityDot(t.priority)}"></span>`).join('')}</div>`;
     if(sameDay(date,new Date())) c.classList.add('today');
-    c.onclick=()=>{ state.currentDate=date; location.hash='#/'; };
+    c.onclick=()=>{ state.currentDate=date; setView('home'); renderAll(); centerActiveInStrip(); };
     grid.appendChild(c);
   }
+
+  // навигация календаря
+  qs('#calPrev')?.addEventListener('click',()=>{ state.currentDate=addMonths(state.currentDate,-1); renderCalendar(); });
+  qs('#calNext')?.addEventListener('click',()=>{ state.currentDate=addMonths(state.currentDate, 1); renderCalendar(); });
+}
+function priorityDot(p){
+  if(p==='low') return '#bfbfbf';
+  if(p==='high') return '#ff4fa3';
+  if(p==='critical') return '#8a2be2';
+  return 'var(--accent)';
 }
 
-// ---------- STATS ----------
-function mountStats(root){
-  root.innerHTML = `
-    <section class="stats fade-in">
-      <h2 class="h-impact" style="margin:6px">Статистика</h2>
-      <div class="stats-grid">
-        <div class="card center">
-          <div class="ring">
-            <svg viewBox="0 0 120 120" class="ring-svg">
-              <circle cx="60" cy="60" r="52" class="ring-bg"/>
-              <circle id="ringFg" cx="60" cy="60" r="52" class="ring-fg"/>
-            </svg>
-            <div class="ring-val"><span id="statDonePct">0</span>%</div>
-          </div>
-          <div class="muted">Выполнено за неделю</div>
-        </div>
-        <div class="card"><div class="kpi"><span id="statWeekDone">0</span><small> / <span id="statWeekTotal">0</span></small></div><div class="muted">За 7 дней</div></div>
-        <div class="card"><div class="kpi"><span id="statMonthDone">0</span><small> / <span id="statMonthTotal">0</span></small></div><div class="muted">За месяц</div></div>
-        <div class="card"><div class="kpi"><span id="statStreak">0</span><small> дн.</small></div><div class="muted">Серия выполнения</div></div>
-      </div>
-      <div class="card barcard">
-        <div class="bar-head"><div class="h-sub" style="margin:0">Выполнено по дням</div><div class="muted" id="barRange">последние 7 дней</div></div>
-        <div class="bars" id="bars"></div>
-        <div class="bar-labels" id="barLabels"></div>
-      </div>
-    </section>
-  `;
-  updateStats();
-}
-function updateStats(){
-  const tasks=state.tasks, now=new Date();
-  const weekAgo=addDays(now,-7), monthAgo=addMonths(now,-1);
-  const weekTasks=tasks.filter(t=>new Date(t.date)>=weekAgo);
-  const weekDone =weekTasks.filter(t=>t.done);
-  const monthTasks=tasks.filter(t=>new Date(t.date)>=monthAgo);
-  const monthDone =monthTasks.filter(t=>t.done);
-  const pct=weekTasks.length?Math.round(weekDone.length/weekTasks.length*100):0;
-  qs('#statDonePct').textContent=pct;
-  qs('#ringFg').style.strokeDashoffset = (326 - 326*pct/100);
-  qs('#statWeekDone').textContent=weekDone.length; qs('#statWeekTotal').textContent=weekTasks.length;
-  qs('#statMonthDone').textContent=monthDone.length; qs('#statMonthTotal').textContent=monthTasks.length;
-  qs('#statStreak').textContent = calcStreak(tasks);
+/* =================== STATS =================== */
+function renderStats(){
+  // неделя: все задачи последней недели
+  const now=new Date(), weekAgo=addDays(now,-7), monthAgo=addMonths(now,-1);
+  const week = state.tasks.filter(t=> new Date(t.date) >= new Date(weekAgo.toDateString()));
+  const weekDone= week.filter(t=>t.done);
+  const pct = week.length ? Math.round(weekDone.length/week.length*100) : 0;
 
-  const bars=qs('#bars'), labels=qs('#barLabels'); bars.innerHTML=labels.innerHTML='';
-  for(let i=6;i>=0;i--){
-    const d=addDays(now,-i), iso=toISO(d);
-    const tot=tasks.filter(t=>t.date===iso).length;
-    const dn =tasks.filter(t=>t.date===iso && t.done).length;
-    const h=tot?Math.round(dn/tot*100):0;
-    const b=document.createElement('div'); b.className='bar'; b.style.height=`${h}px`; bars.appendChild(b);
-    const l=document.createElement('div'); l.textContent=d.toLocaleDateString('ru-RU',{weekday:'short'}); labels.appendChild(l);
-  }
+  const ring = qs('#ringFg'); const val=qs('#ringVal');
+  if(ring){ ring.style.strokeDashoffset = (326 - 326*pct/100); }
+  if(val){ animateNumber(val, pct, v=> val.textContent = `${v}%`); }
+
+  const weekAll=week.length, monAll=state.tasks.filter(t=> new Date(t.date)>=monthAgo).length;
+  const weekDoneN=weekDone.length, monDoneN=state.tasks.filter(t=> new Date(t.date)>=monthAgo && t.done).length;
+  const streak = calcStreak();
+
+  if(qs('#kpi7'))   qs('#kpi7').textContent   = `${weekDoneN}/${weekAll}`;
+  if(qs('#kpiMon')) qs('#kpiMon').textContent = `${monDoneN}/${monAll}`;
+  if(qs('#streak')) qs('#streak').textContent = String(streak);
 }
-function calcStreak(tasks){
-  const set=[...new Set(tasks.filter(t=>t.done).map(t=>t.date))].sort();
+function calcStreak(){
+  const days=[...new Set(state.tasks.filter(t=>t.done).map(t=>t.date))].sort();
   let max=0,cur=0,last=null;
-  for(const iso of set){const d=new Date(iso); if(last && (d-last)/86400000===1) cur++; else cur=1; if(cur>max)max=cur; last=d;}
+  for(const iso of days){
+    const d=new Date(iso);
+    if(last && (d-last)/86400000===1) cur++; else cur=1;
+    if(cur>max) max=cur; last=d;
+  }
   return max;
 }
-
-// ---------- SETTINGS (персонализация) ----------
-function mountSettings(root){
-  root.innerHTML = `
-    <section class="fade-in">
-      <div class="settings-section">
-        <div class="section-title">Внешний вид</div>
-        <div class="settings-list">
-          <div class="row item">
-            <div class="left"><div class="label">Тема</div><div class="sub">Светлая / тёмная</div></div>
-            <div class="right"><select id="setTheme"><option value="light">Светлая</option><option value="dark">Тёмная</option></select></div>
-          </div>
-
-          <div class="row item">
-            <div class="left"><div class="label">Акцент</div><div class="sub">Выбери пресет или свой цвет</div></div>
-            <div class="right" style="gap:8px;flex-wrap:wrap">
-              <select id="setAccent">
-                <option value="violet">Фиолетовый</option><option value="blue">Синий</option><option value="rose">Розовый</option>
-                <option value="mint">Мятный</option><option value="lemon">Жёлтый</option><option value="coral">Коралловый</option>
-                <option value="azure">Голубой</option><option value="orchid">Орхидея</option><option value="sky">Небесный</option><option value="lime">Лайм</option>
-                <option value="custom">Свой цвет</option>
-              </select>
-              <input type="color" id="setAccentCustom" title="Свой акцентный цвет">
-            </div>
-          </div>
-
-          <div class="row item">
-            <div class="left"><div class="label">Стиль акцента</div><div class="sub">Обычный / Неон / Металлик</div></div>
-            <div class="right">
-              <select id="setAccentStyle">
-                <option value="solid">Обычный</option>
-                <option value="neon">Неон</option>
-                <option value="metal">Металлик</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="row item">
-            <div class="left"><div class="label">Размер текста</div><div class="sub">Изменяет масштаб интерфейса</div></div>
-            <div class="right">
-              <select id="setFontScale">
-                <option value="0.95">Маленький</option>
-                <option value="1">Стандарт</option>
-                <option value="1.10">Крупный</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="settings-section">
-        <div class="section-title">Календарь</div>
-        <div class="settings-list">
-          <div class="row item">
-            <div class="left"><div class="label">Неделя начинается с</div><div class="sub">Пн / Вс</div></div>
-            <div class="right"><select id="setWeekStart"><option value="1">Понедельника</option><option value="0">Воскресенья</option></select></div>
-          </div>
-          <div class="row item">
-            <div class="left"><div class="label">Кнопка «Сегодня»</div><div class="sub">Быстрый переход к текущей дате</div></div>
-            <div class="right"><label class="switch"><input type="checkbox" id="setShowToday"><span class="slider"></span></label></div>
-          </div>
-          <div class="row item">
-            <div class="left"><div class="label">Точки приоритетов</div><div class="sub">Индикаторы в сетке календаря</div></div>
-            <div class="right"><label class="switch"><input type="checkbox" id="setShowDots"><span class="slider"></span></label></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="settings-section">
-        <div class="section-title">Данные</div>
-        <div class="settings-list">
-          <div class="row item">
-            <div class="left"><div class="label">Экспорт / импорт</div><div class="sub">JSON с вашими задачами</div></div>
-            <div class="right gap">
-              <button class="btn" id="btnExport">Экспорт</button>
-              <label class="btn-outline">Импорт <input type="file" id="fileImport" hidden></label>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  `;
-
-  const s = state.settings;
-  qs('#setTheme').value         = s.theme || 'light';
-  qs('#setAccent').value        = s.accent || 'violet';
-  qs('#setAccentCustom').value  = s.accentCustom || '#7b61ff';
-  qs('#setAccentStyle').value   = s.accentStyle || 'solid';
-  qs('#setFontScale').value     = s.fontScale || '1';
-  qs('#setWeekStart').value     = s.weekStart || '1';
-  qs('#setShowToday').checked   = s.showToday ?? true;
-  qs('#setShowDots').checked    = s.showDots  ?? true;
-
-  const save = ()=>saveSettings();
-  qsa('select, input[type="checkbox"], input[type="color"]', root).forEach(el => el.onchange = save);
-  qs('#btnExport').onclick = exportData;
-  qs('#fileImport').onchange = importData;
+function animateNumber(el, target, draw){
+  const start = Number((el.textContent||'0').replace('%',''))||0;
+  const t0=performance.now(), dur=500;
+  function step(t){
+    const k=clamp((t-t0)/dur,0,1);
+    const v=Math.round(start + (target-start)*k);
+    draw(v);
+    if(k<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
 }
 
-function saveSettings(){
-  state.settings = {
-    theme: qs('#setTheme')?.value || 'light',
-    accent: qs('#setAccent')?.value || 'violet',
-    accentCustom: qs('#setAccentCustom')?.value || '#7b61ff',
-    accentStyle: qs('#setAccentStyle')?.value || 'solid',
-    fontScale: qs('#setFontScale')?.value || '1',
-    weekStart: qs('#setWeekStart')?.value || '1',
-    showToday: qs('#setShowToday')?.checked ?? true,
-    showDots: qs('#setShowDots')?.checked ?? true
-  };
-  localStorage.setItem('settings', JSON.stringify(state.settings));
-  applySettings();
-}
-function applySettings(){
-  const s=state.settings || {};
-  document.documentElement.dataset.theme  = s.theme  || 'light';
-  document.documentElement.dataset.accent = (s.accent==='custom' ? 'custom' : (s.accent || 'violet'));
-  document.documentElement.dataset.accentStyle = s.accentStyle || 'solid';
-  document.documentElement.style.setProperty('--scale', String(s.fontScale || '1'));
+/* =================== SETTINGS (theme/accent) =================== */
+function applySettingsUI(){
+  const s=state.settings||{};
+  document.documentElement.dataset.theme  = s.theme || 'light';
+  document.documentElement.dataset.accent = (s.accent==='custom'?'custom':(s.accent||'violet'));
+  document.documentElement.dataset.accentstyle = s.accentStyle || 'solid';
+  document.documentElement.style.setProperty('--scale', String(s.scale||1));
   if(s.accent==='custom' && s.accentCustom){
     document.documentElement.style.setProperty('--accent', s.accentCustom);
   }
+  // заполнить контролы (если уже отрисованы)
+  const dark = qs('#toggleDark'); if(dark) dark.checked = (s.theme==='dark');
+  const ap = qs('#accentPreset'); if(ap) ap.value = s.accent || 'violet';
+  const ac = qs('#accentCustom'); if(ac) ac.value = s.accentCustom || '#7b61ff';
+  const as = qs('#accentStyle');  if(as) as.value = s.accentStyle || 'solid';
+  const fs = qs('#fontScale');    if(fs) fs.value = s.fontScale || '1';
 }
-
-// ---------- MODAL / TASKS ----------
-function openModal(){
-  const dlg=qs('#taskModal'); dlg.showModal();
-  const form=qs('#taskForm'); form.reset();
-  qs('#fDate').value = toISO(state.currentDate);
-
-  form.onsubmit = e=>{
-    e.preventDefault();
-    const f = Object.fromEntries(new FormData(form).entries());
-    const t = {
-      id: Date.now().toString(36),
-      title: (f.title||'').trim(),
-      date: f.date || toISO(new Date()),
-      time: f.time || '',
-      priority: f.priority || 'medium',
-      smart: f.smart || '',
-      note: f.note || '',
-      done: false
+function bindSettingsControls(){
+  // вешаем только один раз (идемпотентно)
+  const dark = qs('#toggleDark'); if(dark && !dark._bound){
+    dark._bound=true;
+    dark.onchange = ()=>{ state.settings.theme= dark.checked?'dark':'light'; applySettingsUI(); saveSettings(); };
+  }
+  const ap = qs('#accentPreset'); if(ap && !ap._bound){
+    ap._bound=true;
+    ap.onchange = ()=>{
+      state.settings.accent = ap.value;
+      if(ap.value!=='custom') delete state.settings.accentCustom;
+      applySettingsUI(); saveSettings();
     };
-    state.tasks.push(t); saveTasks(); dlg.close(); navigate('#/');
-  };
-  qsa('[data-close]', dlg).forEach(b=> b.onclick=()=> dlg.close());
+  }
+  const ac = qs('#accentCustom'); if(ac && !ac._bound){
+    ac._bound=true;
+    ac.oninput = ()=>{
+      state.settings.accent='custom';
+      state.settings.accentCustom = ac.value;
+      applySettingsUI(); saveSettings();
+    };
+  }
+  const as = qs('#accentStyle'); if(as && !as._bound){
+    as._bound=true;
+    as.onchange = ()=>{ state.settings.accentStyle=as.value; applySettingsUI(); saveSettings(); };
+  }
+  const fs = qs('#fontScale'); if(fs && !fs._bound){
+    fs._bound=true;
+    fs.onchange = ()=>{
+      const v=fs.value; // '1'|'2'|'3'
+      state.settings.fontScale=v;
+      state.settings.scale = (v==='1'?1 : v==='2'?1.10 : 1.20);
+      applySettingsUI(); saveSettings();
+    };
+  }
 }
-function saveTasks(){ localStorage.setItem('tasks', JSON.stringify(state.tasks)); }
-function toggleDone(id){ const t=state.tasks.find(x=>x.id===id); if(t){ t.done=!t.done; saveTasks(); navigate('#/'); } }
-function deleteTask(id){ state.tasks=state.tasks.filter(t=>t.id!==id); saveTasks(); navigate('#/'); }
 
-// ---------- IMPORT / EXPORT ----------
-function exportData(){
-  const blob=new Blob([JSON.stringify({tasks:state.tasks,settings:state.settings},null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='weepl-data.json'; a.click();
+/* =================== HELPERS =================== */
+function startNowTicker(){
+  // Каждую минуту обновляем позицию «сейчас»
+  setInterval(()=>{ if(state.view==='home') renderDayGrid(); }, 60*1000);
 }
-function importData(e){
-  const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=()=>{ try{
-    const data=JSON.parse(r.result);
-    if(data.tasks) state.tasks=data.tasks;
-    if(data.settings) state.settings=data.settings;
-    saveTasks(); localStorage.setItem('settings',JSON.stringify(state.settings)); location.reload();
-  }catch{ alert('Ошибка импорта'); } };
-  r.readAsText(f);
-}
-
-// ---------- ICONS ----------
-function iconTasks(){return `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M9 3h6a2 2 0 0 1 2 2h1a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1a2 2 0 0 1 2-2Zm0 2a1 1 0 0 0-1 1H6v12h12V6h-2a1 1 0 0 0-1-1H9Zm1 6h6v2h-6v-2Zm0 4h6v2h-6v-2Zm-2-4H6v2h2v-2Zm0 4H6v2h2v-2Z"/></svg>`;}
-function iconCalendar(){return `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v3H3V6a2 2 0 0 1 2-2h2V2Zm14 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9h18Zm-11 3H6v3h4v-3Z"/></svg>`;}
-function iconStats(){return `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M4 21a1 1 0 0 1-1-1V4h2v15h15v2H4Zm4-4V9h3v8H8Zm5 0V5h3v12h-3Z"/></svg>`;}
-function iconGear(){return `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm8.94 3.34 1.56.9-1 1.73-1.78-.32a7.97 7.97 0 0 1-1.03 1.79l.57 1.71-1.86 1.08-1.25-1.29a7.9 7.9 0 0 1-2.06.6L13.5 20h-3l-.53-1.46a7.9 7.9 0 0 1-2.06-.6L6.16 19.2 4.3 18.12l.57-1.71a8.05 8.05 0 0 1-1.03-1.79l-1.78.32-1-1.73 1.56-.9a8.2 8.2 0 0 1 0-2.68l-1.56-.9 1-1.73 1.78.32c.28-.64.63-1.24 1.03-1.79L4.3 3.88 6.16 2.8l1.25 1.29c.65-.28 1.34-.48 2.06-.6L10.5 2h3l.53 1.46c.72.12 1.41.32 2.06.6L17.34 2.8 19.2 3.88l-.57 1.71c.4.55.75 1.15 1.03 1.79l1.78-.32 1 1.73-1.56.9c.09.44.12.89.12 1.34s-.03.9-.12 1.34Z"/></svg>`;}
