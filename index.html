@@ -16,7 +16,7 @@
       }
     })();
   </script>
-  <!-- динамический base — чтобы ресурсы грузились из текущей папки -->
+  <!-- dynamic <base> для относительных путей -->
   <script>
     (function(){
       var basePath = location.pathname.replace(/[^/]*$/, '');
@@ -29,8 +29,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=2400">
-  <script defer src="app.js?v=2400"></script>
+  <link rel="stylesheet" href="styles.css?v=2500">
+  <script defer src="app.js?v=2500"></script>
 </head>
 <body>
   <div id="app"></div>
@@ -45,17 +45,28 @@
     <!-- Bottom Navigation -->
     <nav class="bottombar" role="navigation" aria-label="Главная навигация">
       <a class="navbtn active" data-route="#/" href="#/" aria-label="Задачи" title="Задачи">
-        <!-- clipboard/checklist icon -->
+        <!-- tasks icon -->
         <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
           <path fill="currentColor" d="M9 3h6a2 2 0 0 1 2 2h1a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1a2 2 0 0 1 2-2Zm0 2a1 1 0 0 0-1 1H6v12h12V6h-2a1 1 0 0 0-1-1H9Zm1 6h6v2h-6v-2Zm0 4h6v2h-6v-2Zm-2-4H6v2h2v-2Zm0 4H6v2h2v-2Z"/>
         </svg>
       </a>
+
       <a class="navbtn" data-route="#/calendar" href="#/calendar" aria-label="Календарь" title="Календарь">
         <!-- calendar icon -->
         <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
           <path fill="currentColor" d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v3H3V6a2 2 0 0 1 2-2h2V2Zm14 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9h18Zm-11 3H6v3h4v-3Z"/>
         </svg>
       </a>
+
+      <!-- центрический FAB остаётся отдельно -->
+
+      <a class="navbtn" data-route="#/stats" href="#/stats" aria-label="Статистика" title="Статистика">
+        <!-- stats icon -->
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+          <path fill="currentColor" d="M4 21a1 1 0 0 1-1-1V4h2v15h15v2H4Zm4-4V9h3v8H8Zm5 0V5h3v12h-3Z"/>
+        </svg>
+      </a>
+
       <a class="navbtn" data-route="#/settings" href="#/settings" aria-label="Настройки" title="Настройки">
         <!-- gear icon -->
         <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
@@ -101,6 +112,53 @@
       </div>
 
       <div id="calendarTasks" class="calendar-tasks"></div>
+    </section>
+  </template>
+
+  <!-- ====== STATS VIEW ====== -->
+  <template id="stats-view">
+    <section class="stats">
+      <h2 class="h-impact" style="margin:8px 0 14px">Статистика</h2>
+
+      <div class="stats-grid">
+        <!-- прогресс-ринг -->
+        <div class="card center">
+          <div class="ring">
+            <svg viewBox="0 0 120 120" class="ring-svg" aria-hidden="true">
+              <circle cx="60" cy="60" r="52" class="ring-bg"/>
+              <circle cx="60" cy="60" r="52" class="ring-fg" id="ringFg"/>
+            </svg>
+            <div class="ring-val"><span id="statDonePct">0</span>%</div>
+          </div>
+          <div class="muted">Выполнено за неделю</div>
+        </div>
+
+        <!-- счётчики -->
+        <div class="card">
+          <div class="kpi"><span id="statWeekDone">0</span><small> / <span id="statWeekTotal">0</span></small></div>
+          <div class="muted">Задач за 7 дней</div>
+        </div>
+
+        <div class="card">
+          <div class="kpi"><span id="statMonthDone">0</span><small> / <span id="statMonthTotal">0</span></small></div>
+          <div class="muted">Задач за месяц</div>
+        </div>
+
+        <div class="card">
+          <div class="kpi"><span id="statStreak">0</span><small> дн.</small></div>
+          <div class="muted">Серия выполнения</div>
+        </div>
+      </div>
+
+      <!-- мини-график по дням недели -->
+      <div class="card barcard">
+        <div class="bar-head">
+          <div class="h-sub" style="margin:0">Выполнено по дням</div>
+          <div class="muted" id="barRange">последние 7 дней</div>
+        </div>
+        <div class="bars" id="bars"></div>
+        <div class="bar-labels" id="barLabels"></div>
+      </div>
     </section>
   </template>
 
