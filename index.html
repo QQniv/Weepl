@@ -318,6 +318,75 @@
         </div>
       </div>
     </form>
-  </dialog>
+  </dialog><template id="home-view">
+  <div class="home">
+    <div id="homeHeader">
+      <button data-home-month="prev" class="navarrow">←</button>
+      <h2 id="homeMonth"></h2>
+      <button data-home-month="next" class="navarrow">→</button>
+    </div>
+    <div id="dateStrip" class="strip"></div>
+    <h3 id="todayTitle">Сегодня</h3>
+    <div id="taskList" class="tasklist"></div>
+  </div>
+</template>
+
+<template id="calendar-view">
+  <div class="calendar">
+    <div class="calhead">
+      <button data-cal="prev" class="navarrow">←</button>
+      <h2 id="calTitle"></h2>
+      <button data-cal="next" class="navarrow">→</button>
+    </div>
+    <div id="calendarGrid" class="grid"></div>
+  </div>
+</template>
+
+<template id="stats-view">
+  <div class="stats">
+    <h2>Статистика</h2>
+    <div class="circle">
+      <svg width="120" height="120">
+        <circle cx="60" cy="60" r="52" stroke="#eee" stroke-width="10" fill="none" />
+        <circle id="ringFg" cx="60" cy="60" r="52" stroke="var(--accent)" stroke-width="10" fill="none"
+          stroke-linecap="round" stroke-dasharray="326" stroke-dashoffset="326" />
+      </svg>
+      <div class="pct"><span id="statDonePct">0</span>%</div>
+    </div>
+    <div class="numbers">
+      <p>Неделя: <span id="statWeekDone">0</span>/<span id="statWeekTotal">0</span></p>
+      <p>Месяц: <span id="statMonthDone">0</span>/<span id="statMonthTotal">0</span></p>
+      <p>Серия дней: <span id="statStreak">0</span></p>
+    </div>
+    <div id="barChart">
+      <div id="bars"></div>
+      <div id="barLabels"></div>
+    </div>
+  </div>
+</template>
+
+<template id="settings-view">
+  <div class="settings">
+    <h2>Настройки</h2>
+    <label>Тема <select id="setTheme">
+      <option value="light">Светлая</option>
+      <option value="dark">Тёмная</option>
+    </select></label>
+    <label>Цвет акцента <select id="setAccent">
+      <option value="violet">Фиолетовый</option>
+      <option value="blue">Синий</option>
+      <option value="pink">Розовый</option>
+    </select></label>
+    <label>Неделя начинается с <select id="setWeekStart">
+      <option value="1">Понедельника</option>
+      <option value="0">Воскресенья</option>
+    </select></label>
+    <label><input type="checkbox" id="setShowToday" checked> Показывать сегодняшнюю дату</label>
+    <label><input type="checkbox" id="setShowDots" checked> Показывать точки задач в календаре</label>
+    <hr>
+    <button id="btnExport">Экспорт данных</button>
+    <input type="file" id="fileImport" accept=".json">
+  </div>
+</template>
 </body>
 </html>
