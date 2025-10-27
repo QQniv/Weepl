@@ -2,23 +2,18 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8"/>
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  />
-  <!-- Цвет статус-бара (iOS/Android) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
-
   <title>Weepl • Планировщик будущего</title>
 
-  <!-- Fonts -->
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=2101"/>
-  <script defer src="app.js?v=2101"></script>
+  <link rel="stylesheet" href="styles.css?v=2301"/>
+  <script defer src="app.js?v=2301"></script>
 </head>
 <body>
   <div id="app"></div>
@@ -56,9 +51,21 @@
       <div class="calendar-head">
         <button class="month-btn" data-cal="prev">←</button>
         <h2 id="calTitle" class="h-impact"></h2>
+        <div class="head-actions">
+          <button class="chip" id="btnToday">Сегодня</button>
+        </div>
         <button class="month-btn" data-cal="next">→</button>
       </div>
+
       <div id="calendarGrid" class="calendar-grid"></div>
+
+      <div class="legend">
+        <span><i class="lg lg-low"></i> Низкий</span>
+        <span><i class="lg lg-med"></i> Средний</span>
+        <span><i class="lg lg-high"></i> Высокий</span>
+        <span><i class="lg lg-crit"></i> Критический</span>
+      </div>
+
       <div id="calendarTasks" class="calendar-tasks"></div>
     </section>
   </template>
@@ -66,30 +73,105 @@
   <!-- ====== SETTINGS VIEW ====== -->
   <template id="settings-view">
     <section>
-      <div class="settings-card">
-        <div class="row"><label>Тема</label>
-          <select id="setTheme">
-            <option value="light">Светлая</option>
-            <option value="dark">Тёмная</option>
-          </select>
+      <!-- Общий блок -->
+      <div class="settings-section">
+        <div class="section-title">Внешний вид</div>
+        <div class="settings-list">
+          <div class="row item">
+            <div class="left">
+              <div class="label">Тема</div>
+              <div class="sub">Светлая или тёмная</div>
+            </div>
+            <div class="right">
+              <select id="setTheme">
+                <option value="light">Светлая</option>
+                <option value="dark">Тёмная</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row item">
+            <div class="left">
+              <div class="label">Акцентный цвет</div>
+              <div class="sub">10 современных оттенков</div>
+            </div>
+            <div class="right">
+              <select id="setAccent">
+                <option value="blue">Синий</option>
+                <option value="rose">Розовый</option>
+                <option value="violet">Фиолетовый</option>
+                <option value="mint">Мятный</option>
+                <option value="lemon">Жёлтый</option>
+                <option value="coral">Коралловый</option>
+                <option value="azure">Голубой</option>
+                <option value="orchid">Орхидея</option>
+                <option value="sky">Небесный</option>
+                <option value="lime">Лайм</option>
+              </select>
+            </div>
+          </div>
         </div>
-        <div class="row"><label>Акцент</label>
-          <select id="setAccent">
-            <option value="blue">Синий</option>
-            <option value="rose">Розовый</option>
-            <option value="violet">Фиолетовый</option>
-            <option value="mint">Мятный</option>
-            <option value="lemon">Жёлтый</option>
-            <option value="coral">Коралловый</option>
-            <option value="azure">Голубой</option>
-            <option value="orchid">Орхидея</option>
-            <option value="sky">Небесный</option>
-            <option value="lime">Лайм</option>
-          </select>
+      </div>
+
+      <!-- Календарь -->
+      <div class="settings-section">
+        <div class="section-title">Календарь</div>
+        <div class="settings-list">
+          <div class="row item">
+            <div class="left">
+              <div class="label">Неделя начинается с</div>
+              <div class="sub">Пн / Вс</div>
+            </div>
+            <div class="right">
+              <select id="setWeekStart">
+                <option value="1">Понедельника</option>
+                <option value="0">Воскресенья</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row item">
+            <div class="left">
+              <div class="label">Кнопка «Сегодня»</div>
+              <div class="sub">Быстрый прыжок к текущей дате</div>
+            </div>
+            <div class="right">
+              <label class="switch">
+                <input type="checkbox" id="setShowToday">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="row item">
+            <div class="left">
+              <div class="label">Точки приоритетов</div>
+              <div class="sub">Показывать индикаторы в сетке</div>
+            </div>
+            <div class="right">
+              <label class="switch">
+                <input type="checkbox" id="setShowDots">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
         </div>
-        <div class="row">
-          <button class="btn" id="btnExport">Экспорт</button>
-          <label class="btn-outline">Импорт <input type="file" id="fileImport" hidden/></label>
+      </div>
+
+      <!-- Данные -->
+      <div class="settings-section">
+        <div class="section-title">Данные</div>
+        <div class="settings-list">
+          <div class="row item">
+            <div class="left">
+              <div class="label">Экспорт / Импорт</div>
+              <div class="sub">JSON-файл с вашими задачами</div>
+            </div>
+            <div class="right gap">
+              <button class="btn" id="btnExport">Экспорт</button>
+              <label class="btn-outline">Импорт <input type="file" id="fileImport" hidden/></label>
+            </div>
+          </div>
         </div>
       </div>
     </section>
