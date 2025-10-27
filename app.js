@@ -1,15 +1,17 @@
 'use strict';
-console.log('Weepl App V2 dates ✅');
+console.log('Weepl App V2.2 calendar ✅');
 
 /* ===== helpers ===== */
-const $ = (s, r)=> (r||document).querySelector(s);
-const $$ = (s, r)=> Array.from((r||document).querySelectorAll(s));
+const $  = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
 const uid = ()=> Math.random().toString(36).slice(2,9);
 const todayKey = ()=> new Date().toISOString().slice(0,10);
 const dtKey = d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0,10);
 const parseKey = k => { const p=k.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); };
 const monthTitle = d => d.toLocaleString('ru-RU',{month:'long'})+' '+d.getFullYear();
 const prioColor = p => p==='high'?'#ff4fa3':p==='critical'?'#8a2be2':p==='low'?'var(--border)':'var(--accent)';
+const escapeHtml = s => String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const mapPrio = p => p==='high'?'высокий':p==='critical'?'критический':p==='low'?'низкий':'средний';
 function humanDate(iso){
   if(!iso) return 'Без даты';
   const d=parseKey(iso), t=todayKey(), tm=dtKey(new Date(Date.now()+86400000));
@@ -138,8 +140,6 @@ function renderTaskList(){
     list.appendChild(card);
   });
 }
-const escapeHtml = s => String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const mapPrio = p => p==='high'?'высокий':p==='critical'?'критический':p==='low'?'низкий':'средний';
 
 /* swipe: → done, ← перенос +1 день */
 function bindSwipe(el){
@@ -164,9 +164,10 @@ function bindSwipe(el){
 
 function toggleDone(id){ const t=store.tasks.find(x=>x.id===id); if(!t) return; t.done=!t.done; saveStore(store); renderTaskList(); }
 
-/* ===== Calendar ===== */
+/* ===== Calendar (redesigned) ===== */
 function renderCalendar(root){
   root.appendChild($('#calendar-view').content.cloneNode(true));
+
   const now = state.month;
   $('#calTitle').textContent = monthTitle(now);
   $('[data-cal="prev"]').onclick = ()=>{ state.month=new Date(now.getFullYear(), now.getMonth()-1, 1); renderCalendar($('#view')); };
@@ -177,18 +178,29 @@ function renderCalendar(root){
   const startIdx = (first.getDay()+6)%7;
   const days = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
   const names = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+  // заголовки
   names.forEach(n=> grid.insertAdjacentHTML('beforeend', `<div class="cell head">${n}</div>`));
+  // пустые ячейки до начала месяца
   for(let i=0;i<startIdx;i++) grid.insertAdjacentHTML('beforeend','<div class="cell"></div>');
+  // дни
   for(let d=1; d<=days; d++){
     const key = dtKey(new Date(now.getFullYear(), now.getMonth(), d));
     const dayTasks = store.tasks.filter(t=>t.date===key);
     const dots = dayTasks.map(t=>`<span class="dot" style="background:${prioColor(t.priority)}"></span>`).join('');
-    grid.insertAdjacentHTML('beforeend', `<div class="cell daycell" data-date="${key}"><div class="dhead">${d}</div><div class="dots">${dots}</div></div>`);
+    grid.insertAdjacentHTML('beforeend', `
+      <div class="cell daycell ${key===state.selectedDate?'selected':''}" data-date="${key}">
+        <div class="dhead">${d}</div>
+        <div class="dots">${dots}</div>
+      </div>
+    `);
   }
 
-  $$('.daycell').forEach(c=>{
+  // интерактив
+  $$('.daycell', grid).forEach(c=>{
     c.addEventListener('click', ()=>{
       state.selectedDate = c.dataset.date;
+      $$('.daycell', grid).forEach(x=>x.classList.toggle('selected', x===c));
       renderCalendarTasks($('#calendarTasks'), state.selectedDate);
     });
     c.addEventListener('dragover', ev=>ev.preventDefault());
@@ -196,26 +208,35 @@ function renderCalendar(root){
       ev.preventDefault();
       const id = ev.dataTransfer.getData('text/id');
       const t = store.tasks.find(x=>x.id===id);
-      if(!t) return; t.date=c.dataset.date; saveStore(store);
-      renderCalendarTasks($('#calendarTasks'), c.dataset.date);
+      if(!t) return;
+      t.date=c.dataset.date; saveStore(store);
+      state.selectedDate = c.dataset.date;
+      renderCalendar($('#view')); // перерисуем сетку и список
     });
   });
 
   renderCalendarTasks($('#calendarTasks'), state.selectedDate);
 }
 
+/* список событий под календарём — «плашки» */
 function renderCalendarTasks(container, iso){
-  const items = store.tasks.filter(t=>t.date===iso).sort((a,b)=> (a.time||'').localeCompare(b.time||''));
-  container.innerHTML = `<div class="h-impact" style="font-size:20px;margin-bottom:6px">${humanDate(iso)}</div>` +
-    (items.length ? items.map(taskRow).join('') : '<p class="muted">Нет задач на этот день.</p>');
-  $$('.task', container).forEach(card=>{
-    card.querySelector('[data-toggle]').onclick=()=>toggleDone(card.dataset.id);
-    card.querySelector('[data-edit]').onclick = ()=> openTaskModal(store.tasks.find(x=>x.id===card.dataset.id));
-    card.querySelector('[data-del]').onclick  = ()=>{ store.tasks=store.tasks.filter(x=>x.id!==card.dataset.id); saveStore(store); renderCalendarTasks(container, iso); };
+  const items = store.tasks
+    .filter(t=>t.date===iso)
+    .sort((a,b)=> (a.time||'').localeCompare(b.time||''));
+  container.innerHTML = `
+    <div class="h-impact" style="font-size:20px;margin-bottom:6px">${humanDate(iso)}</div>
+    ${items.length ? items.map(eventRow).join('') : '<p class="muted">Нет задач на этот день.</p>'}
+  `;
+
+  $$('.event', container).forEach(row=>{
+    row.querySelector('[data-toggle]').onclick=()=>toggleDone(row.dataset.id);
+    row.querySelector('[data-edit]').onclick = ()=> openTaskModal(store.tasks.find(x=>x.id===row.dataset.id));
+    row.querySelector('[data-del]').onclick  = ()=>{ store.tasks=store.tasks.filter(x=>x.id!==row.dataset.id); saveStore(store); renderCalendarTasks(container, iso); };
   });
 }
-function taskRow(t){
-  return `<article class="task${t.done?' is-done':''}" data-id="${t.id}" draggable="true">
+
+function eventRow(t){
+  return `<article class="event${t.done?' is-done':''}" data-id="${t.id}" data-prio="${t.priority||'medium'}" draggable="true" style="position:relative">
     <div></div>
     <div>
       <div class="title">${escapeHtml(t.title)}</div>
@@ -269,7 +290,9 @@ function openTaskModal(prefill){
     if(i>-1) store.tasks[i]=t; else store.tasks.push(t);
     saveStore(store);
     modal.close();
-    renderTaskList();
+    // обновим оба экрана в зависимости от текущего маршрута
+    if((location.hash||'#/')==='#/calendar') renderCalendar($('#view'));
+    else renderTaskList();
   };
   $$('[data-close]').forEach(b=> b.onclick=()=> modal.close());
 }
@@ -289,9 +312,9 @@ function importJSON(e){
   r.readAsText(f);
 }
 
-/* ===== drag helper ===== */
+/* ===== drag helper (cards are draggable) ===== */
 document.addEventListener('dragstart', e=>{
-  const art=e.target.closest('.task'); if(!art) return;
+  const art=e.target.closest('.task, .event'); if(!art) return;
   e.dataTransfer.setData('text/id', art.dataset.id);
   e.dataTransfer.effectAllowed='move';
 });
