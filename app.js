@@ -1,206 +1,369 @@
-// ===== WEEPL APP v2.5.1 (fix) =====
+/* ================= WEEPL v2.6.1 =================
+   - Home как в референсе
+   - Секция задач в карточке + собственный скролл
+   - Таймлайн (вертикальная линия, точки)
+   - Сортировка задач по времени (без времени — в конец)
+   - Навигация, календарь, статистика, настройки, модалка
+================================================= */
 
-// global state
+// ---------- STATE ----------
 let state = {
   view: 'home',
   tasks: JSON.parse(localStorage.getItem('tasks') || '[]'),
   settings: JSON.parse(localStorage.getItem('settings') || '{}'),
-  currentDate: new Date(),
+  currentDate: new Date()
 };
 
-// DOM helpers
+// ---------- HELPERS ----------
 const qs  = (s, p=document) => p.querySelector(s);
 const qsa = (s, p=document) => [...p.querySelectorAll(s)];
+const esc = s => String(s||'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+const sameDay = (a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+const toISO = d => new Date(d.getFullYear(),d.getMonth(),d.getDate()).toISOString().slice(0,10);
+const addDays = (d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x;};
+const addMonths = (d,n)=>{const x=new Date(d);x.setMonth(x.getMonth()+n);return x;};
+const priName = {low:'Низкий',medium:'Средний',high:'Высокий',critical:'Критический'};
+const priColor = p => ({low:'#bfbfbf',medium:'var(--accent)',high:'#ff4fa3',critical:'#8a2be2'})[p]||'var(--accent)';
+const timeToMin = (t)=> {
+  if(!t) return 24*60+1; // без времени — в самый конец
+  const m = /^(\d{1,2}):(\d{2})$/.exec(t.trim());
+  if(!m) return 24*60+1;
+  return (+m[1])*60 + (+m[2]);
+};
 
-// boot
+// ---------- BOOT ----------
 window.addEventListener('DOMContentLoaded', () => {
-  initLayout();          // ⬅️ больше НЕ перезаписываем body
+  mountLayout();
   applySettings();
   navigate(location.hash || '#/');
-  window.addEventListener('hashchange', () => navigate(location.hash));
+  window.addEventListener('hashchange', ()=> navigate(location.hash || '#/'));
 });
 
-function initLayout(){
-  // оставляем все <template> в документе и только монтируем layout
-  const host = qs('#app');
-  const layoutTpl = qs('#layout');
-  host.innerHTML = ''; // на случай повторной инициализации
-  host.appendChild(layoutTpl.content.cloneNode(true));
+// ---------- LAYOUT ----------
+function mountLayout(){
+  const app = qs('#app');
+  app.innerHTML = `
+    <main id="view" class="section"></main>
 
-  qs('#fabAdd').addEventListener('click', openModal);
+    <button id="fabAdd" class="fab" aria-label="Добавить">+</button>
+
+    <nav class="bottombar" role="navigation" aria-label="Основная навигация">
+      <a class="navbtn" href="#/"          title="Задачи">${iconTasks()}</a>
+      <a class="navbtn" href="#/calendar"  title="Календарь">${iconCalendar()}</a>
+      <a class="navbtn" href="#/stats"     title="Статистика">${iconStats()}</a>
+      <a class="navbtn" href="#/settings"  title="Настройки">${iconGear()}</a>
+    </nav>
+
+    <dialog id="taskModal" class="modal">
+      <form id="taskForm" method="dialog">
+        <div class="modal-body">
+          <div class="modal-head">
+            <h3 class="h-impact" style="font-size:22px">Новая задача</h3>
+            <button data-close type="button" class="icon-btn">✖</button>
+          </div>
+
+          <div class="field"><label>Название</label><input id="fTitle" name="title" required/></div>
+          <div class="grid2">
+            <div class="field"><label>Дата</label><input id="fDate" type="date" name="date"/></div>
+            <div class="field"><label>Время</label><input id="fTime" type="time" name="time"/></div>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label>Важность</label>
+              <select id="fPriority" name="priority">
+                <option value="low">Низкая</option>
+                <option value="medium" selected>Средняя</option>
+                <option value="high">Высокая</option>
+                <option value="critical">Критическая</option>
+              </select>
+            </div>
+            <div class="field"><label>SMART</label><input id="fSmart" name="smart" placeholder="Specific/Measurable/..."></div>
+          </div>
+          <div class="field"><label>Комментарий</label><textarea id="fNote" name="note" rows="2"></textarea></div>
+
+          <div class="modal-foot">
+            <button data-close type="button" class="btn-outline">Отмена</button>
+            <button type="submit" class="btn">Сохранить</button>
+          </div>
+        </div>
+      </form>
+    </dialog>
+  `;
+  qs('#fabAdd').onclick = openModal;
 }
 
-/* ================= NAVIGATION ================= */
+// ---------- ROUTER ----------
 function navigate(hash){
-  const view = hash.replace('#/','') || 'home';
+  const view = (hash.replace('#/','') || 'home');
   state.view = view;
-
-  // активность иконок
   qsa('.navbtn').forEach(a => a.classList.toggle('active', a.getAttribute('href') === hash));
+  const root = qs('#view');
 
-  const main = qs('#view');
-  main.innerHTML = '';
-
-  switch(view){
-    case 'calendar': main.appendChild(loadTemplate('calendar-view')); initCalendar(); break;
-    case 'settings': main.appendChild(loadTemplate('settings-view')); initSettings(); break;
-    case 'stats':    main.appendChild(loadTemplate('stats-view'));    initStats();    break;
-    default:         main.appendChild(loadTemplate('home-view'));     initHome();
-  }
+  if(view==='calendar'){ mountCalendar(root); return; }
+  if(view==='settings'){ mountSettings(root); return; }
+  if(view==='stats'){    mountStats(root);    return; }
+  mountHome(root);
 }
 
-function loadTemplate(id){
-  const t = qs(`#${id}`);
-  // защита: если по какой-то причине шаблон не найден — показываем stub
-  if(!t){ 
-    const div = document.createElement('div');
-    div.textContent = 'Шаблон не найден: ' + id;
-    return div;
-  }
-  return document.importNode(t.content, true);
-}
+// ---------- HOME ----------
+function mountHome(root){
+  root.innerHTML = `
+    <section class="home fade-in">
+      <div class="month-bar">
+        <button class="month-btn" id="btnPrev" aria-label="Предыдущий месяц">←</button>
+        <h2 id="homeMonth" class="h-impact"></h2>
+        <button class="month-btn" id="btnNext" aria-label="Следующий месяц">→</button>
+      </div>
 
-/* ================= HOME ================= */
-function initHome(){
-  renderMonthBar();
+      <div id="dateStrip" class="date-strip"></div>
+
+      <div class="tasks-card">
+        <div class="tasks-head">
+          <div>
+            <div class="title h-sub" style="margin:0">Сегодня</div>
+            <div class="muted" id="tasksMeta"></div>
+          </div>
+        </div>
+        <div class="tasks-scroll">
+          <div id="taskTimeline" class="timeline"></div>
+        </div>
+      </div>
+    </section>
+  `;
+
+  qs('#btnPrev').onclick = ()=>{ state.currentDate = addMonths(state.currentDate,-1); mountHome(root); };
+  qs('#btnNext').onclick = ()=>{ state.currentDate = addMonths(state.currentDate, 1); mountHome(root); };
+
+  updateHomeHeader();
   renderDateStrip();
-  renderTasksForDate(state.currentDate);
+  renderTasksTimeline(state.currentDate);
 }
-function renderMonthBar(){
-  const h2 = qs('#homeMonth');
-  h2.textContent = state.currentDate.toLocaleString('ru-RU',{month:'long',year:'numeric'});
-  qs('[data-home-month="prev"]').onclick = ()=> changeMonth(-1);
-  qs('[data-home-month="next"]').onclick = ()=> changeMonth(1);
+
+function updateHomeHeader(){
+  qs('#homeMonth').textContent = state.currentDate.toLocaleString('ru-RU',{month:'long',year:'numeric'});
 }
-function changeMonth(delta){
-  const d = new Date(state.currentDate);
-  d.setMonth(d.getMonth()+delta);
-  state.currentDate = d;
-  initHome();
-}
+
 function renderDateStrip(){
   const strip = qs('#dateStrip'); strip.innerHTML='';
-  const y = state.currentDate.getFullYear(), m = state.currentDate.getMonth();
-  const days = new Date(y, m+1, 0).getDate();
+  const y=state.currentDate.getFullYear(), m=state.currentDate.getMonth();
+  const days = new Date(y,m+1,0).getDate();
+
   for(let i=1;i<=days;i++){
     const d = new Date(y,m,i);
-    const pill = document.createElement('div');
-    pill.className = 'date-pill' + (sameDay(d,state.currentDate)?' active':'');
-    pill.innerHTML = `
+    const el = document.createElement('div');
+    el.className = 'date-pill' + (sameDay(d,state.currentDate)?' active':'');
+    el.innerHTML = `
       <div class="wk">${d.toLocaleDateString('ru-RU',{weekday:'short'})}</div>
       <div class="daynum">${i}</div>
       <div class="mon">${d.toLocaleDateString('ru-RU',{month:'short'})}</div>`;
-    pill.onclick = ()=>{ state.currentDate=d; renderDateStrip(); renderTasksForDate(d); };
-    strip.appendChild(pill);
+    el.onclick = ()=>{ state.currentDate=d; updateHomeHeader(); renderDateStrip(); renderTasksTimeline(d); };
+    strip.appendChild(el);
   }
 }
-function renderTasksForDate(d){
-  const list = qs('#taskList');
-  qs('#todayTitle').textContent = d.toLocaleDateString('ru-RU',{ day:'numeric', month:'long', year:'numeric' });
-  const dateStr = toISODate(d);
-  const tasks = state.tasks.filter(t=>t.date===dateStr);
-  list.innerHTML = tasks.length ? tasks.map(renderTask).join('') : '<div class="muted">Нет задач на эту дату.</div>';
-  qsa('.btn-done', list).forEach(btn => btn.onclick = e => toggleDone(e.target.dataset.id));
-  qsa('.btn-del',  list).forEach(btn => btn.onclick = e => deleteTask(e.target.dataset.id));
+
+function renderTasksTimeline(d){
+  const box = qs('#taskTimeline');
+  const iso = toISO(d);
+  const tasks = state.tasks
+    .filter(t=>t.date===iso)
+    .sort((a,b)=> timeToMin(a.time) - timeToMin(b.time));
+
+  qs('#tasksMeta').textContent = tasks.length ? `Задач: ${tasks.length}` : 'Нет задач на эту дату.';
+
+  if(!tasks.length){
+    box.innerHTML = '';
+    return;
+  }
+
+  box.innerHTML = tasks.map(t=>timelineItem(t)).join('');
+  // привязки
+  qsa('.btn-done', box).forEach(b => b.onclick = e => toggleDone(e.target.dataset.id));
+  qsa('.btn-del',  box).forEach(b => b.onclick = e => deleteTask(e.target.dataset.id));
 }
-function renderTask(t){
-  const done = t.done ? 'is-done' : '';
-  const pri = {low:'Низкий',medium:'Средний',high:'Высокий',critical:'Критический'}[t.priority];
-  return `<div class="task ${done}">
-    <div>
-      <div class="title"><strong>${escapeHtml(t.title)}</strong></div>
-      <div class="muted">${t.time||''} • приоритет: ${pri||'—'}</div>
+
+function timelineItem(t){
+  const done = t.done ? ' done' : '';
+  const meta = [
+    t.time || '—',
+    `приоритет: ${priName[t.priority]||'—'}`,
+    t.smart ? `SMART: ${esc(t.smart)}` : null
+  ].filter(Boolean).join(' • ');
+
+  return `<div class="t-item${done}">
+    <div class="row1">
+      <div class="t-title">${esc(t.title)}</div>
+      <div class="task-ctl">
+        <button class="icon-btn btn-done" data-id="${t.id}" title="Готово">✔</button>
+        <button class="icon-btn btn-del"  data-id="${t.id}" title="Удалить">🗑</button>
+      </div>
     </div>
-    <div class="ctl">
-      <button class="icon-btn btn-done" data-id="${t.id}">✔</button>
-      <button class="icon-btn btn-del"  data-id="${t.id}">🗑</button>
-    </div>
+    <div class="t-meta">${meta}</div>
   </div>`;
 }
 
-/* ================= CALENDAR ================= */
-function initCalendar(){ renderCalendar(); }
-function renderCalendar(){
-  const cont = qs('#calendarGrid');
-  const d = state.currentDate;
-  const y = d.getFullYear(), m = d.getMonth();
+// ---------- CALENDAR ----------
+function mountCalendar(root){
+  const d=state.currentDate;
+  root.innerHTML = `
+    <section class="fade-in">
+      <div class="calendar-head">
+        <button class="month-btn" id="calPrev">←</button>
+        <h2 id="calTitle" class="h-impact"></h2>
+        <button class="month-btn" id="calNext">→</button>
+      </div>
+      <div id="calendarGrid" class="calendar-grid"></div>
+      <div class="legend">
+        <span><i class="lg lg-low"></i> Низкий</span>
+        <span><i class="lg lg-med"></i> Средний</span>
+        <span><i class="lg lg-high"></i> Высокий</span>
+        <span><i class="lg lg-crit"></i> Критический</span>
+      </div>
+    </section>
+  `;
+
   qs('#calTitle').textContent = d.toLocaleString('ru-RU',{month:'long',year:'numeric'});
-  qs('[data-cal="prev"]').onclick = ()=>{ state.currentDate.setMonth(m-1); renderCalendar(); };
-  qs('[data-cal="next"]').onclick = ()=>{ state.currentDate.setMonth(m+1); renderCalendar(); };
+  qs('#calPrev').onclick=()=>{ state.currentDate=addMonths(state.currentDate,-1); mountCalendar(root); };
+  qs('#calNext').onclick=()=>{ state.currentDate=addMonths(state.currentDate, 1); mountCalendar(root); };
 
-  cont.innerHTML='';
-  const names = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
-  names.forEach(n=>{ const c=document.createElement('div'); c.className='cell head'; c.textContent=n; cont.appendChild(c); });
+  const grid=qs('#calendarGrid');
+  const names=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  names.forEach(n=>{ const c=document.createElement('div'); c.className='cell head'; c.textContent=n; grid.appendChild(c); });
 
-  const first = new Date(y,m,1);
-  const offset = (first.getDay()+6)%7;
-  for(let i=0;i<offset;i++) cont.appendChild(blankCell());
+  const y=d.getFullYear(), m=d.getMonth();
+  const first=new Date(y,m,1);
+  const offset=(first.getDay()+6)%7;
+  for(let i=0;i<offset;i++){ const e=document.createElement('div'); e.className='cell'; grid.appendChild(e); }
 
-  const days = new Date(y,m+1,0).getDate();
+  const days=new Date(y,m+1,0).getDate();
   for(let i=1;i<=days;i++){
-    const date = new Date(y,m,i);
-    const iso = toISODate(date);
-    const tasks = state.tasks.filter(t=>t.date===iso);
-    const cell = document.createElement('div');
-    cell.className = 'cell daycell';
-    cell.innerHTML = `<div class="dhead">${i}</div><div class="dots">${tasks.map(t=>`<span class="dot" style="background:${priColor(t.priority)}"></span>`).join('')}</div>`;
-    if(sameDay(date,new Date())) cell.classList.add('today');
-    cell.onclick = ()=>{ state.currentDate=date; location.hash='#/'; };
-    cont.appendChild(cell);
+    const date=new Date(y,m,i);
+    const iso=toISO(date);
+    const tasks=state.tasks.filter(t=>t.date===iso);
+    const c=document.createElement('div'); c.className='cell daycell';
+    c.innerHTML=`<div class="dhead">${i}</div><div class="dots">${tasks.map(t=>`<span class="dot" style="background:${priColor(t.priority)}"></span>`).join('')}</div>`;
+    if(sameDay(date,new Date())) c.classList.add('today');
+    c.onclick=()=>{ state.currentDate=date; location.hash='#/'; };
+    grid.appendChild(c);
   }
 }
-function blankCell(){ const d=document.createElement('div'); d.className='cell empty'; return d; }
-function priColor(p){ return ({low:'#bfbfbf',medium:'var(--accent)',high:'#ff4fa3',critical:'#8a2be2'})[p]||'var(--accent)'; }
 
-/* ================= STATS ================= */
-function initStats(){ updateStats(); }
+// ---------- STATS ----------
+function mountStats(root){
+  root.innerHTML = `
+    <section class="stats fade-in">
+      <h2 class="h-impact" style="margin:6px">Статистика</h2>
+      <div class="stats-grid">
+        <div class="card center">
+          <div class="ring">
+            <svg viewBox="0 0 120 120" class="ring-svg">
+              <circle cx="60" cy="60" r="52" class="ring-bg"/>
+              <circle id="ringFg" cx="60" cy="60" r="52" class="ring-fg"/>
+            </svg>
+            <div class="ring-val"><span id="statDonePct">0</span>%</div>
+          </div>
+          <div class="muted">Выполнено за неделю</div>
+        </div>
+        <div class="card"><div class="kpi"><span id="statWeekDone">0</span><small> / <span id="statWeekTotal">0</span></small></div><div class="muted">За 7 дней</div></div>
+        <div class="card"><div class="kpi"><span id="statMonthDone">0</span><small> / <span id="statMonthTotal">0</span></small></div><div class="muted">За месяц</div></div>
+        <div class="card"><div class="kpi"><span id="statStreak">0</span><small> дн.</small></div><div class="muted">Серия выполнения</div></div>
+      </div>
+      <div class="card barcard">
+        <div class="bar-head"><div class="h-sub" style="margin:0">Выполнено по дням</div><div class="muted" id="barRange">последние 7 дней</div></div>
+        <div class="bars" id="bars"></div>
+        <div class="bar-labels" id="barLabels"></div>
+      </div>
+    </section>
+  `;
+  updateStats();
+}
 function updateStats(){
-  const tasks = state.tasks;
-  const now = new Date();
-  const weekAgo = addDays(now,-7);
-  const monthAgo = addMonths(now,-1);
+  const tasks=state.tasks, now=new Date();
+  const weekAgo=addDays(now,-7), monthAgo=addMonths(now,-1);
+  const weekTasks=tasks.filter(t=>new Date(t.date)>=weekAgo);
+  const weekDone =weekTasks.filter(t=>t.done);
+  const monthTasks=tasks.filter(t=>new Date(t.date)>=monthAgo);
+  const monthDone =monthTasks.filter(t=>t.done);
+  const pct=weekTasks.length?Math.round(weekDone.length/weekTasks.length*100):0;
+  qs('#statDonePct').textContent=pct;
+  qs('#ringFg').style.strokeDashoffset = (326 - 326*pct/100);
+  qs('#statWeekDone').textContent=weekDone.length; qs('#statWeekTotal').textContent=weekTasks.length;
+  qs('#statMonthDone').textContent=monthDone.length; qs('#statMonthTotal').textContent=monthTasks.length;
+  qs('#statStreak').textContent = calcStreak(tasks);
 
-  const weekTasks  = tasks.filter(t=>new Date(t.date)>=weekAgo);
-  const weekDone   = weekTasks.filter(t=>t.done);
-  const monthTasks = tasks.filter(t=>new Date(t.date)>=monthAgo);
-  const monthDone  = monthTasks.filter(t=>t.done);
-
-  const pct = weekTasks.length ? Math.round(weekDone.length/weekTasks.length*100) : 0;
-  qs('#statDonePct').textContent = pct;
-  const len = 326;
-  qs('#ringFg').style.strokeDashoffset = (len - len*pct/100);
-
-  qs('#statWeekDone').textContent  = weekDone.length;
-  qs('#statWeekTotal').textContent = weekTasks.length;
-  qs('#statMonthDone').textContent = monthDone.length;
-  qs('#statMonthTotal').textContent= monthTasks.length;
-  qs('#statStreak').textContent    = calcStreak(tasks);
-
-  const bars = qs('#bars'), labels = qs('#barLabels');
-  bars.innerHTML = labels.innerHTML = '';
+  const bars=qs('#bars'), labels=qs('#barLabels'); bars.innerHTML=labels.innerHTML='';
   for(let i=6;i>=0;i--){
-    const d = addDays(now,-i);
-    const iso = toISODate(d);
-    const total = tasks.filter(t=>t.date===iso).length;
-    const done  = tasks.filter(t=>t.date===iso && t.done).length;
-    const h = total ? Math.round(done/total*100) : 0;
+    const d=addDays(now,-i), iso=toISO(d);
+    const tot=tasks.filter(t=>t.date===iso).length;
+    const dn =tasks.filter(t=>t.date===iso && t.done).length;
+    const h=tot?Math.round(dn/tot*100):0;
     const b=document.createElement('div'); b.className='bar'; b.style.height=`${h}px`; bars.appendChild(b);
     const l=document.createElement('div'); l.textContent=d.toLocaleDateString('ru-RU',{weekday:'short'}); labels.appendChild(l);
   }
 }
 function calcStreak(tasks){
-  const set = [...new Set(tasks.filter(t=>t.done).map(t=>t.date))].sort();
+  const set=[...new Set(tasks.filter(t=>t.done).map(t=>t.date))].sort();
   let max=0,cur=0,last=null;
-  for(const iso of set){
-    const d = new Date(iso);
-    if(last && (d-last)/86400000===1) cur++; else cur=1;
-    if(cur>max) max=cur; last=d;
-  }
+  for(const iso of set){const d=new Date(iso); if(last && (d-last)/86400000===1) cur++; else cur=1; if(cur>max)max=cur; last=d;}
   return max;
 }
 
-/* ================= SETTINGS ================= */
-function initSettings(){
+// ---------- SETTINGS ----------
+function mountSettings(root){
+  root.innerHTML = `
+    <section class="fade-in">
+      <div class="settings-section">
+        <div class="section-title">Внешний вид</div>
+        <div class="settings-list">
+          <div class="row item">
+            <div class="left"><div class="label">Тема</div><div class="sub">Светлая / тёмная</div></div>
+            <div class="right"><select id="setTheme"><option value="light">Светлая</option><option value="dark">Тёмная</option></select></div>
+          </div>
+          <div class="row item">
+            <div class="left"><div class="label">Акцентный цвет</div><div class="sub">Современные оттенки</div></div>
+            <div class="right">
+              <select id="setAccent">
+                <option value="violet">Фиолетовый</option><option value="blue">Синий</option><option value="rose">Розовый</option>
+                <option value="mint">Мятный</option><option value="lemon">Жёлтый</option><option value="coral">Коралловый</option>
+                <option value="azure">Голубой</option><option value="orchid">Орхидея</option><option value="sky">Небесный</option><option value="lime">Лайм</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-title">Календарь</div>
+        <div class="settings-list">
+          <div class="row item">
+            <div class="left"><div class="label">Неделя начинается с</div><div class="sub">Понедельника или воскресенья</div></div>
+            <div class="right"><select id="setWeekStart"><option value="1">Понедельника</option><option value="0">Воскресенья</option></select></div>
+          </div>
+          <div class="row item">
+            <div class="left"><div class="label">Кнопка «Сегодня»</div><div class="sub">Быстрый переход к текущей дате</div></div>
+            <div class="right"><label class="switch"><input type="checkbox" id="setShowToday"><span class="slider"></span></label></div>
+          </div>
+          <div class="row item">
+            <div class="left"><div class="label">Точки приоритетов</div><div class="sub">Индикаторы в сетке календаря</div></div>
+            <div class="right"><label class="switch"><input type="checkbox" id="setShowDots"><span class="slider"></span></label></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-title">Данные</div>
+        <div class="settings-list">
+          <div class="row item">
+            <div class="left"><div class="label">Экспорт / импорт</div><div class="sub">JSON с вашими задачами</div></div>
+            <div class="right gap">
+              <button class="btn" id="btnExport">Экспорт</button>
+              <label class="btn-outline">Импорт <input type="file" id="fileImport" hidden></label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+
   const s = state.settings;
   qs('#setTheme').value      = s.theme || 'light';
   qs('#setAccent').value     = s.accent || 'violet';
@@ -208,10 +371,11 @@ function initSettings(){
   qs('#setShowToday').checked= s.showToday ?? true;
   qs('#setShowDots').checked = s.showDots  ?? true;
 
-  qsa('#settings-view select, #settings-view input').forEach(el=> el.onchange = saveSettings);
+  qsa('select, input[type="checkbox"]', root).forEach(el => el.onchange = saveSettings);
   qs('#btnExport').onclick = exportData;
   qs('#fileImport').onchange = importData;
 }
+
 function saveSettings(){
   state.settings = {
     theme: qs('#setTheme').value,
@@ -224,23 +388,26 @@ function saveSettings(){
   applySettings();
 }
 function applySettings(){
-  const s = state.settings;
+  const s=state.settings;
   document.documentElement.dataset.theme  = s.theme  || 'light';
   document.documentElement.dataset.accent = s.accent || 'violet';
 }
 
-/* ================= MODAL / TASKS ================= */
+// ---------- MODAL / TASKS ----------
 function openModal(){
-  const dlg = qs('#taskModal'); dlg.showModal();
-  const form = qs('#taskForm');
-  form.reset();
+  const dlg=qs('#taskModal'); dlg.showModal();
+  const form=qs('#taskForm');
+  // значения по умолчанию на выбранную дату
+  qs('#fDate').value = toISO(state.currentDate);
+  form.reset(); qs('#fDate').value = toISO(state.currentDate);
+
   form.onsubmit = e=>{
     e.preventDefault();
     const f = Object.fromEntries(new FormData(form).entries());
     const t = {
       id: Date.now().toString(36),
       title: (f.title||'').trim(),
-      date: f.date || toISODate(new Date()),
+      date: f.date || toISO(new Date()),
       time: f.time || '',
       priority: f.priority || 'medium',
       smart: f.smart || '',
@@ -249,33 +416,31 @@ function openModal(){
     };
     state.tasks.push(t); saveTasks(); dlg.close(); navigate('#/');
   };
-  qsa('[data-close]', dlg).forEach(b=> b.onclick = ()=> dlg.close());
+  qsa('[data-close]', dlg).forEach(b=> b.onclick=()=> dlg.close());
 }
 function saveTasks(){ localStorage.setItem('tasks', JSON.stringify(state.tasks)); }
-function toggleDone(id){ const t=state.tasks.find(x=>x.id===id); if(t){t.done=!t.done; saveTasks(); navigate('#/');} }
-function deleteTask(id){ state.tasks = state.tasks.filter(t=>t.id!==id); saveTasks(); navigate('#/'); }
+function toggleDone(id){ const t=state.tasks.find(x=>x.id===id); if(t){ t.done=!t.done; saveTasks(); navigate('#/'); } }
+function deleteTask(id){ state.tasks=state.tasks.filter(t=>t.id!==id); saveTasks(); navigate('#/'); }
 
-/* ================= EXPORT / IMPORT ================= */
+// ---------- IMPORT / EXPORT ----------
 function exportData(){
-  const blob = new Blob([JSON.stringify({tasks:state.tasks,settings:state.settings},null,2)],{type:'application/json'});
+  const blob=new Blob([JSON.stringify({tasks:state.tasks,settings:state.settings},null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='weepl-data.json'; a.click();
 }
 function importData(e){
-  const file=e.target.files[0]; if(!file) return;
+  const f=e.target.files[0]; if(!f) return;
   const r=new FileReader();
   r.onload=()=>{ try{
-      const data=JSON.parse(r.result);
-      if(data.tasks) state.tasks=data.tasks;
-      if(data.settings) state.settings=data.settings;
-      saveTasks(); localStorage.setItem('settings', JSON.stringify(state.settings));
-      location.reload();
-    }catch{ alert('Ошибка импорта'); } };
-  r.readAsText(file);
+    const data=JSON.parse(r.result);
+    if(data.tasks) state.tasks=data.tasks;
+    if(data.settings) state.settings=data.settings;
+    saveTasks(); localStorage.setItem('settings',JSON.stringify(state.settings)); location.reload();
+  }catch{ alert('Ошибка импорта'); } };
+  r.readAsText(f);
 }
 
-/* ================= HELPERS ================= */
-function sameDay(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
-function toISODate(d){ return new Date(d.getFullYear(),d.getMonth(),d.getDate()).toISOString().slice(0,10); }
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
-function addMonths(d,n){ const x=new Date(d); x.setMonth(x.getMonth()+n); return x; }
+// ---------- ICONS ----------
+function iconTasks(){return `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M9 3h6a2 2 0 0 1 2 2h1a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1a2 2 0 0 1 2-2Zm0 2a1 1 0 0 0-1 1H6v12h12V6h-2a1 1 0 0 0-1-1H9Zm1 6h6v2h-6v-2Zm0 4h6v2h-6v-2Zm-2-4H6v2h2v-2Zm0 4H6v2h2v-2Z"/></svg>`;}
+function iconCalendar(){return `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v3H3V6a2 2 0 0 1 2-2h2V2Zm14 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9h18Zm-11 3H6v3h4v-3Z"/></svg>`;}
+function iconStats(){return `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M4 21a1 1 0 0 1-1-1V4h2v15h15v2H4Zm4-4V9h3v8H8Zm5 0V5h3v12h-3Z"/></svg>`;}
+function iconGear(){return `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm8.94 3.34 1.56.9-1 1.73-1.78-.32a7.97 7.97 0 0 1-1.03 1.79l.57 1.71-1.86 1.08-1.25-1.29a7.9 7.9 0 0 1-2.06.6L13.5 20h-3l-.53-1.46a7.9 7.9 0 0 1-2.06-.6L6.16 19.2 4.3 18.12l.57-1.71a8.05 8.05 0 0 1-1.03-1.79l-1.78.32-1-1.73 1.56-.9a8.2 8.2 0 0 1 0-2.68l-1.56-.9 1-1.73 1.78.32c.28-.64.63-1.24 1.03-1.79L4.3 3.88 6.16 2.8l1.25 1.29c.65-.28 1.34-.48 2.06-.6L10.5 2h3l.53 1.46c.72.12 1.41.32 2.06.6L17.34 2.8 19.2 3.88l-.57 1.71c.4.55.75 1.15 1.03 1.79l1.78-.32 1 1.73-1.56.9c.09.44.12.89.12 1.34s-.03.9-.12 1.34Z"/></svg>`;}
