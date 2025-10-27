@@ -7,13 +7,21 @@
   <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
   <title>Weepl • Планировщик будущего</title>
 
-  <!-- если случайно открыли корень, отправим в /Weepl/ -->
+  <!-- 1) если случайно открыли корень — отправим в /Weepl/ -->
   <script>
     (function(){
       var need = '/Weepl/';
-      if (location.hostname.endsWith('github.io') && !location.pathname.startsWith(need)) {
+      if (location.hostname.endsWith('github.io') && location.pathname === '/') {
         location.replace(need);
       }
+    })();
+  </script>
+
+  <!-- 2) динамический base — чтобы ресурсы всегда грузились из ТЕКУЩЕЙ папки -->
+  <script>
+    (function(){
+      var basePath = location.pathname.replace(/[^/]*$/, ''); // текущая директория с хвостом /
+      document.write('<base href="'+ basePath +'">');
     })();
   </script>
 
@@ -22,9 +30,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Абсолютные пути + версия для кэша -->
-  <link rel="stylesheet" href="/Weepl/styles.css?v=2301"/>
-  <script defer src="/Weepl/app.js?v=2301"></script>
+  <!-- относительные пути + версия для кэша -->
+  <link rel="stylesheet" href="styles.css?v=2302">
+  <script defer src="app.js?v=2302"></script>
 </head>
 <body>
   <div id="app"></div>
