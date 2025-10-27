@@ -11,20 +11,22 @@
   --shadow:0 6px 22px rgba(16,24,40,.06);
   --blur:14px;
 
-  --accent:#7C4DFF; /* дефолт: фиолетовый */
+  --accent:#7C4DFF;
   --safe-top: env(safe-area-inset-top, 0px);
+
+  /* priority colors */
+  --prio-low:#c8d1e1;
+  --prio-medium:var(--accent);
+  --prio-high:#FF4FA3;
+  --prio-critical:#8A2BE2;
 }
 [data-theme="dark"]{
-  --bg:#0f1115;
-  --card:#17191f;
-  --text:#eef0f3;
-  --muted:#97a0ae;
-  --border:#272b33;
-  --shadow:0 8px 26px rgba(0,0,0,.35);
-  --blur:16px;
+  --bg:#0f1115; --card:#17191f; --text:#eef0f3; --muted:#97a0ae;
+  --border:#272b33; --shadow:0 8px 26px rgba(0,0,0,.35); --blur:16px;
+  --prio-low:#3a4252; --prio-high:#ff4fa3; --prio-critical:#b07aff;
 }
 
-/* акцентные темы */
+/* accents (как раньше) */
 [data-accent="rose"]{--accent:#FF4FA3}
 [data-accent="blue"]{--accent:#147BFF}
 [data-accent="violet"]{--accent:#7C4DFF}
@@ -36,140 +38,101 @@
 [data-accent="sky"]{--accent:#4FC3F7}
 [data-accent="lime"]{--accent:#A7F300}
 
-/* ============ GLOBAL ============ */
+/* ============ GLOBAL / TOPBAR / HOME — как в V2.1 (без изменений) ============ */
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:var(--font-main);
-  -webkit-font-smoothing:antialiased;
-}
+body{background:var(--bg);color:var(--text);font-family:var(--font-main);-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
 button,input,select,textarea{font:inherit;color:inherit;border:none;background:none;outline:none}
 ::placeholder{color:var(--muted)}
 h1,h2,h3{font-family:var(--font-impact);letter-spacing:.4px}
 
-/* ============ TOPBAR (safe-area) ============ */
 .topbar{
-  position:fixed;inset:0 0 auto 0;
-  height:calc(60px + var(--safe-top));
+  position:fixed;inset:0 0 auto 0;height:calc(60px + var(--safe-top));
   padding-top:var(--safe-top);
   backdrop-filter:blur(var(--blur));
   background:color-mix(in srgb, var(--card) 82%, transparent);
   border-bottom:1px solid var(--border);
-  display:flex;align-items:flex-end;justify-content:center;
-  z-index:10;
+  display:flex;align-items:flex-end;justify-content:center;z-index:10;
 }
 .tabs{display:flex;gap:24px;margin-bottom:10px}
 .tab{display:flex;align-items:center;gap:6px;color:var(--muted);font-weight:700;transition:.2s}
 .tab.active{color:var(--accent);transform:translateY(-1px)}
-.section{max-width:640px;margin:0 auto;
-  padding:calc(80px + var(--safe-top)) 18px 90px;}
+.section{max-width:740px;margin:0 auto;padding:calc(80px + var(--safe-top)) 18px 90px}
 
-/* ============ MONTH BAR ============ */
 .month-bar{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:12px}
-.month-btn{
-  width:36px;height:36px;border-radius:50%;cursor:pointer;
-  background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow);
-  transition:.2s;color:var(--text)
-}
+.month-btn{width:36px;height:36px;border-radius:50%;cursor:pointer;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow);transition:.2s;color:var(--text)}
 .month-btn:hover{background:var(--accent);color:#fff}
 #homeMonth,#calTitle{text-transform:capitalize;font-size:28px}
 
-/* ============ DATE STRIP (VERTICAL CARDS) ============ */
-.date-strip{
-  display:flex;gap:12px;overflow-x:auto;padding:6px 2px 12px;margin-bottom:8px;
-  scroll-snap-type:x mandatory;
-}
+.date-strip{display:flex;gap:12px;overflow-x:auto;padding:6px 2px 12px;margin-bottom:8px;scroll-snap-type:x mandatory}
 .date-strip::-webkit-scrollbar{height:6px}
-.date-strip::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
-
-.date-pill{
-  scroll-snap-align:center;
-  flex:0 0 auto;
-  width:76px;height:110px; /* вытянутые прямоугольники */
-  border-radius:18px;
-  background:var(--card);
-  border:1px solid var(--border);
-  box-shadow:var(--shadow);
-  display:grid;grid-template-rows:22px 1fr 20px;
-  align-items:center;justify-items:center;
-  padding:8px 6px;text-align:center;
-  color:var(--text);
-  transition:.25s;
-}
+.date-pill{scroll-snap-align:center;flex:0 0 auto;width:76px;height:110px;border-radius:18px;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow);display:grid;grid-template-rows:22px 1fr 20px;align-items:center;justify-items:center;padding:8px 6px;text-align:center;color:var(--text);transition:.25s}
 .date-pill .wk{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
 .date-pill .daynum{font-family:var(--font-impact);font-size:34px;line-height:1}
 .date-pill .mon{font-size:11px;color:var(--muted);text-transform:capitalize}
-
-.date-pill.active{
-  background:var(--accent);
-  color:#fff;border-color:var(--accent);
-  box-shadow:0 10px 24px color-mix(in srgb, var(--accent) 45%, transparent);
-}
+.date-pill.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 10px 24px color-mix(in srgb, var(--accent) 45%, transparent)}
 .date-pill.active .wk,.date-pill.active .mon{color:#f2f4f8}
 
-/* ============ TODAY LIST (REFERENCE STYLE) ============ */
 .h-sub{font-weight:800;font-size:16px;margin:6px 2px 10px;letter-spacing:.2px}
-
 .task-list{display:flex;flex-direction:column;gap:10px;max-height:56vh;overflow:auto}
-.task{
-  position:relative;
+.task{position:relative;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px 12px 16px;display:grid;grid-template-columns:8px 1fr auto;gap:12px;align-items:center}
+.task::before{content:"";width:3px;height:70%;background:var(--accent);border-radius:3px;position:absolute;left:6px;top:15%;opacity:.9}
+.task .title{font-weight:800}
+.task .meta{font-size:12px;color:var(--muted);margin-top:4px}
+.task .ctl{display:flex;gap:8px}
+.icon-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--card);display:grid;place-items:center;cursor:pointer;color:var(--muted);transition:.2s}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent)}
+.task.is-done{opacity:.55;text-decoration:line-through}
+
+.fab{position:fixed;right:22px;bottom:22px;width:60px;height:60px;border-radius:50%;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:30px;box-shadow:0 14px 28px color-mix(in srgb, var(--accent) 40%, transparent);transition:.15s}
+.fab:active{transform:scale(.96)}
+
+/* ============ CALENDAR REDESIGN ============ */
+.calendar-head{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px}
+.calendar-grid{
+  background:transparent;
+  display:grid;grid-template-columns:repeat(7,1fr);gap:8px;font-size:13px;text-align:center;margin-bottom:12px
+}
+.cell{background:var(--card);border:1px solid var(--border);border-radius:12px;min-height:78px;padding:6px 4px;position:relative;box-shadow:var(--shadow)}
+.cell.head{background:transparent;border:none;color:var(--muted);font-weight:800;box-shadow:none}
+.daycell{transition:.2s}
+.daycell:hover{border-color:var(--accent);cursor:pointer;transform:translateY(-1px)}
+.daycell.selected{background:var(--accent);color:#fff;border-color:var(--accent)}
+.daycell .dhead{font-weight:800}
+.daycell.selected .dots .dot{opacity:.95;border-color:rgba(255,255,255,.6)}
+.dots{position:absolute;left:6px;bottom:6px;display:flex;gap:4px}
+.dot{width:8px;height:8px;border-radius:50%;border:1px solid #fff4}
+
+/* легенда/список задач календаря */
+.calendar-tasks{display:flex;flex-direction:column;gap:10px}
+.event{
   background:var(--card);
   border:1px solid var(--border);
   border-radius:14px;
   box-shadow:var(--shadow);
-  padding:12px 14px 12px 16px;
+  padding:10px 12px 10px 14px;
   display:grid;
-  grid-template-columns: 8px 1fr auto;
+  grid-template-columns:10px 1fr auto;
   gap:12px; align-items:center;
 }
-.task::before{ /* вертикальная линия статуса слева */
-  content:""; width:3px; height:70%;
-  background:var(--accent); border-radius:3px;
-  position:absolute; left:6px; top:15%;
-  opacity:.9;
+.event::before{
+  content:""; width:4px; height:70%;
+  border-radius:3px; background:var(--prio-medium);
+  position:absolute; left:8px; top:15%;
 }
-.task .title{font-weight:800}
-.task .time{font-size:12px;color:var(--muted)}
-.task .meta{font-size:12px;color:var(--muted);margin-top:4px}
-.task .ctl{display:flex;gap:8px}
-.icon-btn{
-  width:32px;height:32px;border-radius:50%;
-  border:1px solid var(--border);background:var(--card);
-  display:grid;place-items:center;cursor:pointer;color:var(--muted);
-  transition:.2s;
-}
-.icon-btn:hover{border-color:var(--accent);color:var(--accent)}
-.task.is-done{opacity:.55;text-decoration:line-through}
+.event[data-prio="low"]::before{background:var(--prio-low)}
+.event[data-prio="medium"]::before{background:var(--prio-medium)}
+.event[data-prio="high"]::before{background:var(--prio-high)}
+.event[data-prio="critical"]::before{background:var(--prio-critical)}
+.event .title{font-weight:800}
+.event .meta{font-size:12px;color:var(--muted)}
+.event .ctl{display:flex;gap:8px}
 
-/* ============ FAB ============ */
-.fab{
-  position:fixed;right:22px;bottom:22px;width:60px;height:60px;border-radius:50%;
-  background:var(--accent);color:#fff;border:none;cursor:pointer;
-  font-size:30px;box-shadow:0 14px 28px color-mix(in srgb, var(--accent) 40%, transparent);
-  transition:.15s;
-}
-.fab:active{transform:scale(.96)}
-
-/* ============ CALENDAR ============ */
-.calendar-head{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px}
-.calendar-grid{
-  display:grid;grid-template-columns:repeat(7,1fr);gap:6px;font-size:13px;text-align:center;margin-bottom:8px
-}
-.cell{
-  background:var(--card);border:1px solid var(--border);border-radius:10px;min-height:56px;padding:6px 4px;position:relative
-}
-.cell.head{background:transparent;border:none;color:var(--muted);font-weight:800}
-.daycell:hover{border-color:var(--accent);cursor:pointer}
-.dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin:0 1px}
-
-/* ============ SETTINGS & MODAL ============ */
+/* ============ SETTINGS/MODAL ============ */
 .settings-card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:18px;display:flex;flex-direction:column;gap:14px}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
 select{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px}
-
 .btn{background:var(--accent);color:#fff;border-radius:12px;padding:8px 16px;cursor:pointer}
 .btn-outline{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:8px 16px;cursor:pointer}
 .btn-outline:hover{border-color:var(--accent);color:var(--accent)}
@@ -182,13 +145,11 @@ select{background:var(--card);border:1px solid var(--border);border-radius:10px;
 .field input,.field textarea,.field select{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
-/* ============ UTIL ============ */
+/* ============ UTIL / MOBILE ============ */
 .muted{color:var(--muted)}
 .h-impact{text-transform:uppercase}
-
-/* ============ MOBILE TWEAKS ============ */
 @media (max-width:480px){
   .section{padding:calc(70px + var(--safe-top)) 14px 90px}
   #homeMonth,#calTitle{font-size:24px}
-  .date-pill{width:70px;height:104px}
+  .cell{min-height:64px}
 }
