@@ -95,7 +95,7 @@ p{margin:4px 0}
 .date-pill{
   flex:0 0 auto;min-width:84px;scroll-snap-align:center;
   background:var(--card);border-radius:22px;padding:12px 14px;text-align:center;color:var(--fg);
-  box-shadow:0 10px 26px rgba(0,0,0,.06);transition:transform .18s;
+  box-shadow:0 10px 26px rgba(0,0,0,.06);transition:transform .18s, background .18s, color .18s;
 }
 .date-pill .wk{font-size:12px;opacity:.7;text-transform:uppercase}
 .date-pill .daynum{font-size:26px;line-height:1.1;font-weight:900;margin:4px 0 2px}
@@ -128,7 +128,7 @@ p{margin:4px 0}
   .tasks-scroll{max-height:calc(100vh - 310px)}
 }
 
-/* ===================== TASK LIST (старый формат) ===================== */
+/* ===================== TASK LIST (наследие) ===================== */
 .task-list{display:flex;flex-direction:column;gap:10px;padding:0 2px}
 .task{
   display:flex;align-items:center;gap:10px;
@@ -142,21 +142,33 @@ p{margin:4px 0}
 .icon-btn:hover{color:var(--accent)}
 .muted{color:var(--muted)}
 
-/* ===================== TIMELINE (новый формат) ===================== */
+/* ===================== TIMELINE (новый формат + свайпы) ===================== */
 .timeline{position:relative;padding-left:18px}
 .timeline:before{
   content:"";position:absolute;left:6px;top:0;bottom:0;width:2px;background:var(--border)
 }
 .t-item{
   position:relative;border-radius:14px;padding:10px 12px;margin:2px 0;background:transparent;
+  transition:transform .18s ease, opacity .18s ease;
 }
-.t-item:before{
-  content:"";position:absolute;left:-2px;top:16px;width:10px;height:10px;border-radius:50%;
-  background:var(--accent);
-  box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+/* подложки-подсказки при свайпе */
+.t-item::before,
+.t-item::after{
+  content:"";position:absolute;inset:0;border-radius:14px;z-index:-1;opacity:0;transition:opacity .15s;
 }
+.t-item::before{ /* вправо = выполнено */
+  background:linear-gradient(90deg, rgba(46,213,115,.12), rgba(46,213,115,0));
+}
+.t-item::after{  /* влево = перенос */
+  background:linear-gradient(270deg, color-mix(in srgb, var(--accent) 24%, transparent), transparent);
+}
+/* классы на будущее (если будем добавлять при жесте) */
+.t-swipe-right::before{opacity:1}
+.t-swipe-left::after{opacity:1}
+
 .t-item.done{opacity:.6;text-decoration:line-through}
-.t-item.done:before{background:#aab0b7;box-shadow:none}
+.t-item.done:before{background:linear-gradient(90deg, rgba(170,176,183,.14), rgba(170,176,183,0));opacity:1}
+
 .t-item .row1{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .t-title{font-weight:800}
 .t-time{font-weight:800;opacity:.85}
