@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
   <title>Weepl • Планировщик будущего</title>
 
-  <!-- 1) если случайно открыли корень — отправим в /Weepl/ -->
+  <!-- редирект в /Weepl/ если открыли корень профиля -->
   <script>
     (function(){
       var need = '/Weepl/';
@@ -16,47 +16,62 @@
       }
     })();
   </script>
-
-  <!-- 2) динамический base — чтобы ресурсы всегда грузились из ТЕКУЩЕЙ папки -->
+  <!-- динамический base — чтобы ресурсы грузились из текущей папки -->
   <script>
     (function(){
-      var basePath = location.pathname.replace(/[^/]*$/, ''); // текущая директория с хвостом /
+      var basePath = location.pathname.replace(/[^/]*$/, '');
       document.write('<base href="'+ basePath +'">');
     })();
   </script>
 
-  <!-- Google Fonts -->
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- относительные пути + версия для кэша -->
-  <link rel="stylesheet" href="styles.css?v=2302">
-  <script defer src="app.js?v=2302"></script>
+  <link rel="stylesheet" href="styles.css?v=2400">
+  <script defer src="app.js?v=2400"></script>
 </head>
 <body>
   <div id="app"></div>
 
   <!-- ====== LAYOUT ====== -->
   <template id="layout">
-    <nav class="topbar">
-      <div class="tabs">
-        <a class="tab active" data-route="#/" href="#/"><span class="icon">📋</span>Задачи</a>
-        <a class="tab" data-route="#/calendar" href="#/calendar"><span class="icon">📅</span>Календарь</a>
-        <a class="tab" data-route="#/settings" href="#/settings"><span class="icon">⚙️</span>Настройки</a>
-      </div>
-    </nav>
     <main id="view" class="section"></main>
+
+    <!-- Floating Action Button — по центру снизу -->
     <button id="fabAdd" class="fab" aria-label="Добавить задачу">+</button>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottombar" role="navigation" aria-label="Главная навигация">
+      <a class="navbtn active" data-route="#/" href="#/" aria-label="Задачи" title="Задачи">
+        <!-- clipboard/checklist icon -->
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+          <path fill="currentColor" d="M9 3h6a2 2 0 0 1 2 2h1a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1a2 2 0 0 1 2-2Zm0 2a1 1 0 0 0-1 1H6v12h12V6h-2a1 1 0 0 0-1-1H9Zm1 6h6v2h-6v-2Zm0 4h6v2h-6v-2Zm-2-4H6v2h2v-2Zm0 4H6v2h2v-2Z"/>
+        </svg>
+      </a>
+      <a class="navbtn" data-route="#/calendar" href="#/calendar" aria-label="Календарь" title="Календарь">
+        <!-- calendar icon -->
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+          <path fill="currentColor" d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v3H3V6a2 2 0 0 1 2-2h2V2Zm14 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9h18Zm-11 3H6v3h4v-3Z"/>
+        </svg>
+      </a>
+      <a class="navbtn" data-route="#/settings" href="#/settings" aria-label="Настройки" title="Настройки">
+        <!-- gear icon -->
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+          <path fill="currentColor" d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm8.94 3.34 1.56.9-1 1.73-1.78-.32a7.97 7.97 0 0 1-1.03 1.79l.57 1.71-1.86 1.08-1.25-1.29a7.9 7.9 0 0 1-2.06.6L13.5 20h-3l-.53-1.46a7.9 7.9 0 0 1-2.06-.6L6.16 19.2 4.3 18.12l.57-1.71a8.05 8.05 0 0 1-1.03-1.79l-1.78.32-1-1.73 1.56-.9a8.2 8.2 0 0 1 0-2.68l-1.56-.9 1-1.73 1.78.32c.28-.64.63-1.24 1.03-1.79L4.3 3.88 6.16 2.8l1.25 1.29c.65-.28 1.34-.48 2.06-.6L10.5 2h3l.53 1.46c.72.12 1.41.32 2.06.6L17.34 2.8 19.2 3.88l-.57 1.71c.4.55.75 1.15 1.03 1.79l1.78-.32 1 1.73-1.56.9c.09.44.12.89.12 1.34s-.03.9-.12 1.34Z"/>
+        </svg>
+      </a>
+    </nav>
   </template>
 
   <!-- ====== HOME VIEW ====== -->
   <template id="home-view">
     <section class="home">
       <div class="month-bar">
-        <button class="month-btn" data-home-month="prev">←</button>
+        <button class="month-btn" data-home-month="prev" aria-label="Предыдущий месяц">←</button>
         <h2 id="homeMonth" class="h-impact"></h2>
-        <button class="month-btn" data-home-month="next">→</button>
+        <button class="month-btn" data-home-month="next" aria-label="Следующий месяц">→</button>
       </div>
       <div id="dateStrip" class="date-strip"></div>
       <h3 id="todayTitle" class="h-sub"></h3>
@@ -68,12 +83,12 @@
   <template id="calendar-view">
     <section>
       <div class="calendar-head">
-        <button class="month-btn" data-cal="prev">←</button>
+        <button class="month-btn" data-cal="prev" aria-label="Предыдущий месяц">←</button>
         <h2 id="calTitle" class="h-impact"></h2>
         <div class="head-actions">
           <button class="chip" id="btnToday">Сегодня</button>
         </div>
-        <button class="month-btn" data-cal="next">→</button>
+        <button class="month-btn" data-cal="next" aria-label="Следующий месяц">→</button>
       </div>
 
       <div id="calendarGrid" class="calendar-grid"></div>
@@ -163,7 +178,7 @@
           <div class="row item">
             <div class="left">
               <div class="label">Точки приоритетов</div>
-              <div class="sub">Показывать индикаторы в сетке</div>
+              <div class="sub">Индикаторы в сетке</div>
             </div>
             <div class="right">
               <label class="switch">
