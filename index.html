@@ -2,25 +2,38 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
+  <!-- Цвет статус-бара (iOS/Android) -->
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
+
   <title>Weepl • Планировщик будущего</title>
-  <link rel="stylesheet" href="styles.css"/>
-  <script defer src="app.js"></script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css?v=2101"/>
+  <script defer src="app.js?v=2101"></script>
 </head>
 <body>
   <div id="app"></div>
 
-  <!-- ====== TEMPLATE: LAYOUT ====== -->
+  <!-- ====== LAYOUT ====== -->
   <template id="layout">
     <nav class="topbar">
       <div class="tabs">
-        <div class="tab active" data-route="#/"><span class="icon">📋</span>Задачи</div>
-        <div class="tab" data-route="#/calendar"><span class="icon">📅</span>Календарь</div>
-        <div class="tab" data-route="#/settings"><span class="icon">⚙️</span>Настройки</div>
+        <a class="tab active" data-route="#/" href="#/"><span class="icon">📋</span>Задачи</a>
+        <a class="tab" data-route="#/calendar" href="#/calendar"><span class="icon">📅</span>Календарь</a>
+        <a class="tab" data-route="#/settings" href="#/settings"><span class="icon">⚙️</span>Настройки</a>
       </div>
     </nav>
     <main id="view" class="section"></main>
-    <button id="fabAdd" class="fab">+</button>
+    <button id="fabAdd" class="fab" aria-label="Добавить задачу">+</button>
   </template>
 
   <!-- ====== HOME VIEW ====== -->
@@ -31,9 +44,7 @@
         <h2 id="homeMonth" class="h-impact"></h2>
         <button class="month-btn" data-home-month="next">→</button>
       </div>
-
       <div id="dateStrip" class="date-strip"></div>
-
       <h3 id="todayTitle" class="h-sub"></h3>
       <div id="taskList" class="task-list"></div>
     </section>
@@ -84,18 +95,20 @@
     </section>
   </template>
 
-  <!-- ====== MODAL ADD/EDIT ====== -->
+  <!-- ====== MODAL ====== -->
   <dialog id="taskModal" class="modal">
     <form id="taskForm" method="dialog">
       <div class="modal-body">
         <div class="modal-head">
           <h3 id="modalTitle" class="h-impact">Новая задача</h3>
-          <button data-close class="icon-btn">✖</button>
+          <button data-close class="icon-btn" type="button">✖</button>
         </div>
+
         <div class="field">
           <label>Название</label>
           <input name="title" id="fTitle" required/>
         </div>
+
         <div class="grid2">
           <div class="field">
             <label>Дата</label>
@@ -106,6 +119,7 @@
             <input type="time" name="time" id="fTime"/>
           </div>
         </div>
+
         <div class="grid2">
           <div class="field">
             <label>Важность</label>
@@ -118,15 +132,17 @@
           </div>
           <div class="field">
             <label>SMART</label>
-            <input name="smart" id="fSmart" placeholder="Например: измеримо, достижимо..."/>
+            <input name="smart" id="fSmart" placeholder="Specific/Measurable/..."/>
           </div>
         </div>
+
         <div class="field">
           <label>Комментарий</label>
           <textarea name="note" id="fNote" rows="2"></textarea>
         </div>
+
         <div class="modal-foot">
-          <button data-close class="btn-outline">Отмена</button>
+          <button data-close class="btn-outline" type="button">Отмена</button>
           <button type="submit" class="btn">Сохранить</button>
         </div>
       </div>
