@@ -7,13 +7,24 @@
   <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
   <title>Weepl • Планировщик будущего</title>
 
+  <!-- если случайно открыли корень, отправим в /Weepl/ -->
+  <script>
+    (function(){
+      var need = '/Weepl/';
+      if (location.hostname.endsWith('github.io') && !location.pathname.startsWith(need)) {
+        location.replace(need);
+      }
+    })();
+  </script>
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=2301"/>
-  <script defer src="app.js?v=2301"></script>
+  <!-- Абсолютные пути + версия для кэша -->
+  <link rel="stylesheet" href="/Weepl/styles.css?v=2301"/>
+  <script defer src="/Weepl/app.js?v=2301"></script>
 </head>
 <body>
   <div id="app"></div>
@@ -73,7 +84,6 @@
   <!-- ====== SETTINGS VIEW ====== -->
   <template id="settings-view">
     <section>
-      <!-- Общий блок -->
       <div class="settings-section">
         <div class="section-title">Внешний вид</div>
         <div class="settings-list">
@@ -113,7 +123,6 @@
         </div>
       </div>
 
-      <!-- Календарь -->
       <div class="settings-section">
         <div class="section-title">Календарь</div>
         <div class="settings-list">
@@ -158,7 +167,6 @@
         </div>
       </div>
 
-      <!-- Данные -->
       <div class="settings-section">
         <div class="section-title">Данные</div>
         <div class="settings-list">
