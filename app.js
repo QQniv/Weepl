@@ -1,22 +1,19 @@
 'use strict';
-console.log('Weepl App V2.2.1 calendar (local date keys) ✅');
+console.log('Weepl App V2.4.1 ✅ bottom nav + full features');
 
 /* ===== helpers ===== */
 const $  = (s,r)=> (r||document).querySelector(s);
 const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
 const uid = ()=> Math.random().toString(36).slice(2,9);
-
 const pad = n => String(n).padStart(2,'0');
-const keyFromDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; // ← локально
+const keyFromDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; // локальный ключ YYYY-MM-DD
 const todayKey = ()=> keyFromDate(new Date());
-const dtKey = d => keyFromDate(new Date(d.getFullYear(), d.getMonth(), d.getDate()));     // ← локально
-
+const dtKey = d => keyFromDate(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
 const parseKey = k => { const p=k.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); };
 const monthTitle = d => d.toLocaleString('ru-RU',{month:'long'})+' '+d.getFullYear();
 const prioColor = p => p==='high'?'#ff4fa3':p==='critical'?'#8a2be2':p==='low'?'var(--border)':'var(--accent)';
 const escapeHtml = s => String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const mapPrio = p => p==='high'?'высокий':p==='critical'?'критический':p==='low'?'низкий':'средний';
-
 function humanDate(iso){
   if(!iso) return 'Без даты';
   const d=parseKey(iso), t=todayKey(), tm=keyFromDate(new Date(Date.now()+86400000));
@@ -28,17 +25,28 @@ function humanDate(iso){
 
 /* ===== store ===== */
 const STORE_KEY='weepl.v1';
+const DEFAULTS = {
+  settings:{
+    theme:'light',
+    accent:'violet',
+    weekStart:1,        // 1 — Пн, 0 — Вс
+    showDots:true,
+    showTodayBtn:true
+  },
+  tasks:[]
+};
 function loadStore(){
   try{
-    const raw = JSON.parse(localStorage.getItem(STORE_KEY)) || {settings:{theme:'light',accent:'violet',weekStart:1},tasks:[]};
-    // легкая миграция: если встречаем ISO-дату с "T", приводим к локальному ключу
+    const raw = JSON.parse(localStorage.getItem(STORE_KEY)) || structuredClone(DEFAULTS);
+    // миграция ISO -> локальные ключи
     raw.tasks = (raw.tasks||[]).map(t=>{
       if(t.date && /T/.test(t.date)) t.date = keyFromDate(new Date(t.date));
       return t;
     });
+    raw.settings = Object.assign({}, DEFAULTS.settings, raw.settings||{});
     return raw;
   }catch{
-    return {settings:{theme:'light',accent:'violet',weekStart:1},tasks:[]};
+    return structuredClone(DEFAULTS);
   }
 }
 function saveStore(d){ localStorage.setItem(STORE_KEY, JSON.stringify(d)); }
@@ -51,14 +59,15 @@ function applyTheme(){
 }
 applyTheme();
 
-/* ===== router ===== */
+/* ===== router + bottom nav ===== */
 const routes = {'#/': renderHome, '#/calendar': renderCalendar, '#/settings': renderSettings};
+function setActiveNav(hash){ $$('.navbtn').forEach(b=> b.classList.toggle('active', b.getAttribute('href')===hash)); }
 function router(){
   let hash = location.hash || '#/';
   if(!routes[hash]) hash = '#/';
   const view = $('#view'); view.innerHTML = '';
   routes[hash](view);
-  $$('.tab').forEach(t=> t.classList.toggle('active', t.dataset.route===hash));
+  setActiveNav(hash);
 }
 window.addEventListener('hashchange', router);
 
@@ -120,7 +129,6 @@ function renderTaskList(){
   const tasks = store.tasks
     .filter(t=>t.date===state.selectedDate)
     .sort((a,b)=> (a.time||'23:59').localeCompare(b.time||'23:59'));
-
   if(!tasks.length){ list.innerHTML = '<p class="muted">Нет задач на эту дату.</p>'; return; }
 
   tasks.forEach(t=>{
@@ -168,9 +176,18 @@ function bindSwipe(el){
 
 function toggleDone(id){ const t=store.tasks.find(x=>x.id===id); if(!t) return; t.done=!t.done; saveStore(store); renderTaskList(); }
 
-/* ===== Calendar (redesigned) ===== */
+/* ===== Calendar ===== */
 function renderCalendar(root){
   root.appendChild($('#calendar-view').content.cloneNode(true));
+
+  // показать/скрыть кнопку «Сегодня»
+  $('#btnToday').style.display = store.settings.showTodayBtn ? '' : 'none';
+  $('#btnToday').onclick = ()=>{
+    const now = new Date();
+    state.month = new Date(now.getFullYear(), now.getMonth(), 1);
+    state.selectedDate = todayKey();
+    renderCalendar($('#view'));
+  };
 
   const now = state.month;
   $('#calTitle').textContent = monthTitle(now);
@@ -178,25 +195,38 @@ function renderCalendar(root){
   $('[data-cal="next"]').onclick = ()=>{ state.month=new Date(now.getFullYear(), now.getMonth()+1, 1); renderCalendar($('#view')); };
 
   const grid = $('#calendarGrid'); grid.innerHTML='';
-  const first = new Date(now.getFullYear(), now.getMonth(), 1);
-  const startIdx = (first.getDay()+6)%7;
-  const days = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
-  const names = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  const weekStart = Number(store.settings.weekStart||1); // 1 Пн, 0 Вс
+  const namesMon = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  const namesSun = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  const names = weekStart===1 ? namesMon : namesSun;
 
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startIdx = weekStart===1 ? (first.getDay()+6)%7 : first.getDay();
+  const days = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+
+  // заголовки и пустые
   names.forEach(n=> grid.insertAdjacentHTML('beforeend', `<div class="cell head">${n}</div>`));
   for(let i=0;i<startIdx;i++) grid.insertAdjacentHTML('beforeend','<div class="cell"></div>');
+
+  // дни
+  const tKey = todayKey();
   for(let d=1; d<=days; d++){
-    const key = keyFromDate(new Date(now.getFullYear(), now.getMonth(), d)); // ← локально
+    const key = keyFromDate(new Date(now.getFullYear(), now.getMonth(), d));
     const dayTasks = store.tasks.filter(t=>t.date===key);
-    const dots = dayTasks.map(t=>`<span class="dot" style="background:${prioColor(t.priority)}"></span>`).join('');
+    const dots = !store.settings.showDots ? '' :
+      dayTasks.map(t=>`<span class="dot" style="background:${prioColor(t.priority)}"></span>`).join('');
     grid.insertAdjacentHTML('beforeend', `
-      <div class="cell daycell ${key===state.selectedDate?'selected':''}" data-date="${key}">
+      <div class="cell daycell ${key===state.selectedDate?'selected':''} ${key===tKey?'today':''}" data-date="${key}">
         <div class="dhead">${d}</div>
         <div class="dots">${dots}</div>
       </div>
     `);
   }
 
+  // легенда: показываем только если точки включены
+  const legend = $('.legend'); legend.style.display = store.settings.showDots ? '' : 'none';
+
+  // интерактив ячеек
   $$('.daycell', grid).forEach(c=>{
     c.addEventListener('click', ()=>{
       state.selectedDate = c.dataset.date;
@@ -211,7 +241,7 @@ function renderCalendar(root){
       if(!t) return;
       t.date=c.dataset.date; saveStore(store);
       state.selectedDate = c.dataset.date;
-      renderCalendar($('#view'));
+      renderCalendar($('#view')); // перерисовать
     });
   });
 
@@ -251,10 +281,20 @@ function eventRow(t){
 /* ===== Settings ===== */
 function renderSettings(root){
   root.appendChild($('#settings-view').content.cloneNode(true));
+  // текущие значения
   $('#setTheme').value = store.settings.theme || 'light';
   $('#setAccent').value = store.settings.accent || 'violet';
+  $('#setWeekStart').value = String(store.settings.weekStart ?? 1);
+  $('#setShowToday').checked = !!store.settings.showTodayBtn;
+  $('#setShowDots').checked = !!store.settings.showDots;
+
+  // обработчики
   $('#setTheme').onchange = e=>{ store.settings.theme=e.target.value; applyTheme(); saveStore(store); };
   $('#setAccent').onchange = e=>{ store.settings.accent=e.target.value; applyTheme(); saveStore(store); };
+  $('#setWeekStart').onchange = e=>{ store.settings.weekStart=Number(e.target.value); saveStore(store); if((location.hash||'#/')==='#/calendar') renderCalendar($('#view')); };
+  $('#setShowToday').onchange = e=>{ store.settings.showTodayBtn=e.target.checked; saveStore(store); if((location.hash||'#/')==='#/calendar') renderCalendar($('#view')); };
+  $('#setShowDots').onchange = e=>{ store.settings.showDots=e.target.checked; saveStore(store); if((location.hash||'#/')==='#/calendar') renderCalendar($('#view')); };
+
   $('#btnExport').onclick = exportJSON;
   $('#fileImport').onchange = importJSON;
 }
@@ -304,7 +344,13 @@ function exportJSON(){
 function importJSON(e){
   const f=e.target.files[0]; if(!f) return;
   const r=new FileReader();
-  r.onload=()=>{ try{ const d=JSON.parse(r.result); if(!d.tasks) throw 0; store=d; saveStore(store); applyTheme(); alert('Импортировано'); router(); } catch{ alert('Ошибка импорта'); } };
+  r.onload=()=>{ try{
+      const d=JSON.parse(r.result);
+      if(!d.tasks) throw 0;
+      d.settings = Object.assign({}, DEFAULTS.settings, d.settings||{});
+      store=d; saveStore(store); applyTheme(); alert('Импортировано'); router();
+    } catch{ alert('Ошибка импорта'); }
+  };
   r.readAsText(f);
 }
 
