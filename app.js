@@ -1,9 +1,8 @@
-/* ================= WEEPL v2.6.1 =================
-   - Home как в референсе
-   - Секция задач в карточке + собственный скролл
-   - Таймлайн (вертикальная линия, точки)
-   - Сортировка задач по времени (без времени — в конец)
-   - Навигация, календарь, статистика, настройки, модалка
+/* ================= WEEPL v2.7 =================
+   - Home: активная дата = сегодня и центрирование в полосе
+   - Свайпы задач: вправо — Done, влево — меню переноса
+   - Быстрое меню переноса (+1д, +1н, выбрать дату/время)
+   - Остальной функционал сохранён
 ================================================= */
 
 // ---------- STATE ----------
@@ -24,15 +23,11 @@ const addDays = (d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x;};
 const addMonths = (d,n)=>{const x=new Date(d);x.setMonth(x.getMonth()+n);return x;};
 const priName = {low:'Низкий',medium:'Средний',high:'Высокий',critical:'Критический'};
 const priColor = p => ({low:'#bfbfbf',medium:'var(--accent)',high:'#ff4fa3',critical:'#8a2be2'})[p]||'var(--accent)';
-const timeToMin = (t)=> {
-  if(!t) return 24*60+1; // без времени — в самый конец
-  const m = /^(\d{1,2}):(\d{2})$/.exec(t.trim());
-  if(!m) return 24*60+1;
-  return (+m[1])*60 + (+m[2]);
-};
+const timeToMin = (t)=>{ if(!t) return 24*60+1; const m=/^(\d{1,2}):(\d{2})$/.exec(t.trim()); return m?(+m[1])*60+(+m[2]):24*60+1; };
 
 // ---------- BOOT ----------
 window.addEventListener('DOMContentLoaded', () => {
+  state.currentDate = new Date(); // по умолчанию — сегодня
   mountLayout();
   applySettings();
   navigate(location.hash || '#/');
@@ -54,6 +49,29 @@ function mountLayout(){
       <a class="navbtn" href="#/settings"  title="Настройки">${iconGear()}</a>
     </nav>
 
+    <!-- Перенос дедлайна -->
+    <dialog id="resModal" class="modal">
+      <div class="modal-body">
+        <div class="modal-head">
+          <h3 class="h-impact" style="font-size:22px">Перенести дедлайн</h3>
+          <button class="icon-btn" data-close>✖</button>
+        </div>
+        <div class="grid2">
+          <button class="btn" data-res="+1d">+ 1 день</button>
+          <button class="btn" data-res="+1w">+ 1 неделя</button>
+        </div>
+        <div class="grid2" style="margin-top:10px">
+          <input type="date" id="resDate">
+          <input type="time" id="resTime">
+        </div>
+        <div class="modal-foot">
+          <button class="btn-outline" data-close>Отмена</button>
+          <button class="btn" id="resApply">Применить</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Добавление задачи -->
     <dialog id="taskModal" class="modal">
       <form id="taskForm" method="dialog">
         <div class="modal-body">
@@ -107,6 +125,11 @@ function navigate(hash){
 
 // ---------- HOME ----------
 function mountHome(root){
+  // если пришли «домой» из другого раздела — подстрахуемся и выставим сегодня по центру
+  if(!sameDay(state.currentDate, new Date())) {
+    // не ломаем выбор пользователя: центровать будем только при первом заходе
+  }
+
   root.innerHTML = `
     <section class="home fade-in">
       <div class="month-bar">
@@ -135,7 +158,7 @@ function mountHome(root){
   qs('#btnNext').onclick = ()=>{ state.currentDate = addMonths(state.currentDate, 1); mountHome(root); };
 
   updateHomeHeader();
-  renderDateStrip();
+  renderDateStrip(true);          // true => центрировать активную
   renderTasksTimeline(state.currentDate);
 }
 
@@ -143,21 +166,32 @@ function updateHomeHeader(){
   qs('#homeMonth').textContent = state.currentDate.toLocaleString('ru-RU',{month:'long',year:'numeric'});
 }
 
-function renderDateStrip(){
+function renderDateStrip(centerActive=false){
   const strip = qs('#dateStrip'); strip.innerHTML='';
   const y=state.currentDate.getFullYear(), m=state.currentDate.getMonth();
   const days = new Date(y,m+1,0).getDate();
+  const today = new Date();
 
   for(let i=1;i<=days;i++){
     const d = new Date(y,m,i);
     const el = document.createElement('div');
-    el.className = 'date-pill' + (sameDay(d,state.currentDate)?' active':'');
+    const isActive = sameDay(d,state.currentDate) || (sameDay(d,today) && sameDay(state.currentDate,today));
+    el.className = 'date-pill' + (isActive?' active':'');
     el.innerHTML = `
       <div class="wk">${d.toLocaleDateString('ru-RU',{weekday:'short'})}</div>
       <div class="daynum">${i}</div>
       <div class="mon">${d.toLocaleDateString('ru-RU',{month:'short'})}</div>`;
     el.onclick = ()=>{ state.currentDate=d; updateHomeHeader(); renderDateStrip(); renderTasksTimeline(d); };
     strip.appendChild(el);
+  }
+
+  if(centerActive){
+    // аккуратно центруем активную пилюлю
+    const active = qs('.date-pill.active', strip);
+    if(active){
+      const offset = active.offsetLeft - (strip.clientWidth/2 - active.clientWidth/2);
+      strip.scrollTo({left: Math.max(offset,0), behavior:'instant' in strip ? 'instant' : 'auto'});
+    }
   }
 }
 
@@ -170,15 +204,14 @@ function renderTasksTimeline(d){
 
   qs('#tasksMeta').textContent = tasks.length ? `Задач: ${tasks.length}` : 'Нет задач на эту дату.';
 
-  if(!tasks.length){
-    box.innerHTML = '';
-    return;
-  }
+  if(!tasks.length){ box.innerHTML=''; return; }
 
   box.innerHTML = tasks.map(t=>timelineItem(t)).join('');
-  // привязки
+  // кнопки
   qsa('.btn-done', box).forEach(b => b.onclick = e => toggleDone(e.target.dataset.id));
   qsa('.btn-del',  box).forEach(b => b.onclick = e => deleteTask(e.target.dataset.id));
+  // свайпы
+  qsa('.t-item', box).forEach(el => attachSwipe(el));
 }
 
 function timelineItem(t){
@@ -189,7 +222,7 @@ function timelineItem(t){
     t.smart ? `SMART: ${esc(t.smart)}` : null
   ].filter(Boolean).join(' • ');
 
-  return `<div class="t-item${done}">
+  return `<div class="t-item${done}" data-id="${t.id}" style="touch-action: pan-y;">
     <div class="row1">
       <div class="t-title">${esc(t.title)}</div>
       <div class="task-ctl">
@@ -199,6 +232,77 @@ function timelineItem(t){
     </div>
     <div class="t-meta">${meta}</div>
   </div>`;
+}
+
+// ---------- SWIPE ----------
+function attachSwipe(el){
+  let startX=0, curX=0, dragging=false, id=el.dataset.id;
+  const THRESH = 64; // пикселей до действия
+
+  const onStart = (x)=>{ dragging=true; startX=x; el.style.transition='none'; };
+  const onMove  = (x)=>{
+    if(!dragging) return;
+    curX = x - startX;
+    // ограничим визуальный сдвиг
+    const dx = Math.max(Math.min(curX, 120), -120);
+    el.style.transform = `translateX(${dx}px)`;
+    el.style.opacity = `${1 - Math.min(Math.abs(dx)/220, .4)}`;
+  };
+  const onEnd = ()=>{
+    if(!dragging) return;
+    el.style.transition='transform .18s, opacity .18s';
+    if(curX > THRESH){ // вправо — done
+      el.style.transform='translateX(100%)'; el.style.opacity='0';
+      setTimeout(()=> toggleDone(id), 140);
+    }else if(curX < -THRESH){ // влево — перенос
+      el.style.transform='translateX(-100%)'; el.style.opacity='0';
+      setTimeout(()=> showReschedule(id), 120);
+    }else{
+      el.style.transform='translateX(0)'; el.style.opacity='1';
+    }
+    dragging=false; startX=curX=0;
+  };
+
+  // мышь
+  el.addEventListener('mousedown',e=>onStart(e.clientX));
+  window.addEventListener('mousemove',e=>onMove(e.clientX));
+  window.addEventListener('mouseup', onEnd);
+  // touch
+  el.addEventListener('touchstart',e=>onStart(e.touches[0].clientX),{passive:true});
+  el.addEventListener('touchmove', e=>onMove(e.touches[0].clientX),{passive:true});
+  el.addEventListener('touchend', onEnd);
+}
+
+// ---------- RESCHEDULE ----------
+let rescheduleId = null;
+function showReschedule(id){
+  rescheduleId = id;
+  const t = state.tasks.find(x=>x.id===id);
+  const dlg = qs('#resModal');
+  const dateInput = qs('#resDate'), timeInput = qs('#resTime');
+  dateInput.value = t?.date || toISO(state.currentDate);
+  timeInput.value = t?.time || '';
+  dlg.showModal();
+
+  qsa('[data-close]', dlg).forEach(b=> b.onclick=()=> dlg.close());
+  qsa('[data-res]', dlg).forEach(b=> b.onclick = ()=>{
+    if(!rescheduleId) return;
+    const tx = state.tasks.find(x=>x.id===rescheduleId);
+    if(!tx) return;
+    const op=b.dataset.res;
+    if(op==='+1d') tx.date = toISO(addDays(new Date(tx.date||toISO(new Date())),1));
+    if(op==='+1w') tx.date = toISO(addDays(new Date(tx.date||toISO(new Date())),7));
+    saveTasks(); dlg.close(); navigate('#/');
+  });
+  qs('#resApply').onclick = ()=>{
+    const tx = state.tasks.find(x=>x.id===rescheduleId);
+    if(tx){
+      if(dateInput.value) tx.date = dateInput.value;
+      tx.time = timeInput.value || '';
+      saveTasks();
+    }
+    dlg.close(); navigate('#/');
+  };
 }
 
 // ---------- CALENDAR ----------
@@ -397,9 +501,8 @@ function applySettings(){
 function openModal(){
   const dlg=qs('#taskModal'); dlg.showModal();
   const form=qs('#taskForm');
-  // значения по умолчанию на выбранную дату
+  form.reset();
   qs('#fDate').value = toISO(state.currentDate);
-  form.reset(); qs('#fDate').value = toISO(state.currentDate);
 
   form.onsubmit = e=>{
     e.preventDefault();
