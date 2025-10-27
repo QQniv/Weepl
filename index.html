@@ -1,393 +1,144 @@
-/* Weepl App.js — safe build v1.6.0 (no nested backticks anywhere) */
-(function(){
-  // ---------- tiny utils ----------
-  var $ = function(s, r){ return (r||document).querySelector(s); };
-  var $$ = function(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
-  var pad2 = function(n){ return String(n).padStart(2,'0'); };
-  var keyOf = function(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); };
-  var fromKey = function(k){ var a=k.split('-'); return new Date(+a[0], +a[1]-1, +a[2]); };
-  var addDays = function(d,n){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()+n); };
-  var startDay = function(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); };
-  var clamp = function(n,a,b){ return Math.max(a, Math.min(b,n)); };
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Weepl • Планировщик</title>
 
-  var RU_MON = ["январь","февраль","март","апрель","май","июнь","июль","август","сентябрь","октябрь","ноябрь","декабрь"];
-  var RU_DOW = ["вс","пн","вт","ср","чт","пт","сб"];
-  function capMonth(d){ var m = RU_MON[d.getMonth()]; return m.charAt(0).toUpperCase()+m.slice(1); }
+  <!-- Шрифты: Anton для заголовков, Inter для текста -->
+  <link href="https://fonts.googleapis.com/css2?family=Anton:wght@400&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
 
-  // ---------- state ----------
-  var STORE = "weepl_v1";
-  var state = {
-    selectedDate: startDay(new Date()),
-    monthCursor: startDay(new Date()),
-    items: [],
-    settings: { accent:"#5b5bf0", neon:false, metal:false, fontScale:1 }
-  };
+  <!-- Стили -->
+  <link rel="stylesheet" href="styles.css?v=1.6.3" />
+  <meta name="theme-color" content="#ffffff" />
+</head>
+<body>
 
-  // try load
-  try{
-    var raw = localStorage.getItem(STORE);
-    if(raw){
-      var data = JSON.parse(raw);
-      if(data.selectedDate) state.selectedDate = fromKey(data.selectedDate);
-      if(data.monthCursor) state.monthCursor = fromKey(data.monthCursor);
-      if(Array.isArray(data.items)) state.items = data.items;
-      if(data.settings) state.settings = Object.assign(state.settings, data.settings);
-    }
-  }catch(e){ console.warn("load fail", e); }
+  <!-- Верхняя панель месяца -->
+  <header class="topbar">
+    <button id="navPrev" class="icon-btn" aria-label="Предыдущий месяц">←</button>
+    <h1 id="topTitle" class="title">Октябрь 2025 г.</h1>
+    <button id="navNext" class="icon-btn" aria-label="Следующий месяц">→</button>
+  </header>
 
-  function persist(){
-    localStorage.setItem(STORE, JSON.stringify({
-      selectedDate: keyOf(state.selectedDate),
-      monthCursor: keyOf(state.monthCursor),
-      items: state.items,
-      settings: state.settings
-    }));
-  }
+  <!-- Горизонтальный барабан дат (главный экран) -->
+  <section id="dateScroller" class="date-scroller" aria-label="Дни месяца">
+    <!-- app.js заполнит карточками дат -->
+  </section>
 
-  // ---------- mount skeleton (no backticks) ----------
-  var root = $("#viewContainer");
-  if(!root){ console.error("no #viewContainer"); return; }
+  <!-- Главная: временная шкала и список задач/событий -->
+  <main id="todayView" class="view active" aria-label="Сегодня">
+    <section class="timeline-wrap">
+      <div id="timeline" class="timeline" aria-label="Временная шкала">
+        <!-- app.js рисует часы и события -->
+      </div>
+    </section>
 
-  var html = "";
-  html += '<section id="todayView" class="view is-active">';
-  html += '  <div class="date-scroller" id="dateScroller"></div>';
-  html += '  <div class="timeline-wrap"><div class="timeline" id="timeline"></div></div>';
-  html += '  <div class="tasklist-wrap"><div class="section-head"><h2>Задачи</h2><div id="kpiCounter"></div></div><ul id="taskList" class="task-list"></ul></div>';
-  html += '</section>';
+    <section class="tasks-card">
+      <div class="tasks-card__head">
+        <h2 class="section-title">Задачи</h2>
+        <span id="kpiCounter" class="kpi">0/0</span>
+      </div>
+      <ul id="taskList" class="task-list" aria-live="polite">
+        <!-- app.js добавляет задачи -->
+      </ul>
+    </section>
+  </main>
 
-  html += '<section id="calendarView" class="view">';
-  html += '  <div class="cal-head"><button class="icon-btn" id="calPrev">◀</button><h2 class="month-title" id="calTitle">—</h2><button class="icon-btn" id="calNext">▶</button></div>';
-  html += '  <div class="cal-weekdays" id="calWeekdays"></div>';
-  html += '  <div class="calendar-wrap"><div id="calendarGrid" class="calendar-grid"></div></div>';
-  html += '</section>';
+  <!-- Календарь (отдельная вкладка) -->
+  <main id="calendarView" class="view" aria-label="Календарь">
+    <header class="subbar">
+      <button id="calPrev" class="icon-btn" aria-label="Предыдущий месяц">←</button>
+      <h2 id="calTitle" class="subtitle">Октябрь 2025 г.</h2>
+      <button id="calNext" class="icon-btn" aria-label="Следующий месяц">→</button>
+    </header>
+    <div id="calendarGrid" class="calendar-grid" role="grid" aria-label="Сетка календаря">
+      <!-- app.js заполнит днями 1–31 -->
+    </div>
+  </main>
 
-  html += '<section id="statsView" class="view">';
-  html += '  <h2 class="screen-title" style="padding:8px 16px 0">Статистика</h2>';
-  html += '  <div class="card" style="margin:10px 16px;padding:12px;text-align:center">';
-  html += '    <div class="ring"><svg viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="52"></circle><circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52"></circle></svg><div class="ring-center"><div id="ringPct" class="ring-pct">0%</div></div></div>';
-  html += '    <div class="card-caption">Выполнено за неделю</div>';
-  html += '  </div>';
-  html += '  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;padding:0 16px 10px">';
-  html += '    <div class="card" style="padding:12px"><b id="stat7">0 / 0</b><div class="card-caption">За 7 дней</div></div>';
-  html += '    <div class="card" style="padding:12px"><b id="stat30">0 / 0</b><div class="card-caption">За месяц</div></div>';
-  html += '    <div class="card" style="padding:12px"><b id="streak">0</b><div class="card-caption">Серия выполнения</div></div>';
-  html += '  </div>';
-  html += '  <div style="padding:0 16px 100px"><canvas id="miniBars" height="120" style="width:100%"></canvas></div>';
-  html += '</section>';
+  <!-- Статистика -->
+  <main id="statsView" class="view" aria-label="Статистика">
+    <h2 class="section-title">Статистика</h2>
+    <div class="stats-grid">
+      <div class="card kpi-ring">
+        <canvas id="ringPct" width="240" height="240" aria-label="Процент недели"></canvas>
+        <div id="ringPctValue" class="ring-value">0%</div>
+        <div class="muted">Выполнено за неделю</div>
+      </div>
+      <div class="card kpi-box"><div id="kpi7d" class="kpi-big">0 / 0</div><div class="muted">За 7 дней</div></div>
+      <div class="card kpi-box"><div id="kpiMonth" class="kpi-big">0 / 0</div><div class="muted">За месяц</div></div>
+      <div class="card kpi-box"><div id="streak" class="kpi-big">0</div><div class="muted">Серия выполнения</div></div>
+      <div class="card kpi-chart">
+        <header class="card-head">
+          <span class="card-title">Выполнено по дням</span>
+          <span class="muted">последние 7 дней</span>
+        </header>
+        <canvas id="bar7d" width="600" height="220" aria-label="Гистограмма 7 дней"></canvas>
+      </div>
+    </div>
+  </main>
 
-  html += '<section id="settingsView" class="view">';
-  html += '  <h2 class="screen-title" style="padding:8px 16px 0">Настройки</h2>';
-  html += '  <div class="card" style="margin:10px 16px;padding:12px">';
-  html += '    <div class="field"><label>Акцентный цвет</label><input type="color" id="accentPicker" value="#5b5bf0"></div>';
-  html += '    <div class="field-row"><label class="muted" style="min-width:140px">Неон-эффект</label><input type="checkbox" id="neonToggle"></div>';
-  html += '    <div class="field-row"><label class="muted" style="min-width:140px">Металличность</label><input type="checkbox" id="metalToggle"></div>';
-  html += '    <div class="field"><label>Масштаб текста</label><input type="range" id="fontScale" min="0.9" max="1.2" step="0.01" value="1"></div>';
-  html += '  </div>';
-  html += '</section>';
+  <!-- Настройки -->
+  <main id="settingsView" class="view" aria-label="Настройки">
+    <h2 class="section-title">Настройки</h2>
 
-  html += '<dialog id="addDialog" class="modal"></dialog>';
-  html += '<dialog id="reschedDialog" class="modal"></dialog>';
+    <div class="settings-group">
+      <div class="row">
+        <label for="accentColor">Акцентный цвет</label>
+        <input type="color" id="accentColor" value="#5b6cff" />
+      </div>
+      <div class="row">
+        <label for="neonToggle">Неон-эффект</label>
+        <input type="checkbox" id="neonToggle" />
+      </div>
+      <div class="row">
+        <label for="metalToggle">Металличность</label>
+        <input type="checkbox" id="metalToggle" />
+      </div>
+      <div class="row">
+        <label for="fontScale">Масштаб текста</label>
+        <input type="range" id="fontScale" min="0.9" max="1.2" step="0.05" value="1" />
+      </div>
+    </div>
 
-  root.innerHTML = html;
+    <div class="settings-group">
+      <div class="row">
+        <label for="smartOptional">SMART-поля при добавлении</label>
+        <input type="checkbox" id="smartOptional" checked />
+      </div>
+      <div class="row">
+        <label for="slotStart">Старт дневной шкалы</label>
+        <input type="time" id="slotStart" value="06:00" />
+      </div>
+      <div class="row">
+        <label for="slotStep">Шаг слотов (мин)</label>
+        <input type="number" id="slotStep" min="5" step="5" value="15" />
+      </div>
+    </div>
+  </main>
 
-  // ---------- refs ----------
-  var topTitle = $("#topTitle");
-  var scroller = $("#dateScroller");
-  var timeline = $("#timeline");
-  var taskList = $("#taskList");
-  var kpi       = $("#kpiCounter");
-  var ringFg    = $("#ringFg");
-  var ringPct   = $("#ringPct");
+  <!-- Плавающая кнопка добавления -->
+  <button id="fab" class="fab" aria-label="Добавить">＋</button>
 
-  var calTitle  = $("#calTitle");
-  var calGrid   = $("#calendarGrid");
-  var calPrev   = $("#calPrev");
-  var calNext   = $("#calNext");
+  <!-- Нижняя панель навигации -->
+  <nav id="tabbar" class="tabbar" aria-label="Навигация">
+    <button data-view="today" class="tab active" aria-label="Список">
+      <span class="ico">🗂️</span>
+    </button>
+    <button data-view="calendar" class="tab" aria-label="Календарь">
+      <span class="ico">📅</span>
+    </button>
+    <button data-view="stats" class="tab" aria-label="Статистика">
+      <span class="ico">📊</span>
+    </button>
+    <button data-view="settings" class="tab" aria-label="Настройки">
+      <span class="ico">⚙️</span>
+    </button>
+  </nav>
 
-  // weekdays header (static)
-  var wd = $("#calWeekdays");
-  var wdHtml = "";
-  for (var i=0;i<7;i++){ wdHtml += '<div>'+RU_DOW[i].toUpperCase()+'</div>'; }
-  wd.innerHTML = wdHtml;
-
-  // ---------- helpers ----------
-  function setAccent(v){
-    document.documentElement.style.setProperty('--accent', v);
-    state.settings.accent = v; persist();
-  }
-  setAccent(state.settings.accent);
-  document.documentElement.style.setProperty('--fontScale', state.settings.fontScale);
-
-  // ---------- renderers ----------
-  function renderTop(){ topTitle.textContent = capMonth(state.selectedDate)+' '+state.selectedDate.getFullYear()+' г.'; }
-
-  function renderScroller(){
-    scroller.innerHTML = "";
-    var center = state.selectedDate;
-    var start  = addDays(center, -3);
-    for (var i=0;i<7;i++){
-      var d = addDays(start, i);
-      var btn = document.createElement('button');
-      btn.className = 'date-pill'+(keyOf(d)===keyOf(center)?' is-active':'');
-      btn.innerHTML =
-        '<div class="dow">'+RU_DOW[d.getDay()].toUpperCase()+'</div>'+
-        '<div class="day" style="font:800 26px/1 Impact">'+d.getDate()+'</div>'+
-        '<div class="mon">'+RU_MON[d.getMonth()].slice(0,3)+'.</div>';
-      (function(dd){ btn.onclick = function(){ state.selectedDate = startDay(dd); persist(); renderAllToday(); }; })(d);
-      scroller.appendChild(btn);
-    }
-  }
-
-  var DAY_START = 6*60, DAY_END = 22*60;
-  function todayKey(){ return keyOf(state.selectedDate); }
-
-  function renderTimeline(){
-    timeline.style.height = (DAY_END-DAY_START)+'px';
-    timeline.innerHTML = "";
-    for (var h=6; h<=22; h++){
-      var y = h*60 - DAY_START;
-      var lbl = document.createElement('div');
-      lbl.className = 'time-label';
-      lbl.style.top = y+'px';
-      lbl.textContent = pad2(h)+':00';
-      timeline.appendChild(lbl);
-    }
-    var evs = state.items.filter(function(x){ return x.type==='event' && x.dateKey===todayKey(); });
-    for (var i=0;i<evs.length;i++){
-      var ev = evs[i];
-      var hm = (ev.start||'06:00').split(':');
-      var top = (+hm[0])*60 + (+hm[1]) - DAY_START;
-      var height = Math.max(30, ev.durationMin||60);
-      var el = document.createElement('div');
-      el.className = 'event';
-      el.style.left='56px'; el.style.right='12px';
-      el.style.top = top+'px'; el.style.height = height+'px';
-      el.style.background='rgba(91,91,240,.12)';
-      el.style.borderLeft='3px solid var(--accent)';
-      el.style.borderRadius='8px'; el.style.padding='6px 8px';
-      el.innerHTML = '<div class="ttl" style="font-weight:700">'+(ev.title||'Событие')+'</div>'+
-                     '<div class="meta" style="color:#667">'+(ev.start||'06:00')+' • '+(ev.durationMin||60)+' мин</div>';
-      timeline.appendChild(el);
-    }
-  }
-
-  function renderTasks(){
-    taskList.innerHTML = "";
-    var tasks = state.items.filter(function(x){ return x.type==='task' && x.dateKey===todayKey(); });
-    var doneN = tasks.filter(function(t){return !!t.done;}).length;
-    kpi.textContent = tasks.length ? (doneN+' / '+tasks.length) : '';
-    tasks.forEach(function(t){
-      var li = document.createElement('li');
-      li.className = 'task-row'+(t.done?' task-done':'');
-      li.dataset.id = t.id;
-      li.innerHTML =
-        '<div class="title">'+t.title+'</div>'+
-        '<div class="meta">приоритет: '+(t.priority||'medium')+'</div>'+
-        '<div class="task-actions">'+
-          '<button class="icon-small" data-act="done">✓</button>'+
-          '<button class="icon-small" data-act="move">↔</button>'+
-          '<button class="icon-small" data-act="del">🗑</button>'+
-        '</div>';
-      li.querySelector('[data-act="done"]').onclick = function(){ toggleDone(t.id); };
-      li.querySelector('[data-act="del"]').onclick  = function(){ removeItem(t.id); };
-      li.querySelector('[data-act="move"]').onclick = function(){ openReschedule(t); };
-      attachSwipe(li, { right:function(){ toggleDone(t.id); }, left:function(){ openReschedule(t); } });
-      taskList.appendChild(li);
-    });
-  }
-
-  function renderCalendar(){
-    calTitle.textContent = capMonth(state.monthCursor)+' '+state.monthCursor.getFullYear()+' г.';
-    calGrid.innerHTML = "";
-    var first = new Date(state.monthCursor.getFullYear(), state.monthCursor.getMonth(), 1);
-    var start = new Date(first); start.setDate(1 - ((first.getDay()+6)%7)); // Monday-first grid
-    for (var i=0;i<42;i++){
-      var d = addDays(start,i);
-      var b = document.createElement('button');
-      b.className = 'cal-cell';
-      if (d.getMonth()!==state.monthCursor.getMonth()) b.classList.add('is-out');
-      if (keyOf(d)===keyOf(new Date())) b.classList.add('is-today');
-      if (keyOf(d)===keyOf(state.selectedDate)) b.classList.add('is-selected');
-      b.textContent = d.getDate();
-      (function(dd){ b.onclick=function(){ state.selectedDate=startDay(dd); persist(); switchTab('today'); }; })(d);
-      calGrid.appendChild(b);
-    }
-  }
-
-  function renderStats(){
-    var days=[], i;
-    for(i=6;i>=0;i--) days.push(addDays(new Date(), -i));
-    var done7 = days.map(function(d){
-      var k = keyOf(d);
-      return state.items.filter(function(x){ return x.type==='task' && x.dateKey===k && x.done; }).length;
-    });
-    var all7 = days.map(function(d){
-      var k = keyOf(d);
-      return state.items.filter(function(x){ return x.type==='task' && x.dateKey===k; }).length;
-    });
-    var s7 = done7.reduce(function(a,b){return a+b;},0);
-    var a7 = all7.reduce(function(a,b){return a+b;},0);
-    $("#stat7").textContent = s7+' / '+a7;
-    $("#stat30").textContent = s7+' / '+a7;
-    var pct = a7 ? Math.round(s7/a7*100) : 0;
-    ringPct.textContent = pct+'%';
-    var C = 2*Math.PI*52;
-    ringFg.style.strokeDasharray = C;
-    ringFg.style.strokeDashoffset = C - C*pct/100;
-
-    var cv = $("#miniBars"), ctx = cv.getContext && cv.getContext('2d');
-    if(ctx){
-      var w = cv.width = cv.clientWidth||300, h = cv.height;
-      ctx.clearRect(0,0,w,h);
-      var bw = Math.floor(w/9), max = Math.max(1, Math.max.apply(null, done7));
-      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#5b5bf0';
-      done7.forEach(function(v,idx){
-        var x = (idx+1)*bw, bh = (v/max)*(h-24);
-        ctx.fillRect(x, h-8-bh, bw*0.6, bh);
-      });
-    }
-  }
-
-  function renderAllToday(){ renderTop(); renderScroller(); renderTimeline(); renderTasks(); }
-
-  // ---------- actions ----------
-  function toggleDone(id){
-    var it = state.items.find(function(x){ return x.id===id; });
-    if(!it) return; it.done = !it.done; persist(); renderAllToday(); renderStats();
-  }
-  function removeItem(id){
-    state.items = state.items.filter(function(x){ return x.id!==id; });
-    persist(); renderAllToday(); renderStats();
-  }
-
-  function attachSwipe(el, handlers){
-    var x0=0, dx=0, active=false;
-    function start(e){ active=true; x0=(e.touches?e.touches[0].clientX:e.clientX); el.style.transition='none'; }
-    function move(e){ if(!active) return; var x=(e.touches?e.touches[0].clientX:e.clientX); dx=x-x0; el.style.transform='translateX('+dx+'px)'; }
-    function end(){ if(!active) return; active=false; el.style.transition=''; var fire=Math.abs(dx)>80; el.style.transform=''; if(!fire) return; if(dx>0 && handlers.right) handlers.right(); if(dx<0 && handlers.left) handlers.left(); }
-    el.addEventListener('touchstart',start,{passive:true});
-    el.addEventListener('touchmove',move,{passive:true});
-    el.addEventListener('touchend',end);
-    el.addEventListener('mousedown',start);
-    window.addEventListener('mousemove',move);
-    window.addEventListener('mouseup',end);
-  }
-
-  // reschedule dialog (с «Отмена» не удаляет ничего)
-  var resId=null;
-  function openReschedule(item){
-    resId=item.id;
-    var dlg = $("#reschedDialog");
-    var s = '';
-    s += '<div class="modal-card">';
-    s += ' <div class="row" style="justify-content:space-between"><b>Перенести задачу</b>';
-    s += ' <button class="btn btn-ghost" id="rsClose">×</button></div>';
-    s += ' <div class="row" style="margin-top:10px;gap:8px">';
-    s += '   <button class="btn btn-ghost" data-add="1">+1 день</button>';
-    s += '   <button class="btn btn-ghost" data-add="3">+3 дня</button>';
-    s += '   <button class="btn btn-ghost" data-add="7">+7 дней</button>';
-    s += ' </div>';
-    s += ' <div style="margin-top:10px;text-align:right"><button class="btn" id="rsCancel">Отмена</button></div>';
-    s += '</div>';
-    dlg.innerHTML = s;
-    dlg.showModal();
-    dlg.querySelector('#rsClose').onclick = function(){ dlg.close(); };
-    dlg.querySelector('#rsCancel').onclick = function(){ dlg.close(); };
-    $$('#reschedDialog [data-add]').forEach(function(b){
-      b.onclick = function(){
-        var add = +b.getAttribute('data-add');
-        var it = state.items.find(function(x){return x.id===resId;});
-        if(it){
-          var d = fromKey(it.dateKey);
-          it.dateKey = keyOf(addDays(d, add));
-          persist(); renderAllToday(); renderCalendar();
-        }
-        dlg.close();
-      };
-    });
-  }
-
-  // add dialog (задача/событие)
-  function openAdd(){
-    var dlg = $("#addDialog");
-    var s = '';
-    s += '<div class="modal-card">';
-    s += '<div class="row" style="justify-content:space-between"><b>Новое</b><button class="btn btn-ghost" id="addClose">×</button></div>';
-    s += '<div style="display:grid;gap:8px;margin-top:10px">';
-    s += '  <input id="addTitle" placeholder="Название" style="padding:10px;border-radius:12px;border:1px solid #e5e8f2">';
-    s += '  <div class="row"><label><input type="radio" name="kind" value="task" checked> Задача</label>';
-    s += '       <label style="margin-left:12px"><input type="radio" name="kind" value="event"> Событие</label></div>';
-    s += '  <div class="row" id="eventFields" style="display:none;gap:8px">';
-    s += '    <input id="evStart" value="10:00" style="padding:8px;border-radius:10px;border:1px solid #e5e8f2;width:90px">';
-    s += '    <input id="evDur" value="60" style="padding:8px;border-radius:10px;border:1px solid #e5e8f2;width:90px"><span class="muted">мин</span>';
-    s += '  </div>';
-    s += '  <div class="row"><label class="muted">Приоритет:</label>';
-    s += '    <select id="prio" style="padding:8px;border-radius:10px;border:1px solid #e5e8f2"><option>low</option><option selected>medium</option><option>high</option></select>';
-    s += '  </div>';
-    s += '</div>';
-    s += '<div style="margin-top:12px;text-align:right"><button class="btn btn-accent" id="addOk">Добавить</button></div>';
-    s += '</div>';
-    dlg.innerHTML = s;
-    dlg.showModal();
-    dlg.querySelector('#addClose').onclick = function(){ dlg.close(); };
-
-    var kindRadios = $$('#addDialog [name="kind"]');
-    function syncEv(){ var k=[].find.call(kindRadios, function(r){return r.checked;}).value; $('#eventFields').style.display = (k==='event'?'flex':'none'); }
-    kindRadios.forEach(function(r){ r.onchange = syncEv; }); syncEv();
-
-    dlg.querySelector('#addOk').onclick = function(){
-      var title = $('#addTitle').value.trim() || 'Без названия';
-      var k = [].find.call(kindRadios, function(r){return r.checked;}).value;
-      var pr = $('#prio').value;
-      if(k==='task'){
-        state.items.push({id:'t'+Date.now(), type:'task',  dateKey: todayKey(), title:title, priority:pr, done:false});
-      }else{
-        var st = $('#evStart').value || '10:00';
-        var du = clamp(parseInt($('#evDur').value,10)||60, 15, 24*60);
-        state.items.push({id:'e'+Date.now(), type:'event', dateKey: todayKey(), title:title, start:st, durationMin:du, priority:pr});
-      }
-      persist(); dlg.close(); renderAllToday(); renderStats();
-    };
-  }
-
-  // ---------- tabbar ----------
-  function switchTab(id){
-    Object.keys(views).forEach(function(k){ views[k].classList.remove('is-active'); });
-    views[id].classList.add('is-active');
-    if(id==='calendar') renderCalendar();
-    if(id==='stats') renderStats();
-    if(id==='today') renderAllToday();
-  }
-  var views = {
-    today:    $('#todayView'),
-    calendar: $('#calendarView'),
-    stats:    $('#statsView'),
-    settings: $('#settingsView'),
-  };
-  $('#tabToday').onclick    = function(){ switchTab('today'); };
-  $('#tabCalendar').onclick = function(){ switchTab('calendar'); };
-  $('#tabStats').onclick    = function(){ switchTab('stats'); };
-  $('#tabSettings').onclick = function(){ switchTab('settings'); };
-  $('#fab').onclick         = openAdd;
-
-  // calendar arrows
-  calPrev.onclick = function(){ state.monthCursor = addDays(state.monthCursor, -28); persist(); renderCalendar(); };
-  calNext.onclick = function(){ state.monthCursor = addDays(state.monthCursor, +28); persist(); renderCalendar(); };
-
-  // settings hooks
-  var ap = $('#accentPicker'), nt = $('#neonToggle'), mt = $('#metalToggle'), fs = $('#fontScale');
-  if(ap){ ap.value = state.settings.accent; ap.oninput = function(){ setAccent(ap.value); }; }
-  if(nt){ nt.checked = !!state.settings.neon;  nt.onchange = function(){ state.settings.neon = nt.checked; persist(); }; }
-  if(mt){ mt.checked = !!state.settings.metal; mt.onchange = function(){ state.settings.metal = mt.checked; persist(); }; }
-  if(fs){ fs.value = state.settings.fontScale; fs.oninput = function(){ state.settings.fontScale = +fs.value; document.documentElement.style.setProperty('--fontScale', fs.value); persist(); }; }
-
-  // seed demo if empty today
-  if(!state.items.some(function(x){ return x.dateKey===todayKey(); })){
-    state.items.push({id:'d1',type:'task',title:'Сыграть в волейбол',dateKey:todayKey(),priority:'medium',done:false});
-    persist();
-  }
-
-  // initial
-  renderAllToday(); renderCalendar(); renderStats();
-
-})();
+  <!-- Скрипт приложения: defer и ОДИН раз -->
+  <script defer src="app.js?v=1.6.3"></script>
+</body>
+</html>
