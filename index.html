@@ -1,392 +1,357 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="light" data-accent="violet" data-accentstyle="solid">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
-  <title>Weepl • Планировщик будущего</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#ffffff" />
 
-  <!-- редирект в /Weepl/ если открыли корень профиля -->
-  <script>
-    (function(){
-      var need = '/Weepl/';
-      if (location.hostname.endsWith('github.io') && location.pathname === '/') {
-        location.replace(need);
-      }
-    })();
-  </script>
-  <!-- dynamic <base> для относительных путей -->
-  <script>
-    (function(){
-      var basePath = location.pathname.replace(/[^/]*$/, '');
-      document.write('<base href="'+ basePath +'">');
-    })();
-  </script>
+  <title>Weepl • Планировщик</title>
+  <meta name="description" content="Weepl — умный планировщик: задачи, события, календарь, статистика." />
 
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <!-- Шрифты -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Anton:wght@400&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=2500">
-  <script defer src="app.js?v=2500"></script>
+  <!-- Стили -->
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Favicon (минимал) -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ccircle cx=%2750%27 cy=%2750%27 r=%2746%27 fill=%27%237b61ff%27/%3E%3Ctext x=%2750%27 y=%2758%27 text-anchor=%27middle%27 font-size=%2762%27 font-family=%27Anton%27 fill=%27%23fff%27%3EW%3C/text%3E%3C/svg%3E" />
 </head>
 <body>
-  <div id="app"></div>
 
-  <!-- ====== LAYOUT ====== -->
-  <template id="layout">
-    <main id="view" class="section"></main>
+  <!-- ====== ROOT APP WRAPPER ====== -->
+  <div id="app" class="home section">
 
-    <!-- Floating Action Button — по центру снизу -->
-    <button id="fabAdd" class="fab" aria-label="Добавить задачу">+</button>
+    <!-- ====== HEADER: месяц + стрелки ====== -->
+    <header class="month-bar">
+      <button class="month-btn" id="btnPrevMonth" aria-label="Предыдущий месяц">←</button>
+      <h1 class="h-impact" id="monthTitle">Октябрь 2025 г.</h1>
+      <button class="month-btn" id="btnNextMonth" aria-label="Следующий месяц">→</button>
+    </header>
 
-    <!-- Bottom Navigation -->
-    <nav class="bottombar" role="navigation" aria-label="Главная навигация">
-      <a class="navbtn active" data-route="#/" href="#/" aria-label="Задачи" title="Задачи">
-        <!-- tasks icon -->
-        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-          <path fill="currentColor" d="M9 3h6a2 2 0 0 1 2 2h1a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1a2 2 0 0 1 2-2Zm0 2a1 1 0 0 0-1 1H6v12h12V6h-2a1 1 0 0 0-1-1H9Zm1 6h6v2h-6v-2Zm0 4h6v2h-6v-2Zm-2-4H6v2h2v-2Zm0 4H6v2h2v-2Z"/>
-        </svg>
-      </a>
-
-      <a class="navbtn" data-route="#/calendar" href="#/calendar" aria-label="Календарь" title="Календарь">
-        <!-- calendar icon -->
-        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-          <path fill="currentColor" d="M7 2h2v2h6V2h2v2h2a2 2 0 0 1 2 2v3H3V6a2 2 0 0 1 2-2h2V2Zm14 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9h18Zm-11 3H6v3h4v-3Z"/>
-        </svg>
-      </a>
-
-      <!-- центрический FAB остаётся отдельно -->
-
-      <a class="navbtn" data-route="#/stats" href="#/stats" aria-label="Статистика" title="Статистика">
-        <!-- stats icon -->
-        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-          <path fill="currentColor" d="M4 21a1 1 0 0 1-1-1V4h2v15h15v2H4Zm4-4V9h3v8H8Zm5 0V5h3v12h-3Z"/>
-        </svg>
-      </a>
-
-      <a class="navbtn" data-route="#/settings" href="#/settings" aria-label="Настройки" title="Настройки">
-        <!-- gear icon -->
-        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-          <path fill="currentColor" d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm8.94 3.34 1.56.9-1 1.73-1.78-.32a7.97 7.97 0 0 1-1.03 1.79l.57 1.71-1.86 1.08-1.25-1.29a7.9 7.9 0 0 1-2.06.6L13.5 20h-3l-.53-1.46a7.9 7.9 0 0 1-2.06-.6L6.16 19.2 4.3 18.12l.57-1.71a8.05 8.05 0 0 1-1.03-1.79l-1.78.32-1-1.73 1.56-.9a8.2 8.2 0 0 1 0-2.68l-1.56-.9 1-1.73 1.78.32c.28-.64.63-1.24 1.03-1.79L4.3 3.88 6.16 2.8l1.25 1.29c.65-.28 1.34-.48 2.06-.6L10.5 2h3l.53 1.46c.72.12 1.41.32 2.06.6L17.34 2.8 19.2 3.88l-.57 1.71c.4.55.75 1.15 1.03 1.79l1.78-.32 1 1.73-1.56.9c.09.44.12.89.12 1.34s-.03.9-.12 1.34Z"/>
-        </svg>
-      </a>
-    </nav>
-  </template>
-
-  <!-- ====== HOME VIEW ====== -->
-  <template id="home-view">
-    <section class="home">
-      <div class="month-bar">
-        <button class="month-btn" data-home-month="prev" aria-label="Предыдущий месяц">←</button>
-        <h2 id="homeMonth" class="h-impact"></h2>
-        <button class="month-btn" data-home-month="next" aria-label="Следующий месяц">→</button>
+    <!-- ====== Пояс дней (strip) ====== -->
+    <div class="date-strip" id="dateStrip">
+      <!-- JS заполнит карточками .date-pill -->
+      <!-- пример статической карточки для начального рендера -->
+      <div class="date-pill">
+        <div class="wk">Пн</div>
+        <div class="daynum">27</div>
+        <div class="mon">Окт.</div>
       </div>
-      <div id="dateStrip" class="date-strip"></div>
-      <h3 id="todayTitle" class="h-sub"></h3>
-      <div id="taskList" class="task-list"></div>
-    </section>
-  </template>
+      <div class="date-pill active">
+        <div class="wk">Вт</div>
+        <div class="daynum">28</div>
+        <div class="mon">Окт.</div>
+      </div>
+      <div class="date-pill">
+        <div class="wk">Ср</div>
+        <div class="daynum">29</div>
+        <div class="mon">Окт.</div>
+      </div>
+    </div>
 
-  <!-- ====== CALENDAR VIEW ====== -->
-  <template id="calendar-view">
-    <section>
-      <div class="calendar-head">
-        <button class="month-btn" data-cal="prev" aria-label="Предыдущий месяц">←</button>
-        <h2 id="calTitle" class="h-impact"></h2>
-        <div class="head-actions">
-          <button class="chip" id="btnToday">Сегодня</button>
+    <!-- ====== СЕКЦИЯ «Сегодня» (карточка) ====== -->
+    <section class="section">
+      <div class="tasks-card" id="todayCard">
+        <div class="tasks-head">
+          <div>
+            <div class="title h-impact" style="font-size:1.15rem">Сегодня</div>
+            <div class="muted" id="todayCounter">Задач: 0</div>
+          </div>
+          <div class="row gap">
+            <button class="btn-outline" id="btnAddTaskTop">+ Задача</button>
+            <button class="btn-outline" id="btnAddEventTop">+ Событие</button>
+          </div>
         </div>
-        <button class="month-btn" data-cal="next" aria-label="Следующий месяц">→</button>
+
+        <!-- Таймлайн событий (06:00–20:00) -->
+        <div class="day-grid" id="dayGrid">
+          <div class="time-col" id="timeTicks">
+            <!-- JS вставит .tick по часам -->
+            <div class="tick">06:00</div>
+            <div class="tick">07:00</div>
+            <div class="tick">08:00</div>
+            <div class="tick">09:00</div>
+          </div>
+          <div class="events-col" id="eventsCol">
+            <!-- красная/акцентная линия «сейчас» -->
+            <div class="now-line" id="nowLine" style="top: 120px;"></div>
+            <!-- Пример статического блока события для пустого состояния -->
+            <div class="event" style="--top:140px;--h:64px">
+              <div class="title">Демо-событие</div>
+              <div class="time">09:30 – 10:10</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Список задач (скроллируемый) -->
+        <h3 class="h-sub">Задачи</h3>
+        <div class="tasks-scroll">
+          <div class="task-list" id="taskList">
+            <!-- Пример строки задачи (для initial skeleton) -->
+            <div class="t-item" data-id="demo">
+              <div class="row1">
+                <div class="t-title">Пример задачи</div>
+                <div class="task-ctl">
+                  <button class="icon-btn" title="Выполнить">✓</button>
+                  <button class="icon-btn" title="Перенести">↔</button>
+                  <button class="icon-btn" title="Удалить">🗑</button>
+                </div>
+              </div>
+              <div class="t-meta">приоритет: средний</div>
+            </div>
+          </div>
+        </div>
       </div>
-
-      <div id="calendarGrid" class="calendar-grid"></div>
-
-      <div class="legend">
-        <span><i class="lg lg-low"></i> Низкий</span>
-        <span><i class="lg lg-med"></i> Средний</span>
-        <span><i class="lg lg-high"></i> Высокий</span>
-        <span><i class="lg lg-crit"></i> Критический</span>
-      </div>
-
-      <div id="calendarTasks" class="calendar-tasks"></div>
     </section>
-  </template>
 
-  <!-- ====== STATS VIEW ====== -->
-  <template id="stats-view">
-    <section class="stats">
-      <h2 class="h-impact" style="margin:8px 0 14px">Статистика</h2>
+    <!-- ====== VIEW: Календарь ====== -->
+    <section class="section" id="viewCalendar" style="display:none">
+      <div class="calhead">
+        <button class="month-btn" id="calPrev">←</button>
+        <h2 class="h-impact" id="calTitle">Октябрь 2025</h2>
+        <button class="month-btn" id="calNext">→</button>
+      </div>
+      <div class="calendar-grid" id="calendarGrid">
+        <div class="cell head">Пн</div><div class="cell head">Вт</div><div class="cell head">Ср</div>
+        <div class="cell head">Чт</div><div class="cell head">Пт</div><div class="cell head">Сб</div><div class="cell head">Вс</div>
+        <!-- JS заполнит днями -->
+      </div>
+      <div class="center muted" id="calEmpty">Выберите день, чтобы увидеть задачи и события.</div>
+    </section>
 
+    <!-- ====== VIEW: Статистика ====== -->
+    <section class="section" id="viewStats" style="display:none">
+      <h2 class="h-impact" style="margin:.25rem .15rem .7rem">Статистика</h2>
       <div class="stats-grid">
-        <!-- прогресс-ринг -->
         <div class="card center">
-          <div class="ring">
-            <svg viewBox="0 0 120 120" class="ring-svg" aria-hidden="true">
-              <circle cx="60" cy="60" r="52" class="ring-bg"/>
-              <circle cx="60" cy="60" r="52" class="ring-fg" id="ringFg"/>
+          <div class="ring" id="ring">
+            <svg class="ring-svg" viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
+              <circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52"></circle>
             </svg>
-            <div class="ring-val"><span id="statDonePct">0</span>%</div>
+            <div class="ring-val" id="ringVal">0%</div>
           </div>
           <div class="muted">Выполнено за неделю</div>
         </div>
 
-        <!-- счётчики -->
-        <div class="card">
-          <div class="kpi"><span id="statWeekDone">0</span><small> / <span id="statWeekTotal">0</span></small></div>
-          <div class="muted">Задач за 7 дней</div>
+        <div class="card center">
+          <div class="kpi"><span id="kpi7">0/0</span></div>
+          <small class="muted">За 7 дней</small>
         </div>
 
-        <div class="card">
-          <div class="kpi"><span id="statMonthDone">0</span><small> / <span id="statMonthTotal">0</span></small></div>
-          <div class="muted">Задач за месяц</div>
+        <div class="card center">
+          <div class="kpi"><span id="kpiMon">0/0</span></div>
+          <small class="muted">За месяц</small>
         </div>
 
-        <div class="card">
-          <div class="kpi"><span id="statStreak">0</span><small> дн.</small></div>
-          <div class="muted">Серия выполнения</div>
+        <div class="card center">
+          <div class="kpi"><span id="streak">0</span> дн.</div>
+          <small class="muted">Серия выполнения</small>
         </div>
-      </div>
 
-      <!-- мини-график по дням недели -->
-      <div class="card barcard">
-        <div class="bar-head">
-          <div class="h-sub" style="margin:0">Выполнено по дням</div>
-          <div class="muted" id="barRange">последние 7 дней</div>
+        <div class="card barcard" style="grid-column:1/-1">
+          <div class="bar-head">
+            <div class="h-impact" style="font-size:1rem">Выполнено по дням</div>
+            <div class="muted">последние 7 дней</div>
+          </div>
+          <div class="bars" id="bars"></div>
+          <div class="bar-labels">
+            <span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span><span>Пн</span>
+          </div>
         </div>
-        <div class="bars" id="bars"></div>
-        <div class="bar-labels" id="barLabels"></div>
       </div>
     </section>
-  </template>
 
-  <!-- ====== SETTINGS VIEW ====== -->
-  <template id="settings-view">
-    <section>
+    <!-- ====== VIEW: Настройки ====== -->
+    <section class="section" id="viewSettings" style="display:none">
+      <h2 class="h-impact" style="margin:.25rem .15rem .7rem">Настройки</h2>
+
       <div class="settings-section">
-        <div class="section-title">Внешний вид</div>
+        <div class="section-title">Тема и акценты</div>
         <div class="settings-list">
-          <div class="row item">
+
+          <div class="item">
             <div class="left">
-              <div class="label">Тема</div>
-              <div class="sub">Светлая или тёмная</div>
+              <div class="label">Тёмная тема</div>
+              <div class="sub">переключается мгновенно</div>
             </div>
-            <div class="right">
-              <select id="setTheme">
-                <option value="light">Светлая</option>
-                <option value="dark">Тёмная</option>
-              </select>
-            </div>
+            <label class="switch right">
+              <input type="checkbox" id="toggleDark">
+              <span class="slider"></span>
+            </label>
           </div>
 
-          <div class="row item">
+          <div class="item">
             <div class="left">
-              <div class="label">Акцентный цвет</div>
-              <div class="sub">10 современных оттенков</div>
+              <div class="label">Цвет акцента</div>
+              <div class="sub">preset или свой цвет</div>
             </div>
             <div class="right">
-              <select id="setAccent">
+              <select id="accentPreset">
+                <option value="violet">Фиолетовый</option>
                 <option value="blue">Синий</option>
                 <option value="rose">Розовый</option>
-                <option value="violet">Фиолетовый</option>
-                <option value="mint">Мятный</option>
-                <option value="lemon">Жёлтый</option>
-                <option value="coral">Коралловый</option>
-                <option value="azure">Голубой</option>
+                <option value="mint">Мята</option>
+                <option value="lemon">Лимон</option>
+                <option value="coral">Коралл</option>
+                <option value="azure">Лазурь</option>
                 <option value="orchid">Орхидея</option>
                 <option value="sky">Небесный</option>
                 <option value="lime">Лайм</option>
+                <option value="custom">Свой…</option>
+              </select>
+              <input type="color" id="accentCustom" value="#7b61ff" title="Свой цвет">
+            </div>
+          </div>
+
+          <div class="item">
+            <div class="left">
+              <div class="label">Стиль акцента</div>
+              <div class="sub">обычный / неон / металлик</div>
+            </div>
+            <div class="right">
+              <select id="accentStyle">
+                <option value="solid">Обычный</option>
+                <option value="neon">Неон</option>
+                <option value="metal">Металлик</option>
               </select>
             </div>
           </div>
+
+          <div class="item">
+            <div class="left">
+              <div class="label">Размер шрифта</div>
+              <div class="sub">по вкусу</div>
+            </div>
+            <div class="right">
+              <select id="fontScale">
+                <option value="1">Стандарт</option>
+                <option value="2">Крупнее</option>
+                <option value="3">Крупный</option>
+              </select>
+            </div>
+          </div>
+
         </div>
       </div>
 
       <div class="settings-section">
-        <div class="section-title">Календарь</div>
+        <div class="section-title">Поведение</div>
         <div class="settings-list">
-          <div class="row item">
+          <div class="item">
             <div class="left">
-              <div class="label">Неделя начинается с</div>
-              <div class="sub">Пн / Вс</div>
+              <div class="label">Свайпы задач</div>
+              <div class="sub">вправо — выполнено, влево — перенос</div>
             </div>
-            <div class="right">
-              <select id="setWeekStart">
-                <option value="1">Понедельника</option>
-                <option value="0">Воскресенья</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="row item">
-            <div class="left">
-              <div class="label">Кнопка «Сегодня»</div>
-              <div class="sub">Быстрый прыжок к текущей дате</div>
-            </div>
-            <div class="right">
-              <label class="switch">
-                <input type="checkbox" id="setShowToday">
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <div class="row item">
-            <div class="left">
-              <div class="label">Точки приоритетов</div>
-              <div class="sub">Индикаторы в сетке</div>
-            </div>
-            <div class="right">
-              <label class="switch">
-                <input type="checkbox" id="setShowDots">
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="settings-section">
-        <div class="section-title">Данные</div>
-        <div class="settings-list">
-          <div class="row item">
-            <div class="left">
-              <div class="label">Экспорт / Импорт</div>
-              <div class="sub">JSON-файл с вашими задачами</div>
-            </div>
-            <div class="right gap">
-              <button class="btn" id="btnExport">Экспорт</button>
-              <label class="btn-outline">Импорт <input type="file" id="fileImport" hidden/></label>
-            </div>
+            <div class="right muted">включено</div>
           </div>
         </div>
       </div>
     </section>
-  </template>
 
-  <!-- ====== MODAL ====== -->
-  <dialog id="taskModal" class="modal">
-    <form id="taskForm" method="dialog">
-      <div class="modal-body">
-        <div class="modal-head">
-          <h3 id="modalTitle" class="h-impact">Новая задача</h3>
-          <button data-close class="icon-btn" type="button">✖</button>
-        </div>
+  </div> <!-- /#app -->
 
-        <div class="field">
-          <label>Название</label>
-          <input name="title" id="fTitle" required/>
-        </div>
+  <!-- ====== НИЖНЯЯ ПАНЕЛЬ + FAB ====== -->
+  <nav class="bottombar" id="tabbar">
+    <a class="navbtn active" data-view="home" id="tabHome" aria-label="Задачи">
+      <!-- иконка список -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 6h12M8 12h12M8 18h12M4 6h0M4 12h0M4 18h0" stroke-width="2" stroke-linecap="round"/><circle cx="4" cy="6" r="1.5" fill="currentColor"/><circle cx="4" cy="12" r="1.5" fill="currentColor"/><circle cx="4" cy="18" r="1.5" fill="currentColor"/></svg>
+    </a>
+    <a class="navbtn" data-view="calendar" id="tabCalendar" aria-label="Календарь">
+      <!-- иконка календарь -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="16" rx="2" stroke-width="2"/><path d="M16 3v4M8 3v4M3 10h18" stroke-width="2" stroke-linecap="round"/></svg>
+    </a>
 
+    <button class="fab" id="fab" aria-label="Добавить">+</button>
+
+    <a class="navbtn" data-view="stats" id="tabStats" aria-label="Статистика">
+      <!-- иконка столбцы -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="10" width="4" height="10" rx="1" stroke-width="2"/><rect x="10" y="6" width="4" height="14" rx="1" stroke-width="2"/><rect x="17" y="13" width="4" height="7" rx="1" stroke-width="2"/></svg>
+    </a>
+    <a class="navbtn" data-view="settings" id="tabSettings" aria-label="Настройки">
+      <!-- иконка шестерёнка -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke-width="2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 3.3l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.08a1.65 1.65 0 0 0 1.82-.33l.06-.06A2 2 0 1 1 21 7.04l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c0 .66.39 1.26 1 1.51.29.12.61.19.94.19A2 2 0 1 1 22 12h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke-width="1.2"/></svg>
+    </a>
+  </nav>
+
+  <!-- ====== MODAL: Добавить (задача/событие) ====== -->
+  <dialog id="dlgAdd" class="modal">
+    <div class="modal-body">
+      <div class="modal-head">
+        <h3 class="h-impact" style="font-size:1.1rem">Быстрое добавление</h3>
+        <button class="icon-btn" id="dlgAddClose">✕</button>
+      </div>
+
+      <div class="grid2" style="margin-top:.5rem">
+        <button class="btn" id="openAddTask">+ Задача</button>
+        <button class="btn" id="openAddEvent">+ Событие</button>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:1rem 0 .5rem" />
+
+      <!-- Форма задачи -->
+      <form id="formTask" class="fade-in">
+        <div class="field"><label>Название</label><input id="taskTitle" placeholder="Что сделать?"></div>
         <div class="grid2">
-          <div class="field">
-            <label>Дата</label>
-            <input type="date" name="date" id="fDate"/>
-          </div>
-          <div class="field">
-            <label>Время</label>
-            <input type="time" name="time" id="fTime"/>
-          </div>
+          <div class="field"><label>Дата</label><input type="date" id="taskDate"></div>
+          <div class="field"><label>Время</label><input type="time" id="taskTime"></div>
         </div>
-
-        <div class="grid2">
-          <div class="field">
-            <label>Важность</label>
-            <select name="priority" id="fPriority">
-              <option value="low">Низкая</option>
-              <option value="medium">Средняя</option>
-              <option value="high">Высокая</option>
-              <option value="critical">Критическая</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>SMART</label>
-            <input name="smart" id="fSmart" placeholder="Specific/Measurable/..."/>
-          </div>
+        <div class="field"><label>Приоритет</label>
+          <select id="taskPriority"><option>Низкий</option><option selected>Средний</option><option>Высокий</option></select>
         </div>
-
-        <div class="field">
-          <label>Комментарий</label>
-          <textarea name="note" id="fNote" rows="2"></textarea>
-        </div>
-
+        <div class="field"><label>Комментарий</label><textarea id="taskNote" rows="2" placeholder="Опционально"></textarea></div>
         <div class="modal-foot">
-          <button data-close class="btn-outline" type="button">Отмена</button>
+          <button type="button" class="btn-outline" id="cancelTask">Отмена</button>
           <button type="submit" class="btn">Сохранить</button>
         </div>
+      </form>
+
+      <!-- Форма события -->
+      <form id="formEvent" class="fade-in" style="display:none">
+        <div class="field"><label>Название</label><input id="eventTitle" placeholder="Название события"></div>
+        <div class="grid2">
+          <div class="field"><label>Дата</label><input type="date" id="eventDate"></div>
+          <div class="field"><label>Начало</label><input type="time" id="eventStart" step="900"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Конец</label><input type="time" id="eventEnd" step="900"></div>
+          <div class="field"><label>Приоритет</label>
+            <select id="eventPriority"><option>Низкий</option><option selected>Средний</option><option>Высокий</option></select>
+          </div>
+        </div>
+        <div class="field"><label>Локация (опц.)</label><input id="eventLocation" placeholder="Где?"></div>
+        <div class="field"><label>Комментарий</label><textarea id="eventNote" rows="2" placeholder="Опционально"></textarea></div>
+        <div class="modal-foot">
+          <button type="button" class="btn-outline" id="cancelEvent">Отмена</button>
+          <button type="submit" class="btn">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- ====== MODAL: Перенос дедлайна ====== -->
+  <dialog id="dlgReschedule" class="modal">
+    <div class="modal-body">
+      <div class="modal-head">
+        <h3 class="h-impact" style="font-size:1.1rem">Перенести</h3>
+        <button class="icon-btn" id="dlgRescheduleClose">✕</button>
       </div>
-    </form>
-  </dialog><template id="home-view">
-  <div class="home">
-    <div id="homeHeader">
-      <button data-home-month="prev" class="navarrow">←</button>
-      <h2 id="homeMonth"></h2>
-      <button data-home-month="next" class="navarrow">→</button>
+      <div class="grid2">
+        <div class="field"><label>Новая дата</label><input type="date" id="moveDate"></div>
+        <div class="field"><label>Новое время</label><input type="time" id="moveTime" step="900"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn-outline" id="moveCancel">Отмена</button>
+        <button class="btn" id="moveApply">Применить</button>
+      </div>
     </div>
-    <div id="dateStrip" class="strip"></div>
-    <h3 id="todayTitle">Сегодня</h3>
-    <div id="taskList" class="tasklist"></div>
-  </div>
-</template>
+  </dialog>
 
-<template id="calendar-view">
-  <div class="calendar">
-    <div class="calhead">
-      <button data-cal="prev" class="navarrow">←</button>
-      <h2 id="calTitle"></h2>
-      <button data-cal="next" class="navarrow">→</button>
-    </div>
-    <div id="calendarGrid" class="grid"></div>
-  </div>
-</template>
-
-<template id="stats-view">
-  <div class="stats">
-    <h2>Статистика</h2>
-    <div class="circle">
-      <svg width="120" height="120">
-        <circle cx="60" cy="60" r="52" stroke="#eee" stroke-width="10" fill="none" />
-        <circle id="ringFg" cx="60" cy="60" r="52" stroke="var(--accent)" stroke-width="10" fill="none"
-          stroke-linecap="round" stroke-dasharray="326" stroke-dashoffset="326" />
-      </svg>
-      <div class="pct"><span id="statDonePct">0</span>%</div>
-    </div>
-    <div class="numbers">
-      <p>Неделя: <span id="statWeekDone">0</span>/<span id="statWeekTotal">0</span></p>
-      <p>Месяц: <span id="statMonthDone">0</span>/<span id="statMonthTotal">0</span></p>
-      <p>Серия дней: <span id="statStreak">0</span></p>
-    </div>
-    <div id="barChart">
-      <div id="bars"></div>
-      <div id="barLabels"></div>
-    </div>
-  </div>
-</template>
-
-<template id="settings-view">
-  <div class="settings">
-    <h2>Настройки</h2>
-    <label>Тема <select id="setTheme">
-      <option value="light">Светлая</option>
-      <option value="dark">Тёмная</option>
-    </select></label>
-    <label>Цвет акцента <select id="setAccent">
-      <option value="violet">Фиолетовый</option>
-      <option value="blue">Синий</option>
-      <option value="pink">Розовый</option>
-    </select></label>
-    <label>Неделя начинается с <select id="setWeekStart">
-      <option value="1">Понедельника</option>
-      <option value="0">Воскресенья</option>
-    </select></label>
-    <label><input type="checkbox" id="setShowToday" checked> Показывать сегодняшнюю дату</label>
-    <label><input type="checkbox" id="setShowDots" checked> Показывать точки задач в календаре</label>
-    <hr>
-    <button id="btnExport">Экспорт данных</button>
-    <input type="file" id="fileImport" accept=".json">
-  </div>
-</template>
+  <!-- ====== Скрипт приложения ====== -->
+  <script defer src="app.js"></script>
 </body>
 </html>
