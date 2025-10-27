@@ -1,362 +1,311 @@
-'use strict';
-console.log('Weepl App V2.4.1 ✅ bottom nav + full features');
+// ===== WEEPL APP v2.5.0 =====
 
-/* ===== helpers ===== */
-const $  = (s,r)=> (r||document).querySelector(s);
-const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
-const uid = ()=> Math.random().toString(36).slice(2,9);
-const pad = n => String(n).padStart(2,'0');
-const keyFromDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; // локальный ключ YYYY-MM-DD
-const todayKey = ()=> keyFromDate(new Date());
-const dtKey = d => keyFromDate(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
-const parseKey = k => { const p=k.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); };
-const monthTitle = d => d.toLocaleString('ru-RU',{month:'long'})+' '+d.getFullYear();
-const prioColor = p => p==='high'?'#ff4fa3':p==='critical'?'#8a2be2':p==='low'?'var(--border)':'var(--accent)';
-const escapeHtml = s => String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const mapPrio = p => p==='high'?'высокий':p==='critical'?'критический':p==='low'?'низкий':'средний';
-function humanDate(iso){
-  if(!iso) return 'Без даты';
-  const d=parseKey(iso), t=todayKey(), tm=keyFromDate(new Date(Date.now()+86400000));
-  const k=keyFromDate(d);
-  if(k===t) return 'Сегодня';
-  if(k===tm) return 'Завтра';
-  return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'long',year:'numeric'});
-}
-
-/* ===== store ===== */
-const STORE_KEY='weepl.v1';
-const DEFAULTS = {
-  settings:{
-    theme:'light',
-    accent:'violet',
-    weekStart:1,        // 1 — Пн, 0 — Вс
-    showDots:true,
-    showTodayBtn:true
-  },
-  tasks:[]
+// global state
+let state = {
+  view: 'home',
+  tasks: JSON.parse(localStorage.getItem('tasks') || '[]'),
+  settings: JSON.parse(localStorage.getItem('settings') || '{}'),
+  currentDate: new Date(),
 };
-function loadStore(){
-  try{
-    const raw = JSON.parse(localStorage.getItem(STORE_KEY)) || structuredClone(DEFAULTS);
-    // миграция ISO -> локальные ключи
-    raw.tasks = (raw.tasks||[]).map(t=>{
-      if(t.date && /T/.test(t.date)) t.date = keyFromDate(new Date(t.date));
-      return t;
-    });
-    raw.settings = Object.assign({}, DEFAULTS.settings, raw.settings||{});
-    return raw;
-  }catch{
-    return structuredClone(DEFAULTS);
-  }
-}
-function saveStore(d){ localStorage.setItem(STORE_KEY, JSON.stringify(d)); }
-let store = loadStore();
 
-/* ===== theme ===== */
-function applyTheme(){
-  document.documentElement.dataset.theme = store.settings.theme || 'light';
-  document.documentElement.dataset.accent = store.settings.accent || 'violet';
-}
-applyTheme();
+// DOM helpers
+const qs = (s, p = document) => p.querySelector(s);
+const qsa = (s, p = document) => [...p.querySelectorAll(s)];
 
-/* ===== router + bottom nav ===== */
-const routes = {'#/': renderHome, '#/calendar': renderCalendar, '#/settings': renderSettings};
-function setActiveNav(hash){ $$('.navbtn').forEach(b=> b.classList.toggle('active', b.getAttribute('href')===hash)); }
-function router(){
-  let hash = location.hash || '#/';
-  if(!routes[hash]) hash = '#/';
-  const view = $('#view'); view.innerHTML = '';
-  routes[hash](view);
-  setActiveNav(hash);
-}
-window.addEventListener('hashchange', router);
-
-/* ===== state ===== */
-let state = { selectedDate: todayKey(), month: new Date() };
-
-/* ===== boot ===== */
-document.addEventListener('DOMContentLoaded', ()=>{
-  $('#app').appendChild($('#layout').content.cloneNode(true));
-  $('#fabAdd').onclick = ()=> openTaskModal({});
-  router();
+// init
+window.addEventListener('DOMContentLoaded', () => {
+  initLayout();
+  applySettings();
+  navigate(location.hash || '#/');
+  window.addEventListener('hashchange', () => navigate(location.hash));
 });
 
-/* ===== HOME ===== */
-function renderHome(root){
-  root.appendChild($('#home-view').content.cloneNode(true));
-  $('#homeMonth').textContent = monthTitle(state.month);
-  $('[data-home-month="prev"]').onclick = ()=>{ state.month = new Date(state.month.getFullYear(), state.month.getMonth()-1, 1); $('#homeMonth').textContent = monthTitle(state.month); renderDates(); };
-  $('[data-home-month="next"]').onclick = ()=>{ state.month = new Date(state.month.getFullYear(), state.month.getMonth()+1, 1); $('#homeMonth').textContent = monthTitle(state.month); renderDates(); };
-  renderDates();
-  renderTaskList();
+function initLayout() {
+  document.body.innerHTML = qs('#layout').innerHTML;
+  qs('#fabAdd').addEventListener('click', openModal);
 }
 
-/* vertical date cards */
-function renderDates(){
-  const strip = $('#dateStrip'); strip.innerHTML = '';
-  const base = parseKey(state.selectedDate);
-  const start = new Date(base.getFullYear(), base.getMonth(), base.getDate()-6);
-  for(let i=0;i<14;i++){
-    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate()+i);
-    const key = dtKey(d);
-    const btn = document.createElement('button');
-    btn.className = 'date-pill'+(key===state.selectedDate?' active':'');
-    btn.setAttribute('data-key', key);
-    const wk = d.toLocaleString('ru-RU',{weekday:'short'}).toUpperCase();
-    const mon = d.toLocaleString('ru-RU',{month:'long'});
-    btn.innerHTML = `
-      <div class="wk">${wk}</div>
-      <div class="daynum">${pad(d.getDate())}</div>
-      <div class="mon">${mon}</div>
-    `;
-    btn.onclick = ()=>{
-      state.selectedDate = key;
-      $$('.date-pill', strip).forEach(b=>b.classList.toggle('active', b===btn));
-      $('#todayTitle').textContent = humanDate(state.selectedDate);
-      renderTaskList();
-      btn.scrollIntoView({inline:'center', block:'nearest', behavior:'smooth'});
-    };
-    strip.appendChild(btn);
+// ===== NAVIGATION =====
+function navigate(hash) {
+  const view = hash.replace('#/', '') || 'home';
+  state.view = view;
+  qsa('.navbtn').forEach(a => a.classList.toggle('active', a.dataset.route === hash));
+  const main = qs('#view');
+  main.innerHTML = '';
+  switch (view) {
+    case 'calendar': main.appendChild(loadTemplate('calendar-view')); initCalendar(); break;
+    case 'settings': main.appendChild(loadTemplate('settings-view')); initSettings(); break;
+    case 'stats': main.appendChild(loadTemplate('stats-view')); initStats(); break;
+    default: main.appendChild(loadTemplate('home-view')); initHome();
   }
-  $('#todayTitle').textContent = humanDate(state.selectedDate);
-  const active = $('.date-pill.active', strip);
-  if(active) active.scrollIntoView({inline:'center', block:'nearest'});
 }
 
-/* ===== Tasks list ===== */
-function renderTaskList(){
-  const list = $('#taskList'); list.innerHTML='';
-  const tasks = store.tasks
-    .filter(t=>t.date===state.selectedDate)
-    .sort((a,b)=> (a.time||'23:59').localeCompare(b.time||'23:59'));
-  if(!tasks.length){ list.innerHTML = '<p class="muted">Нет задач на эту дату.</p>'; return; }
-
-  tasks.forEach(t=>{
-    const card = document.createElement('article');
-    card.className = 'task'+(t.done?' is-done':'');
-    card.draggable = true;
-    card.dataset.id = t.id;
-    card.innerHTML = `
-      <div></div>
-      <div>
-        <div class="title">${escapeHtml(t.title)}</div>
-        <div class="meta">
-          ${t.time?`<span class="time">⏰ ${t.time}</span>`:''}
-          ${t.priority?` • приоритет: ${mapPrio(t.priority)}`:''}
-        </div>
-      </div>
-      <div class="ctl">
-        <button class="icon-btn" data-toggle title="Готово">✔</button>
-        <button class="icon-btn" data-edit title="Редактировать">✎</button>
-        <button class="icon-btn" data-del title="Удалить">🗑</button>
-      </div>
-    `;
-    card.querySelector('[data-toggle]').onclick = ()=> toggleDone(t.id);
-    card.querySelector('[data-edit]').onclick   = ()=> openTaskModal(t);
-    card.querySelector('[data-del]').onclick    = ()=> { store.tasks = store.tasks.filter(x=>x.id!==t.id); saveStore(store); renderTaskList(); };
-    bindSwipe(card);
-    list.appendChild(card);
-  });
+function loadTemplate(id) {
+  return document.importNode(qs(`#${id}`).content, true);
 }
 
-/* swipe: → done, ← перенос +1 день */
-function bindSwipe(el){
-  let x0=0,dx=0,active=false;
-  el.addEventListener('touchstart',e=>{x0=e.touches[0].clientX;active=true;dx=0;},{passive:true});
-  el.addEventListener('touchmove',e=>{ if(!active) return; dx = e.touches[0].clientX - x0; el.style.transform = `translateX(${dx}px)`; },{passive:true});
-  el.addEventListener('touchend',()=>{ if(!active) return; active=false;
-    if(dx>80){ toggleDone(el.dataset.id); }
-    else if(dx<-80){
-      const t = store.tasks.find(x=>x.id===el.dataset.id);
-      if(t){ const d=parseKey(t.date); d.setDate(d.getDate()+1); t.date = keyFromDate(d); saveStore(store); }
-    }
-    el.style.transform=''; renderTaskList();
-  });
+// ====== HOME ======
+function initHome() {
+  renderMonthBar();
+  renderDateStrip();
+  renderTasksForDate(state.currentDate);
 }
 
-function toggleDone(id){ const t=store.tasks.find(x=>x.id===id); if(!t) return; t.done=!t.done; saveStore(store); renderTaskList(); }
+function renderMonthBar() {
+  const h2 = qs('#homeMonth');
+  const monthName = state.currentDate.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
+  h2.textContent = monthName;
+  qs('[data-home-month="prev"]').onclick = () => changeMonth(-1);
+  qs('[data-home-month="next"]').onclick = () => changeMonth(1);
+}
 
-/* ===== Calendar ===== */
-function renderCalendar(root){
-  root.appendChild($('#calendar-view').content.cloneNode(true));
+function changeMonth(delta) {
+  const d = new Date(state.currentDate);
+  d.setMonth(d.getMonth() + delta);
+  state.currentDate = d;
+  initHome();
+}
 
-  // показать/скрыть кнопку «Сегодня»
-  $('#btnToday').style.display = store.settings.showTodayBtn ? '' : 'none';
-  $('#btnToday').onclick = ()=>{
-    const now = new Date();
-    state.month = new Date(now.getFullYear(), now.getMonth(), 1);
-    state.selectedDate = todayKey();
-    renderCalendar($('#view'));
-  };
-
-  const now = state.month;
-  $('#calTitle').textContent = monthTitle(now);
-  $('[data-cal="prev"]').onclick = ()=>{ state.month=new Date(now.getFullYear(), now.getMonth()-1, 1); renderCalendar($('#view')); };
-  $('[data-cal="next"]').onclick = ()=>{ state.month=new Date(now.getFullYear(), now.getMonth()+1, 1); renderCalendar($('#view')); };
-
-  const grid = $('#calendarGrid'); grid.innerHTML='';
-  const weekStart = Number(store.settings.weekStart||1); // 1 Пн, 0 Вс
-  const namesMon = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
-  const namesSun = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
-  const names = weekStart===1 ? namesMon : namesSun;
-
-  const first = new Date(now.getFullYear(), now.getMonth(), 1);
-  const startIdx = weekStart===1 ? (first.getDay()+6)%7 : first.getDay();
-  const days = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
-
-  // заголовки и пустые
-  names.forEach(n=> grid.insertAdjacentHTML('beforeend', `<div class="cell head">${n}</div>`));
-  for(let i=0;i<startIdx;i++) grid.insertAdjacentHTML('beforeend','<div class="cell"></div>');
-
-  // дни
-  const tKey = todayKey();
-  for(let d=1; d<=days; d++){
-    const key = keyFromDate(new Date(now.getFullYear(), now.getMonth(), d));
-    const dayTasks = store.tasks.filter(t=>t.date===key);
-    const dots = !store.settings.showDots ? '' :
-      dayTasks.map(t=>`<span class="dot" style="background:${prioColor(t.priority)}"></span>`).join('');
-    grid.insertAdjacentHTML('beforeend', `
-      <div class="cell daycell ${key===state.selectedDate?'selected':''} ${key===tKey?'today':''}" data-date="${key}">
-        <div class="dhead">${d}</div>
-        <div class="dots">${dots}</div>
-      </div>
-    `);
+function renderDateStrip() {
+  const strip = qs('#dateStrip');
+  strip.innerHTML = '';
+  const base = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth(), 1);
+  const daysInMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+  const today = new Date();
+  for (let i = 1; i <= daysInMonth; i++) {
+    const d = new Date(base.getFullYear(), base.getMonth(), i);
+    const div = document.createElement('div');
+    div.className = 'date-pill' + (sameDay(d, state.currentDate) ? ' active' : '');
+    div.innerHTML = `<div class="wk">${d.toLocaleDateString('ru-RU',{weekday:'short'})}</div>
+                     <div class="daynum">${i}</div>
+                     <div class="mon">${d.toLocaleDateString('ru-RU',{month:'short'})}</div>`;
+    div.onclick = () => { state.currentDate = d; renderDateStrip(); renderTasksForDate(d); };
+    strip.appendChild(div);
   }
-
-  // легенда: показываем только если точки включены
-  const legend = $('.legend'); legend.style.display = store.settings.showDots ? '' : 'none';
-
-  // интерактив ячеек
-  $$('.daycell', grid).forEach(c=>{
-    c.addEventListener('click', ()=>{
-      state.selectedDate = c.dataset.date;
-      $$('.daycell', grid).forEach(x=>x.classList.toggle('selected', x===c));
-      renderCalendarTasks($('#calendarTasks'), state.selectedDate);
-    });
-    c.addEventListener('dragover', ev=>ev.preventDefault());
-    c.addEventListener('drop', ev=>{
-      ev.preventDefault();
-      const id = ev.dataTransfer.getData('text/id');
-      const t = store.tasks.find(x=>x.id===id);
-      if(!t) return;
-      t.date=c.dataset.date; saveStore(store);
-      state.selectedDate = c.dataset.date;
-      renderCalendar($('#view')); // перерисовать
-    });
-  });
-
-  renderCalendarTasks($('#calendarTasks'), state.selectedDate);
 }
 
-/* список событий под календарём */
-function renderCalendarTasks(container, iso){
-  const items = store.tasks
-    .filter(t=>t.date===iso)
-    .sort((a,b)=> (a.time||'').localeCompare(b.time||''));
-  container.innerHTML = `
-    <div class="h-impact" style="font-size:20px;margin-bottom:6px">${humanDate(iso)}</div>
-    ${items.length ? items.map(eventRow).join('') : '<p class="muted">Нет задач на этот день.</p>'}
-  `;
-  $$('.event', container).forEach(row=>{
-    row.querySelector('[data-toggle]').onclick=()=>toggleDone(row.dataset.id);
-    row.querySelector('[data-edit]').onclick = ()=> openTaskModal(store.tasks.find(x=>x.id===row.dataset.id));
-    row.querySelector('[data-del]').onclick  = ()=>{ store.tasks=store.tasks.filter(x=>x.id!==row.dataset.id); saveStore(store); renderCalendarTasks(container, iso); };
-  });
+function renderTasksForDate(d) {
+  const list = qs('#taskList');
+  const dateStr = d.toISOString().split('T')[0];
+  const tasks = state.tasks.filter(t => t.date === dateStr);
+  qs('#todayTitle').textContent = d.toLocaleDateString('ru-RU',{ day:'numeric', month:'long', year:'numeric'});
+  list.innerHTML = tasks.length
+    ? tasks.map(renderTask).join('')
+    : '<div class="muted">Нет задач на эту дату.</div>';
+  qsa('.btn-done', list).forEach(btn => btn.onclick = e => toggleDone(e.target.dataset.id));
+  qsa('.btn-del', list).forEach(btn => btn.onclick = e => deleteTask(e.target.dataset.id));
 }
-function eventRow(t){
-  return `<article class="event${t.done?' is-done':''}" data-id="${t.id}" data-prio="${t.priority||'medium'}" draggable="true" style="position:relative">
-    <div></div>
+
+function renderTask(t) {
+  const done = t.done ? 'is-done' : '';
+  const pri = { low:'Низкий', medium:'Средний', high:'Высокий', critical:'Критический' }[t.priority];
+  return `<div class="task ${done}">
     <div>
-      <div class="title">${escapeHtml(t.title)}</div>
-      <div class="meta">${t.time?`⏰ ${t.time}`:''}${t.priority?` • ${mapPrio(t.priority)}`:''}</div>
+      <div><strong>${t.title}</strong></div>
+      <div class="muted">${t.time || ''} • приоритет: ${pri}</div>
     </div>
     <div class="ctl">
-      <button class="icon-btn" data-toggle>✔</button>
-      <button class="icon-btn" data-edit>✎</button>
-      <button class="icon-btn" data-del>🗑</button>
+      <button class="icon-btn btn-done" data-id="${t.id}">✔</button>
+      <button class="icon-btn btn-del" data-id="${t.id}">🗑</button>
     </div>
-  </article>`;
+  </div>`;
 }
 
-/* ===== Settings ===== */
-function renderSettings(root){
-  root.appendChild($('#settings-view').content.cloneNode(true));
-  // текущие значения
-  $('#setTheme').value = store.settings.theme || 'light';
-  $('#setAccent').value = store.settings.accent || 'violet';
-  $('#setWeekStart').value = String(store.settings.weekStart ?? 1);
-  $('#setShowToday').checked = !!store.settings.showTodayBtn;
-  $('#setShowDots').checked = !!store.settings.showDots;
-
-  // обработчики
-  $('#setTheme').onchange = e=>{ store.settings.theme=e.target.value; applyTheme(); saveStore(store); };
-  $('#setAccent').onchange = e=>{ store.settings.accent=e.target.value; applyTheme(); saveStore(store); };
-  $('#setWeekStart').onchange = e=>{ store.settings.weekStart=Number(e.target.value); saveStore(store); if((location.hash||'#/')==='#/calendar') renderCalendar($('#view')); };
-  $('#setShowToday').onchange = e=>{ store.settings.showTodayBtn=e.target.checked; saveStore(store); if((location.hash||'#/')==='#/calendar') renderCalendar($('#view')); };
-  $('#setShowDots').onchange = e=>{ store.settings.showDots=e.target.checked; saveStore(store); if((location.hash||'#/')==='#/calendar') renderCalendar($('#view')); };
-
-  $('#btnExport').onclick = exportJSON;
-  $('#fileImport').onchange = importJSON;
+// ===== CALENDAR =====
+function initCalendar() {
+  renderCalendar();
 }
 
-/* ===== Modal ===== */
-function openTaskModal(prefill){
-  const modal = $('#taskModal'), form = $('#taskForm');
-  $('#modalTitle').textContent = prefill && prefill.id ? 'Редактировать' : 'Новая задача';
-  $('#fTitle').value = prefill.title || '';
-  $('#fDate').value  = prefill.date  || state.selectedDate;
-  $('#fTime').value  = prefill.time  || '';
-  $('#fPriority').value = prefill.priority || 'medium';
-  $('#fSmart').value = prefill.smart || '';
-  $('#fNote').value  = prefill.note  || '';
-  modal.showModal();
+function renderCalendar() {
+  const cont = qs('#calendarGrid');
+  const d = state.currentDate;
+  const y = d.getFullYear(), m = d.getMonth();
+  qs('#calTitle').textContent = d.toLocaleString('ru-RU', { month:'long', year:'numeric' });
+  qs('[data-cal="prev"]').onclick = () => { state.currentDate.setMonth(m-1); renderCalendar(); };
+  qs('[data-cal="next"]').onclick = () => { state.currentDate.setMonth(m+1); renderCalendar(); };
 
-  form.onsubmit = e=>{
+  const firstDay = new Date(y, m, 1);
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  cont.innerHTML = '';
+  const weekDays = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  weekDays.forEach(dn => {
+    const div = document.createElement('div');
+    div.textContent = dn;
+    div.className = 'cell head';
+    cont.appendChild(div);
+  });
+
+  const offset = (firstDay.getDay()+6)%7;
+  for (let i=0;i<offset;i++) cont.appendChild(blankCell());
+
+  for (let i=1;i<=daysInMonth;i++) {
+    const date = new Date(y,m,i);
+    const dateStr = date.toISOString().split('T')[0];
+    const tasks = state.tasks.filter(t=>t.date===dateStr);
+    const cell = document.createElement('div');
+    cell.className = 'cell daycell';
+    cell.innerHTML = `<div class="dhead">${i}</div><div class="dots">${tasks.map(t=>`<span class="dot" style="background:${priColor(t.priority)}"></span>`).join('')}</div>`;
+    if (sameDay(date,new Date())) cell.classList.add('today');
+    cell.onclick=()=>{state.currentDate=date;location.hash='#/';};
+    cont.appendChild(cell);
+  }
+}
+function blankCell(){const d=document.createElement('div');d.className='cell empty';return d;}
+function priColor(p){return({low:'#bfbfbf',medium:'var(--accent)',high:'#ff4fa3',critical:'#8a2be2'})[p];}
+
+// ===== STATS =====
+function initStats() {
+  updateStats();
+}
+
+function updateStats() {
+  const tasks = state.tasks;
+  const done = tasks.filter(t=>t.done);
+  const now = new Date();
+  const weekAgo = new Date(now); weekAgo.setDate(now.getDate()-7);
+  const monthAgo = new Date(now); monthAgo.setMonth(now.getMonth()-1);
+
+  const weekTasks = tasks.filter(t=>new Date(t.date)>=weekAgo);
+  const monthTasks = tasks.filter(t=>new Date(t.date)>=monthAgo);
+  const weekDone = weekTasks.filter(t=>t.done);
+  const monthDone = monthTasks.filter(t=>t.done);
+
+  const pct = weekTasks.length?Math.round(weekDone.length/weekTasks.length*100):0;
+  qs('#statDonePct').textContent = pct;
+  const circle = qs('#ringFg');
+  const len = 326; circle.style.strokeDashoffset = len - len*pct/100;
+
+  qs('#statWeekDone').textContent = weekDone.length;
+  qs('#statWeekTotal').textContent = weekTasks.length;
+  qs('#statMonthDone').textContent = monthDone.length;
+  qs('#statMonthTotal').textContent = monthTasks.length;
+  qs('#statStreak').textContent = calcStreak(tasks);
+
+  // bar chart
+  const bars = qs('#bars'), labels = qs('#barLabels');
+  bars.innerHTML = labels.innerHTML = '';
+  for (let i=6;i>=0;i--) {
+    const d = new Date(now); d.setDate(now.getDate()-i);
+    const dayStr = d.toISOString().split('T')[0];
+    const total = tasks.filter(t=>t.date===dayStr).length;
+    const doneC = tasks.filter(t=>t.date===dayStr && t.done).length;
+    const h = total ? Math.round(doneC/total*100) : 0;
+    const b = document.createElement('div');
+    b.className='bar'; b.style.height=`${h}px`;
+    bars.appendChild(b);
+    const lab = document.createElement('div');
+    lab.textContent = d.toLocaleDateString('ru-RU',{weekday:'short'});
+    labels.appendChild(lab);
+  }
+}
+
+function calcStreak(tasks){
+  const dates = [...new Set(tasks.filter(t=>t.done).map(t=>t.date))].sort();
+  let max=0,curr=0,last=null;
+  for(let d of dates){
+    const dt=new Date(d);
+    if(last && (dt-last)/86400000===1) curr++; else curr=1;
+    if(curr>max)max=curr;
+    last=dt;
+  }
+  return max;
+}
+
+// ===== SETTINGS =====
+function initSettings(){
+  const s = state.settings;
+  qs('#setTheme').value = s.theme || 'light';
+  qs('#setAccent').value = s.accent || 'violet';
+  qs('#setWeekStart').value = s.weekStart || '1';
+  qs('#setShowToday').checked = s.showToday ?? true;
+  qs('#setShowDots').checked = s.showDots ?? true;
+
+  qsa('#settings-view select, #settings-view input').forEach(el=>el.onchange=saveSettings);
+  qs('#btnExport').onclick=exportData;
+  qs('#fileImport').onchange=importData;
+}
+
+function saveSettings(){
+  const s = state.settings = {
+    theme: qs('#setTheme').value,
+    accent: qs('#setAccent').value,
+    weekStart: qs('#setWeekStart').value,
+    showToday: qs('#setShowToday').checked,
+    showDots: qs('#setShowDots').checked
+  };
+  localStorage.setItem('settings', JSON.stringify(s));
+  applySettings();
+}
+
+function applySettings(){
+  const s = state.settings;
+  document.documentElement.dataset.theme = s.theme || 'light';
+  document.documentElement.dataset.accent = s.accent || 'violet';
+}
+
+// ===== TASK MODAL =====
+function openModal(){
+  const dlg = qs('#taskModal');
+  dlg.showModal();
+  const form = qs('#taskForm');
+  form.onsubmit = e => {
     e.preventDefault();
-    const fd = new FormData(form);
+    const f = Object.fromEntries(new FormData(form).entries());
     const t = {
-      id: prefill.id || uid(),
-      title: fd.get('title'),
-      date: fd.get('date') || state.selectedDate,
-      time: fd.get('time') || '',
-      priority: fd.get('priority') || 'medium',
-      smart: fd.get('smart') || '',
-      note: fd.get('note') || '',
-      done: prefill.done || false
+      id:Date.now().toString(36),
+      title:f.title.trim(),
+      date:f.date || new Date().toISOString().split('T')[0],
+      time:f.time||'',
+      priority:f.priority||'medium',
+      smart:f.smart||'',
+      note:f.note||'',
+      done:false
     };
-    const i = store.tasks.findIndex(x=>x.id===t.id);
-    if(i>-1) store.tasks[i]=t; else store.tasks.push(t);
-    saveStore(store);
-    modal.close();
-    if((location.hash||'#/')==='#/calendar') renderCalendar($('#view')); else renderTaskList();
+    state.tasks.push(t);
+    saveTasks();
+    dlg.close();
+    navigate('#/');
   };
-  $$('[data-close]').forEach(b=> b.onclick=()=> modal.close());
+  qsa('[data-close]',dlg).forEach(b=>b.onclick=()=>dlg.close());
 }
 
-/* ===== export/import ===== */
-function exportJSON(){
-  const blob = new Blob([JSON.stringify(store,null,2)], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'weepl-export-'+todayKey()+'.json';
-  a.click(); URL.revokeObjectURL(a.href);
+// ===== STORAGE =====
+function saveTasks(){
+  localStorage.setItem('tasks', JSON.stringify(state.tasks));
 }
-function importJSON(e){
-  const f=e.target.files[0]; if(!f) return;
+function toggleDone(id){
+  const t=state.tasks.find(x=>x.id===id); if(t){t.done=!t.done; saveTasks(); navigate('#/');}
+}
+function deleteTask(id){
+  state.tasks = state.tasks.filter(t=>t.id!==id);
+  saveTasks();
+  navigate('#/');
+}
+
+// ===== EXPORT / IMPORT =====
+function exportData(){
+  const blob=new Blob([JSON.stringify({tasks:state.tasks,settings:state.settings},null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='weepl-data.json';
+  a.click();
+}
+function importData(e){
+  const file=e.target.files[0];
+  if(!file)return;
   const r=new FileReader();
-  r.onload=()=>{ try{
-      const d=JSON.parse(r.result);
-      if(!d.tasks) throw 0;
-      d.settings = Object.assign({}, DEFAULTS.settings, d.settings||{});
-      store=d; saveStore(store); applyTheme(); alert('Импортировано'); router();
-    } catch{ alert('Ошибка импорта'); }
+  r.onload=()=>{
+    try{
+      const data=JSON.parse(r.result);
+      if(data.tasks)state.tasks=data.tasks;
+      if(data.settings)state.settings=data.settings;
+      saveTasks();
+      localStorage.setItem('settings',JSON.stringify(state.settings));
+      location.reload();
+    }catch(err){alert('Ошибка импорта');}
   };
-  r.readAsText(f);
+  r.readAsText(file);
 }
 
-/* ===== drag helper ===== */
-document.addEventListener('dragstart', e=>{
-  const art=e.target.closest('.task, .event'); if(!art) return;
-  e.dataTransfer.setData('text/id', art.dataset.id);
-  e.dataTransfer.effectAllowed='move';
-});
+// ===== HELPERS =====
+function sameDay(a,b){return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();}
