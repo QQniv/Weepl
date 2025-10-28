@@ -1,281 +1,206 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" class="no-js">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <meta name="color-scheme" content="light dark"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Weepl • Планировщик</title>
 
-  <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Anton:wght@400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <!-- Шрифты (Impact-стиль для заголовков + нейтральный текстовый) -->
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="styles.css?v=1.7.1"/>
+  <!-- Стили -->
+  <link rel="stylesheet" href="./styles.css"/>
 
+  <!-- PWA meta (опционально, не мешает) -->
   <meta name="theme-color" content="#ffffff"/>
 </head>
 <body>
 
-  <!-- ===== TOP BAR (month) ===== -->
-  <header class="topbar" role="banner">
-    <button id="navPrev" class="icon-btn" aria-label="Предыдущий месяц">←</button>
-    <h1 id="topTitle" class="title">Октябрь 2025 г.</h1>
-    <button id="navNext" class="icon-btn" aria-label="Следующий месяц">→</button>
+  <!-- ====== TOPBAR: заголовок месяца на главной и в календаре ====== -->
+  <header class="topbar">
+    <button id="navPrev" class="iconbtn" aria-label="Предыдущий месяц">←</button>
+    <h1 id="topTitle" class="month-title">Октябрь 2025 г.</h1>
+    <button id="navNext" class="iconbtn" aria-label="Следующий месяц">→</button>
   </header>
 
-  <!-- ====== VIEW: TODAY (has scroller + timeline + list) ====== -->
-  <main id="todayView" class="view active" role="main" aria-label="Сегодня">
-    <!-- Horizontal day cards scroller (ONLY here) -->
-    <section id="dateScroller" class="date-scroller" aria-label="Дни месяца"></section>
+  <!-- ====== ОСНОВНОЕ ПОЛЕ ПРИЛОЖЕНИЯ ====== -->
+  <main id="viewContainer" class="view">
 
-    <!-- 2-колоночный лейаут: таймлиния и общий список -->
-    <section class="today-layout" aria-label="План на день">
-      <!-- Timeline: события растягиваются по длительности -->
-      <div class="timeline-wrap">
-        <div class="timeline-head">
-          <h2 class="section-title">Временная шкала</h2>
-          <div id="kpiCounter" class="muted"></div>
+    <!-- ====== TODAY VIEW (главная) ====== -->
+    <section id="todayView" class="screen screen--active" role="region" aria-label="Сегодня">
+
+      <!-- Горизонтальный скроллер дат (пилюли). По центру всегда сегодня -->
+      <div class="date-strip">
+        <div id="dateScroller" class="date-strip__scroller" aria-label="Выбор даты">
+          <!-- JS вставит карточки-дни -->
         </div>
-        <div id="timeline" class="timeline" aria-live="polite"></div>
       </div>
 
-      <!-- Общий список: задачи (фикс) + события (ярлык в списке) -->
-      <div class="list-wrap">
-        <div class="list-head">
-          <h2 class="section-title">Список</h2>
-          <div class="list-legend">
-            <span class="dot task"></span><span class="muted">задача</span>
-            <span class="dot event"></span><span class="muted">событие</span>
+      <!-- Блок “Сегодня” с двумя секциями: линейка событий (временной промежуток) и список задач -->
+      <div class="today-panels">
+
+        <!-- Тайм-лента событий (08:00–20:00). Внутрь позиционируются блоки событий. -->
+        <section class="panel" aria-label="События за день">
+          <div class="panel__head">
+            <h2 class="panel__title">События</h2>
+            <div class="panel__hint">длительные блоки по времени</div>
           </div>
-        </div>
-        <ul id="taskList" class="task-list" aria-live="polite" aria-describedby="listHint"></ul>
-        <p id="listHint" class="muted small">
-          Свайп вправо — выполнить. Свайп влево — перенос дедлайна.
-        </p>
+
+          <div id="timeline" class="timeline" aria-live="polite" aria-relevant="additions">
+            <!-- JS: рендер шкалы часов + события с высотой по длительности -->
+          </div>
+        </section>
+
+        <!-- Список задач (фиксированные карточки) -->
+        <section class="panel" aria-label="Задачи за день">
+          <div class="panel__head">
+            <h2 class="panel__title">Задачи</h2>
+            <div id="kpiCounter" class="panel__hint">Задач: 0</div>
+          </div>
+
+          <ul id="taskList" class="tasklist" aria-live="polite" aria-relevant="additions removals">
+            <!-- JS: задачи. Свайп вправо — выполнить; влево — меню переноса -->
+          </ul>
+        </section>
+
       </div>
     </section>
-  </main>
 
-  <!-- ====== VIEW: CALENDAR (NO scroller here) ====== -->
-  <main id="calendarView" class="view" aria-label="Календарь">
-    <header class="subbar">
-      <button id="calPrev" class="icon-btn" aria-label="Предыдущий месяц">←</button>
-      <h2 id="calTitle" class="subtitle">Октябрь 2025 г.</h2>
-      <button id="calNext" class="icon-btn" aria-label="Следующий месяц">→</button>
-    </header>
-
-    <!-- Сетка помещается в экран; внутри — собственный скролл, если надо -->
-    <div class="calendar-wrap">
-      <div class="weekdays" aria-hidden="true">
-        <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+    <!-- ====== CALENDAR VIEW (полноэкранная сетка, без верхнего барабана дат) ====== -->
+    <section id="calendarView" class="screen" role="region" aria-label="Календарь">
+      <div class="calendar-head">
+        <button id="calPrev" class="iconbtn" aria-label="Предыдущий месяц">←</button>
+        <h2 id="calTitle" class="month-title">Октябрь 2025 г.</h2>
+        <button id="calNext" class="iconbtn" aria-label="Следующий месяц">→</button>
       </div>
-      <div id="calendarGrid" class="calendar-grid" role="grid" aria-label="Сетка календаря"></div>
-    </div>
-  </main>
 
-  <!-- ====== VIEW: STATS ====== -->
-  <main id="statsView" class="view" aria-label="Статистика">
-    <h2 class="section-title">Статистика</h2>
-    <div class="stats-grid">
-      <article class="card kpi-ring" aria-label="Процент недели">
-        <canvas id="ringPct" width="240" height="240"></canvas>
-        <div id="ringPctValue" class="ring-value">0%</div>
-        <div class="muted">Выполнено за неделю</div>
-      </article>
-
-      <article class="card kpi-box">
-        <div id="kpi7d" class="kpi-big">0 / 0</div>
-        <div class="muted">За 7 дней</div>
-      </article>
-
-      <article class="card kpi-box">
-        <div id="kpiMonth" class="kpi-big">0 / 0</div>
-        <div class="muted">За месяц</div>
-      </article>
-
-      <article class="card kpi-box">
-        <div id="streak" class="kpi-big">0</div>
-        <div class="muted">Серия выполнения</div>
-      </article>
-
-      <article class="card kpi-chart">
-        <header class="card-head">
-          <span class="card-title">Выполнено по дням</span>
-          <span class="muted">последние 7 дней</span>
-        </header>
-        <canvas id="bar7d" width="640" height="220"></canvas>
-      </article>
-    </div>
-  </main>
-
-  <!-- ====== VIEW: SETTINGS ====== -->
-  <main id="settingsView" class="view" aria-label="Настройки">
-    <h2 class="section-title">Персонализация</h2>
-
-    <div id="settings" class="settings">
-      <section class="settings-group">
-        <div class="row">
-          <label for="accentColor">Акцентный цвет</label>
-          <input type="color" id="accentColor" value="#5b6cff"/>
+      <div class="calendar">
+        <div class="calendar__wd">Пн</div><div class="calendar__wd">Вт</div><div class="calendar__wd">Ср</div>
+        <div class="calendar__wd">Чт</div><div class="calendar__wd">Пт</div><div class="calendar__wd">Сб</div><div class="calendar__wd">Вс</div>
+        <div id="calendarGrid" class="calendar__grid" aria-label="Сетка дней">
+          <!-- JS: 6×7 ячеек, полностью помещается на экране -->
         </div>
-        <div class="row">
-          <label for="neonToggle">Неон-эффект</label>
-          <input type="checkbox" id="neonToggle"/>
-        </div>
-        <div class="row">
-          <label for="metalToggle">Металличность</label>
-          <input type="checkbox" id="metalToggle"/>
-        </div>
-        <div class="row">
-          <label for="fontScale">Масштаб текста</label>
-          <input type="range" id="fontScale" min="0.9" max="1.2" step="0.05" value="1"/>
-        </div>
-      </section>
+      </div>
 
-      <h3 class="settings-sub">Поведение</h3>
-      <section class="settings-group">
-        <div class="row">
-          <label for="smartOptional">SMART-поля при добавлении</label>
-          <input type="checkbox" id="smartOptional" checked/>
-        </div>
-        <div class="row">
-          <label for="slotStart">Старт дневной шкалы</label>
-          <input type="time" id="slotStart" value="06:00"/>
-        </div>
-        <div class="row">
-          <label for="slotStep">Шаг слотов (мин)</label>
-          <input type="number" id="slotStep" min="5" step="5" value="15"/>
-        </div>
-      </section>
-    </div>
-  </main>
+      <p class="calendar-hint">Выберите день, чтобы увидеть задачи и события.</p>
+    </section>
 
-  <!-- ===== FAB ===== -->
-  <button id="fab" class="fab" aria-haspopup="dialog" aria-controls="addDialog" aria-label="Добавить">＋</button>
-
-  <!-- ===== TABBAR ===== -->
-  <nav id="tabbar" class="tabbar" role="navigation" aria-label="Навигация">
-    <button class="tab active" data-view="today" aria-label="Список">
-      <span class="ico" aria-hidden="true">🗂️</span>
-    </button>
-    <button class="tab" data-view="calendar" aria-label="Календарь">
-      <span class="ico" aria-hidden="true">📅</span>
-    </button>
-    <button class="tab" data-view="stats" aria-label="Статистика">
-      <span class="ico" aria-hidden="true">📊</span>
-    </button>
-    <button class="tab" data-view="settings" aria-label="Настройки">
-      <span class="ico" aria-hidden="true">⚙️</span>
-    </button>
-  </nav>
-
-  <!-- ===== DIALOG: ADD ITEM (Task/Event) ===== -->
-  <dialog id="addDialog" class="dialog">
-    <form method="dialog" class="dialog-body" id="addForm">
-      <header class="dialog-head">
-        <h3 id="addTitle">Новое</h3>
-        <menu class="seg">
-          <button type="button" class="seg-btn active" data-kind="task">Задача</button>
-          <button type="button" class="seg-btn" data-kind="event">Событие</button>
-        </menu>
-      </header>
-
-      <div class="fields">
-        <label>Название
-          <input id="fTitle" type="text" required placeholder="Что нужно сделать?"/>
-        </label>
-
-        <div class="row2">
-          <label>Дата
-            <input id="fDate" type="date" required/>
-          </label>
-          <label>Время
-            <input id="fTime" type="time"/>
-          </label>
+    <!-- ====== STATS VIEW ====== -->
+    <section id="statsView" class="screen" role="region" aria-label="Статистика">
+      <h2 class="screen-title">Статистика</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="ring" aria-label="Процент выполнения за неделю">
+            <svg viewBox="0 0 120 120" class="ring__svg" aria-hidden="true">
+              <circle cx="60" cy="60" r="52" class="ring__bg"></circle>
+              <circle cx="60" cy="60" r="52" class="ring__fg" id="ringFg"></circle>
+            </svg>
+            <div id="ringPct" class="ring__label">0%</div>
+          </div>
+          <div class="stat-card__caption">Выполнено за неделю</div>
         </div>
 
-        <!-- Только для события -->
-        <div id="eventBlock" class="event-only hidden">
-          <div class="row2">
-            <label>Начало
-              <input id="fStart" type="time" value="06:00"/>
-            </label>
-            <label>Длительность (мин)
-              <input id="fDur" type="number" min="5" step="5" value="60"/>
+        <div class="stat-card">
+          <div class="stat-card__big" id="w7Stat">0 / 0</div>
+          <div class="stat-card__caption">За 7 дней</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card__big" id="monthStat">0 / 0</div>
+          <div class="stat-card__caption">За месяц</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card__big" id="streakStat">0</div>
+          <div class="stat-card__caption">Серия выполнений</div>
+        </div>
+
+        <div class="stat-wide">
+          <div class="stat-wide__head">
+            <div class="stat-wide__title">Выполнено по дням</div>
+            <div class="stat-wide__hint">последние 7 дней</div>
+          </div>
+          <canvas id="bar7" width="700" height="180" aria-label="Столбцы за 7 дней"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== SETTINGS VIEW ====== -->
+    <section id="settingsView" class="screen" role="region" aria-label="Настройки">
+      <h2 class="screen-title">Настройки</h2>
+
+      <div class="settings">
+        <div class="setting-row">
+          <div class="setting-row__label">Акцентный цвет</div>
+          <div class="setting-row__ctrl">
+            <input id="accentPicker" type="color" value="#6a5bff" />
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-row__label">Неон-эффект</div>
+          <div class="setting-row__ctrl">
+            <label class="switch">
+              <input id="toggleNeon" type="checkbox"/>
+              <span class="switch__bar"></span>
             </label>
           </div>
         </div>
 
-        <div class="row2">
-          <label>Важность
-            <select id="fPriority">
-              <option value="low">низкая</option>
-              <option value="medium" selected>средняя</option>
-              <option value="high">высокая</option>
-            </select>
-          </label>
-          <label>Тег
-            <input id="fTag" type="text" placeholder="#учёба #спорт"/>
-          </label>
+        <div class="setting-row">
+          <div class="setting-row__label">Металличность</div>
+          <div class="setting-row__ctrl">
+            <label class="switch">
+              <input id="toggleMetal" type="checkbox"/>
+              <span class="switch__bar"></span>
+            </label>
+          </div>
         </div>
 
-        <!-- SMART (опционально) -->
-        <details id="smartWrap" class="smart">
-          <summary>SMART-поля</summary>
-          <label>S — конкретика
-            <input id="fS" type="text" placeholder="Что точно сделать?"/>
-          </label>
-          <label>M — метрика
-            <input id="fM" type="text" placeholder="Как пойму, что готово?"/>
-          </label>
-          <label>A — достижимость
-            <input id="fA" type="text" placeholder="Ресурсы/шаги"/>
-          </label>
-          <label>R — релевантность
-            <input id="fR" type="text" placeholder="Зачем это мне?"/>
-          </label>
-          <label>T — срок
-            <input id="fT" type="datetime-local"/>
-          </label>
-        </details>
-
-        <label>Комментарий
-          <textarea id="fNote" rows="3" placeholder="Доп. детали…"></textarea>
-        </label>
+        <div class="setting-row">
+          <div class="setting-row__label">Размер текста</div>
+          <div class="setting-row__ctrl">
+            <input id="fontScale" type="range" min="90" max="115" step="5" value="100"/>
+          </div>
+        </div>
       </div>
+    </section>
 
-      <footer class="dialog-foot">
-        <button value="cancel" class="btn ghost">Отмена</button>
-        <button id="addSave" value="default" class="btn primary">Добавить</button>
-      </footer>
+  </main>
+
+  <!-- ====== FAB (добавить) ====== -->
+  <button id="fabAdd" class="fab" aria-label="Добавить">+</button>
+
+  <!-- ====== НИЖНЯЯ НАВИГАЦИЯ ====== -->
+  <nav class="tabbar" aria-label="Навигация по разделам">
+    <button id="tabTasks"    class="tabbar__btn" aria-label="Задачи"   data-view="today"><span class="i i-list"></span></button>
+    <button id="tabCalendar" class="tabbar__btn" aria-label="Календарь" data-view="calendar"><span class="i i-cal"></span></button>
+    <button id="tabStats"    class="tabbar__btn" aria-label="Статистика" data-view="stats"><span class="i i-bars"></span></button>
+    <button id="tabSettings" class="tabbar__btn" aria-label="Настройки" data-view="settings"><span class="i i-gear"></span></button>
+  </nav>
+
+  <!-- Модалка переноса дедлайна (исправлен баг “Отмена скрывает задачу”) -->
+  <dialog id="rescheduleDlg" class="dlg">
+    <form method="dialog" class="dlg__card" id="rescheduleForm">
+      <div class="dlg__title">Перенести</div>
+      <div class="dlg__grid">
+        <button value="b15" class="chip">+15 мин</button>
+        <button value="b30" class="chip">+30 мин</button>
+        <button value="h1"  class="chip">+1 час</button>
+        <button value="d1"  class="chip">+1 день</button>
+      </div>
+      <div class="dlg__custom">
+        <label class="dlg__label">Минуты</label>
+        <input id="resMins" type="number" min="1" max="1440" step="1" placeholder="Минуты" class="dlg__input"/>
+        <button value="apply" class="btn btn--primary">Применить</button>
+      </div>
+      <div class="dlg__actions">
+        <button value="cancel" class="btn">Отмена</button>
+      </div>
     </form>
   </dialog>
 
-  <!-- ===== BOTTOM SHEET: RESCHEDULE ===== -->
-  <div id="rescheduleSheet" class="sheet" aria-hidden="true" role="dialog" aria-label="Перенос дедлайна">
-    <div class="sheet-card">
-      <header class="sheet-head">
-        <h3>Перенести</h3>
-        <button id="sheetClose" class="icon-btn" aria-label="Закрыть">✕</button>
-      </header>
-      <div class="sheet-actions">
-        <button class="chip" data-shift="15">+15 мин</button>
-        <button class="chip" data-shift="30">+30 мин</button>
-        <button class="chip" data-shift="60">+1 час</button>
-        <button class="chip" data-shift="1440">+1 день</button>
-        <div class="row2">
-          <input id="customShift" type="number" min="1" step="1" placeholder="Минуты"/>
-          <button id="applyCustom" class="btn">Применить</button>
-        </div>
-      </div>
-      <footer class="sheet-foot">
-        <button id="sheetCancel" class="btn ghost">Отмена</button>
-      </footer>
-    </div>
-    <div class="sheet-backdrop"></div>
-  </div>
-
-  <!-- App script -->
-  <script defer src="app.js?v=1.7.1"></script>
+  <!-- Скрипт приложения -->
+  <script src="./app.js" defer></script>
 </body>
 </html>
