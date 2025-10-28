@@ -1,9 +1,11 @@
 /* =========================================================
-   WEEPL — app.js
-   Полный рабочий движок приложения
+   WEEPL — app.js (fixes)
+   - Центрируем выбранную/сегодняшнюю дату в ленте
+   - Ровная сетка событий/задач
+   - Нормальное закрытие модалок (крестик/Отмена/ESC)
+   - Мелкие UX-улучшения
    ========================================================= */
 
-/* --------- ELEMENTS --------- */
 const app = document.getElementById("app");
 const dateStrip = document.getElementById("dateStrip");
 const monthLabel = document.getElementById("monthLabel");
@@ -26,6 +28,16 @@ const saveSettings = document.getElementById("saveSettings");
 const colorSwatches = document.querySelectorAll(".color-swatch");
 const customColor = document.getElementById("customColor");
 
+// поля формы
+const $ = (s)=>document.querySelector(s);
+const inputType = $("#taskType");
+const inputTitle = $("#taskTitle");
+const inputDesc  = $("#taskDesc");
+const inputStart = $("#taskStart");
+const inputEnd   = $("#taskEnd");
+const inputPriority = $("#taskPriority");
+const inputIcon  = $("#taskIcon");
+
 /* --------- STATE --------- */
 let currentDate = new Date();
 let selectedDate = new Date();
@@ -44,227 +56,325 @@ const parseMin = (t) => { if(!t) return 0; const [h,m] = t.split(":").map(Number
 const minToTime = (m) => `${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;
 const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
-/* --------- INITIAL SETUP --------- */
+/* --------- INITIAL THEME --------- */
 applyTheme(settings.theme);
 applyAccent(settings.accent);
 app.dataset.view = settings.view;
 
-/* --------- RENDER CALENDAR --------- */
-function renderCalendar(date){
+/* =========================================================
+   Calendar strip
+   ========================================================= */
+function renderCalendar(date, centerSelected = true){
   dateStrip.innerHTML="";
   const start = new Date(date.getFullYear(), date.getMonth(), 1);
   const end = new Date(date.getFullYear(), date.getMonth()+1, 0);
+
   monthLabel.textContent = start.toLocaleString("ru-RU",{month:"long"}).replace(/^./,c=>c.toUpperCase());
   yearLabel.textContent = start.getFullYear();
+
+  let selectedEl = null;
 
   for(let d=1; d<=end.getDate(); d++){
     const cur = new Date(date.getFullYear(), date.getMonth(), d);
     const el = document.createElement("button");
+    el.type = "button";
     el.className="date";
     if(isSameDate(cur,new Date())) el.classList.add("is-today");
-    if(isSameDate(cur,selectedDate)) el.classList.add("is-selected");
-    el.innerHTML=`<div class="dow">${cur.toLocaleDateString("ru-RU",{weekday:"short"})}</div>
-                  <div class="day">${d}</div>
-                  <div class="mon">${cur.toLocaleDateString("ru-RU",{month:"short"})}</div>`;
-    el.onclick=()=>{selectedDate=cur; renderCalendar(cur); renderTasks();};
+    if(isSameDate(cur,selectedDate)) { el.classList.add("is-selected"); selectedEl = el; }
+
+    el.innerHTML=`
+      <div class="dow">${cur.toLocaleDateString("ru-RU",{weekday:"short"})}</div>
+      <div class="day">${d}</div>
+      <div class="mon">${cur.toLocaleDateString("ru-RU",{month:"short"})}</div>`;
+    el.onclick=()=>{
+      selectedDate=cur;
+      renderCalendar(cur);
+      renderTasks();
+    };
     dateStrip.appendChild(el);
+  }
+
+  // центрируем выбранную дату (по умолчанию это сегодня)
+  if (centerSelected && selectedEl) {
+    selectedEl.scrollIntoView({inline:"center", behavior:"smooth", block:"nearest"});
   }
 }
 
-/* --------- RENDER TASKS --------- */
+/* =========================================================
+   Rendering tasks
+   ========================================================= */
 function renderTasks(){
   const dateKey = fmtDate(selectedDate);
   const daily = tasks.filter(t=>t.date===dateKey);
+
   todayTitle.textContent = isSameDate(selectedDate,new Date()) ? "Сегодня" :
     selectedDate.toLocaleDateString("ru-RU",{day:"numeric",month:"long"});
+
   timelineView.innerHTML="";
   cardsView.innerHTML="";
 
   if(daily.length===0){
-    timelineView.innerHTML = `<div class="empty">Нет событий или задач</div>`;
-    cardsView.innerHTML = `<div class="empty">Нет событий или задач</div>`;
+    const empty = `<div class="empty">Нет событий или задач</div>`;
+    timelineView.innerHTML = empty;
+    cardsView.innerHTML = empty;
+    toggleViews();
     return;
   }
 
-  // разделение
   const events = daily.filter(t=>t.type==="event").sort((a,b)=>a.start.localeCompare(b.start));
-  const plain = daily.filter(t=>t.type==="task");
+  const plain  = daily.filter(t=>t.type==="task"); // без времени
 
-  // Timeline
   if(settings.view==="timeline"){
+    // события по сетке
     for(const ev of events){
-      const el=document.createElement("div");
-      el.className="event"+(ev.done?" is-done":"");
-      el.innerHTML=`
-        <div class="pin">${ev.icon||"•"}</div>
-        <div class="card">
-          <div class="title">${ev.title}</div>
-          <div class="meta">${ev.start}–${ev.end} • ${ev.desc||""}</div>
+      const row = document.createElement("div");
+      row.className = "row"; // сетка 40px + 1fr
+      row.innerHTML = `
+        <div class="node">
+          <div class="pin">${ev.icon||"•"}</div>
         </div>
-      `;
-      addSwipe(el, ev.id);
-      el.onclick=()=>openEdit(ev.id);
-      timelineView.appendChild(el);
+        <div class="cell">
+          <div class="event ${ev.done?'is-done':''}">
+            <div class="card">
+              <div class="title">${ev.title}</div>
+              <div class="meta">${ev.start}–${ev.end}${ev.desc?` • ${ev.desc}`:''}</div>
+            </div>
+          </div>
+        </div>`;
+      attachRowHandlers(row, ev.id);
+      timelineView.appendChild(row);
     }
 
+    // блок задач
     if(plain.length){
-      const block=document.createElement("div");
-      block.innerHTML=`<h4 class="section-title">Задачи</h4>`;
-      timelineView.appendChild(block);
+      const hdr = document.createElement("h4");
+      hdr.className = "section-sub";
+      hdr.textContent = "Задачи";
+      timelineView.appendChild(hdr);
+
       for(const t of plain){
-        const task=document.createElement("div");
-        task.className="task"+(t.done?" is-done":"");
-        task.innerHTML=`
-          <div class="check">${t.done?"✓":""}</div>
-          <div class="info">
-            <div class="name">${t.icon||"•"} ${t.title}</div>
-            <div class="priority">Приоритет ${t.priority}</div>
+        const row = document.createElement("div");
+        row.className="row";
+        row.innerHTML=`
+          <div class="node">
+            <div class="pin pin-task">${t.icon||"•"}</div>
           </div>
-        `;
-        addSwipe(task,t.id);
-        task.onclick=()=>openEdit(t.id);
-        timelineView.appendChild(task);
+          <div class="cell">
+            <div class="task ${t.done?'is-done':''}">
+              <button class="check">${t.done?'✓':''}</button>
+              <div class="info">
+                <div class="name">${t.title}</div>
+                <div class="priority">Приоритет ${t.priority}</div>
+              </div>
+            </div>
+          </div>`;
+        attachRowHandlers(row, t.id);
+        timelineView.appendChild(row);
       }
     }
   }
 
-  // Cards
   if(settings.view==="cards"){
     for(const t of daily){
-      const card=document.createElement("div");
-      card.className=(t.type==="event"?"event":"task")+(t.done?" is-done":"");
-      card.innerHTML=`
-        <div class="pin">${t.icon||"•"}</div>
-        <div class="card">
-          <div class="title">${t.title}</div>
-          <div class="meta">${t.type==="event"?`${t.start}–${t.end}`:"Приоритет "+t.priority}</div>
+      const row = document.createElement("div");
+      row.className="row";
+      row.innerHTML=`
+        <div class="node">
+          <div class="pin ${t.type==='task'?'pin-task':''}">${t.icon||"•"}</div>
         </div>
-      `;
-      addSwipe(card,t.id);
-      card.onclick=()=>openEdit(t.id);
-      cardsView.appendChild(card);
+        <div class="cell">
+          <div class="${t.type==='event'?'event':'task'} ${t.done?'is-done':''}">
+            ${t.type==='event'
+              ? `<div class="card"><div class="title">${t.title}</div><div class="meta">${t.start}–${t.end}</div></div>`
+              : `<button class="check">${t.done?'✓':''}</button><div class="info"><div class="name">${t.title}</div><div class="priority">Приоритет ${t.priority}</div></div>`
+            }
+          </div>
+        </div>`;
+      attachRowHandlers(row, t.id);
+      cardsView.appendChild(row);
     }
   }
 
-  timelineView.hidden=settings.view!=="timeline";
-  cardsView.hidden=settings.view!=="cards";
+  toggleViews();
 }
 
-/* --------- ADD TASK --------- */
+function toggleViews(){
+  timelineView.hidden = settings.view !== "timeline";
+  cardsView.hidden    = settings.view !== "cards";
+}
+
+function attachRowHandlers(row, id){
+  // клики по карточке — редактирование
+  row.querySelector(".cell").addEventListener("click", ()=> openEdit(id));
+  // свайпы
+  addSwipe(row, id);
+}
+
+/* =========================================================
+   Create / Edit
+   ========================================================= */
 taskForm.addEventListener("submit",(e)=>{
   e.preventDefault();
   const data={
-    type:document.getElementById("taskType").value,
-    title:document.getElementById("taskTitle").value.trim(),
-    desc:document.getElementById("taskDesc").value.trim(),
-    start:document.getElementById("taskStart").value,
-    end:document.getElementById("taskEnd").value,
-    priority:document.getElementById("taskPriority").value,
-    icon:document.getElementById("taskIcon").value,
-    date:fmtDate(selectedDate),
-    done:false
+    type: inputType.value,
+    title: inputTitle.value.trim(),
+    desc:  inputDesc.value.trim(),
+    start: inputStart.value,
+    end:   inputEnd.value,
+    priority: inputPriority.value,
+    icon:  inputIcon.value,
+    date:  fmtDate(selectedDate),
+    done: false
   };
   if(!data.title) return;
-  if(editingId){
-    const idx=tasks.findIndex(t=>t.id===editingId);
-    if(idx>-1) tasks[idx]={...tasks[idx],...data};
+
+  if (data.type === "event") {
+    // валидация времени
+    if (!data.start || !data.end || parseMin(data.end) <= parseMin(data.start)) {
+      alert("У события укажи корректный период времени.");
+      return;
+    }
   } else {
-    data.id=uid();
+    // задачи не должны иметь времени
+    data.start = ""; data.end = "";
+  }
+
+  if(editingId){
+    const i = tasks.findIndex(t=>t.id===editingId);
+    if(i>-1) tasks[i] = { ...tasks[i], ...data };
+  } else {
+    data.id = uid();
     tasks.push(data);
   }
+
   saveTasks();
-  taskModal.close();
+  closeDialog(taskModal);
   taskForm.reset();
   renderTasks();
-  editingId=null;
+  editingId = null;
 });
 
-/* --------- OPEN/EDIT --------- */
 function openEdit(id){
   const t=tasks.find(x=>x.id===id);
   if(!t) return;
   editingId=id;
   taskFormTitle.textContent="Редактировать";
-  document.getElementById("taskType").value=t.type;
-  document.getElementById("taskTitle").value=t.title;
-  document.getElementById("taskDesc").value=t.desc;
-  document.getElementById("taskStart").value=t.start;
-  document.getElementById("taskEnd").value=t.end;
-  document.getElementById("taskPriority").value=t.priority;
-  document.getElementById("taskIcon").value=t.icon;
-  taskModal.showModal();
+  inputType.value = t.type;
+  inputTitle.value = t.title;
+  inputDesc.value  = t.desc || "";
+  inputStart.value = t.start || "";
+  inputEnd.value   = t.end || "";
+  inputPriority.value = t.priority || "B";
+  inputIcon.value  = t.icon || "•";
+  openDialog(taskModal);
 }
 
-/* --------- SWIPE HANDLERS --------- */
+/* =========================================================
+   Swipe: right=done, left=postpone (events)
+   ========================================================= */
 function addSwipe(el,id){
-  let startX=0;
-  el.addEventListener("touchstart",(e)=>{startX=e.touches[0].clientX;});
+  let startX=0, startY=0;
+  el.addEventListener("touchstart",(e)=>{startX=e.touches[0].clientX; startY=e.touches[0].clientY;},{passive:true});
   el.addEventListener("touchend",(e)=>{
     const dx=e.changedTouches[0].clientX-startX;
-    if(Math.abs(dx)>50){
+    const dy=e.changedTouches[0].clientY-startY;
+    if(Math.abs(dx)>60 && Math.abs(dy)<40){
       if(dx>0) markDone(id);
       else postpone(id);
     }
   });
 }
-
 function markDone(id){
   const t=tasks.find(x=>x.id===id);
-  if(t){t.done=!t.done; saveTasks(); renderTasks();}
+  if(t){ t.done=!t.done; saveTasks(); renderTasks(); }
 }
 function postpone(id){
   const t=tasks.find(x=>x.id===id && x.type==="event");
-  if(t){
-    const end=parseMin(t.end)+15;
-    t.end=minToTime(end);
-    saveTasks();
-    renderTasks();
-  }
+  if(!t) return;
+  const end=parseMin(t.end)+15;
+  t.end=minToTime(end);
+  saveTasks(); renderTasks();
 }
 
-/* --------- SETTINGS --------- */
+/* =========================================================
+   Settings & theme
+   ========================================================= */
 saveSettings.addEventListener("click",(e)=>{
   e.preventDefault();
   const theme=document.querySelector('input[name="theme"]:checked').value;
   const view=document.querySelector('input[name="view"]:checked').value;
-  settings.theme=theme; settings.view=view;
-  const color=customColor.value || settings.accent;
-  settings.accent=color;
-  localStorage.setItem("weepl_settings",JSON.stringify(settings));
-  applyTheme(theme);
-  applyAccent(color);
+  const color=customColor?.value || settings.accent;
+
+  settings.theme=theme; settings.view=view; settings.accent=color;
+  localStorage.setItem("weepl_settings", JSON.stringify(settings));
+
+  applyTheme(theme); applyAccent(color);
   app.dataset.view=view;
-  settingsModal.close();
+
+  closeDialog(settingsModal);
   renderTasks();
 });
+
 colorSwatches.forEach(b=>{
   b.addEventListener("click",()=>{
     const c=b.dataset.color;
     applyAccent(c);
-    customColor.value=c;
+    if (customColor) customColor.value=c;
   });
 });
 
-/* --------- THEME & COLOR --------- */
-function applyTheme(theme){
-  app.dataset.theme=theme;
-  localStorage.setItem("weepl_theme",theme);
-}
-function applyAccent(color){
-  document.documentElement.style.setProperty("--accent",color);
-  localStorage.setItem("weepl_accent",color);
-}
+function applyTheme(theme){ app.dataset.theme=theme; }
+function applyAccent(color){ document.documentElement.style.setProperty("--accent",color); }
 
-/* --------- STORAGE --------- */
-function saveTasks(){
-  localStorage.setItem("weepl_tasks",JSON.stringify(tasks));
-}
+/* =========================================================
+   Modal open/close (iOS-friendly)
+   ========================================================= */
+function openDialog(dlg){ if(!dlg.open) dlg.showModal(); }
+function closeDialog(dlg){ if(dlg.open) dlg.close(); }
 
-/* --------- NAVIGATION --------- */
-btnPrev.onclick=()=>{currentDate.setMonth(currentDate.getMonth()-1); renderCalendar(currentDate);};
-btnNext.onclick=()=>{currentDate.setMonth(currentDate.getMonth()+1); renderCalendar(currentDate);};
-addBtn.onclick=()=>{editingId=null; taskForm.reset(); taskFormTitle.textContent="Новая запись"; taskModal.showModal();};
+// крестики и кнопки «Отмена»
+document.querySelectorAll('dialog .icon-btn[value="close"], dialog .btn[value="cancel"]').forEach(btn=>{
+  btn.setAttribute("type","button");
+  btn.addEventListener("click", (e)=>{
+    const dlg = e.target.closest("dialog");
+    closeDialog(dlg);
+  });
+});
 
-/* --------- INIT --------- */
-renderCalendar(currentDate);
+// закрытие по ESC — нативно работает, но на всякий случай
+document.addEventListener("keydown", (e)=>{
+  if(e.key==="Escape"){
+    if(taskModal.open) closeDialog(taskModal);
+    if(settingsModal.open) closeDialog(settingsModal);
+  }
+});
+
+/* =========================================================
+   Storage
+   ========================================================= */
+function saveTasks(){ localStorage.setItem("weepl_tasks", JSON.stringify(tasks)); }
+
+/* =========================================================
+   Navigation
+   ========================================================= */
+btnPrev.onclick=()=>{ currentDate.setMonth(currentDate.getMonth()-1); renderCalendar(currentDate); };
+btnNext.onclick=()=>{ currentDate.setMonth(currentDate.getMonth()+1); renderCalendar(currentDate); };
+addBtn.onclick=()=>{
+  editingId=null;
+  taskForm.reset();
+  taskFormTitle.textContent="Новая запись";
+  // по умолчанию — событие с ближайшим 30-мин интервалом
+  const now = new Date();
+  const base = isSameDate(selectedDate, new Date()) ? now : new Date(selectedDate);
+  const s = `${String(base.getHours()).padStart(2,'0')}:${String(base.getMinutes()).padStart(2,'0')}`;
+  inputType.value="event";
+  inputStart.value=s;
+  inputEnd.value=minToTime(parseMin(s)+30);
+  openDialog(taskModal);
+};
+
+/* =========================================================
+   Init (центрируем сегодня)
+   ========================================================= */
+renderCalendar(currentDate, true);
 renderTasks();
