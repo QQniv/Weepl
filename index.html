@@ -3,19 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>PlanFlow — твой день</title>
+  <title>Weepl — твой день</title>
+  <meta name="theme-color" content="#0f1a2b" />
   <link rel="stylesheet" href="styles.css" />
-  <meta name="theme-color" content="#f6f7fb" />
+  <link rel="manifest" href="manifest.json" />
 </head>
 
 <body>
-  <div class="app" id="app" data-layout="timeline">
+  <div class="app" id="app" data-theme="light" data-view="timeline">
     <!-- Верхняя панель -->
     <header class="topbar">
       <button class="icon-btn" id="btnPrev" aria-label="Предыдущий месяц">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
 
       <div class="month-title">
@@ -24,13 +23,11 @@
       </div>
 
       <button class="icon-btn" id="btnNext" aria-label="Следующий месяц">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
     </header>
 
-    <!-- Лента календаря -->
+    <!-- Календарная лента -->
     <section class="calendar-strip">
       <div class="dates" id="dateStrip"></div>
     </section>
@@ -39,58 +36,110 @@
     <main class="content">
       <h2 class="section-title" id="todayTitle">Сегодня</h2>
 
-      <!-- Вариант отображения: Таймлайн -->
       <div id="timelineView" class="timeline-view"></div>
-
-      <!-- Вариант отображения: Карточки -->
       <div id="cardsView" class="cards-view" hidden></div>
     </main>
 
     <!-- Центральная кнопка -->
-    <button class="fab" id="addBtn" aria-label="Создать задачу">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
+    <button class="fab" id="addBtn" aria-label="Добавить">
+      <svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
 
-    <!-- Нижняя панель навигации -->
-    <nav class="bottombar">
-      <button class="nav-btn is-active" data-route="today" aria-label="Сегодня">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
-          <path d="M12 7v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+    <!-- Нижняя овальная панель -->
+    <nav class="bottombar" aria-label="Главная навигация">
+      <button class="nav-btn is-active" data-route="today">
+        <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         <span>День</span>
       </button>
-
-      <button class="nav-btn" data-route="projects" aria-label="Проекты">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <rect x="3" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/>
-          <rect x="14" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/>
-          <rect x="3" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/>
-          <rect x="14" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/>
-        </svg>
+      <button class="nav-btn" data-route="projects">
+        <svg width="22" height="22" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/></svg>
         <span>Проекты</span>
       </button>
 
       <span class="nav-gap"></span>
 
-      <button class="nav-btn" data-route="stats" aria-label="Статистика">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path d="M4 20v-8m6 8V4m6 16v-5m6 5v-9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+      <button class="nav-btn" data-route="stats">
+        <svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 20v-8m6 8V4m6 16v-5m6 5v-9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         <span>Аналитика</span>
       </button>
-
-      <button class="nav-btn" data-route="settings" id="openSettings" aria-label="Настройки">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" stroke="currentColor" stroke-width="2"/>
-          <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1v.17a2 2 0 1 1-4 0V21a1.7 1.7 0 0 0-.4-1 1.7 1.7 0 0 0-1-.6 1.7 1.7 0 0 0-1.87-.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1-.4H2.83a2 2 0 1 1 0-4H3a1.7 1.7 0 0 0 1-.4 1.7 1.7 0 0 0 .6-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06A2 2 0 1 1 7.03 2.8l.06.06A1.7 1.7 0 0 0 9 4.6c.37 0 .73-.14 1-.4a1.7 1.7 0 0 0 .4-1V2.83a2 2 0 1 1 4 0V3a1.7 1.7 0 0 0 .4 1c.27.26.63.4 1 .4a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c0 .37.14.73.4 1 .26.27.63.4 1 .4H21.2a2 2 0 1 1 0 4H20.8a1.7 1.7 0 0 0-1 .4c-.26.27-.4.63-.4 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+      <button class="nav-btn" id="openSettings" data-route="settings">
+        <svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1v.17a2 2 0 1 1-4 0V21a1.7 1.7 0 0 0-.4-1 1.7 1.7 0 0 0-1-.6 1.7 1.7 0 0 0-1.87-.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1-.4H2.83a2 2 0 1 1 0-4H3a1.7 1.7 0 0 0 1-.4 1.7 1.7 0 0 0 .6-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06A2 2 0 1 1 7.03 2.8l.06.06A1.7 1.7 0 0 0 9 4.6c.37 0 .73-.14 1-.4a1.7 1.7 0 0 0 .4-1V2.83a2 2 0 1 1 4 0V3a1.7 1.7 0 0 0 .4 1c.27.26.63.4 1 .4a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c0 .37.14.73.4 1 .26.27.63.4 1 .4H21.2a2 2 0 1 1 0 4H20.8a1.7 1.7 0 0 0-1 .4c-.26.27-.4.63-.4 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         <span>Настройки</span>
       </button>
     </nav>
   </div>
+
+  <!-- Модалка добавления -->
+  <dialog id="taskModal" class="modal">
+    <form method="dialog" class="modal-card" id="taskForm">
+      <header class="modal-header">
+        <h3 id="taskFormTitle">Новая запись</h3>
+        <button class="icon-btn" value="close" aria-label="Закрыть">
+          <svg width="20" height="20" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </header>
+
+      <section class="modal-body grid">
+        <label class="field">
+          <span>Тип</span>
+          <select id="taskType">
+            <option value="event">Событие</option>
+            <option value="task">Задача</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Название</span>
+          <input type="text" id="taskTitle" required placeholder="Например: Завтрак" />
+        </label>
+        <label class="field">
+          <span>Описание</span>
+          <textarea id="taskDesc" rows="2" placeholder="Подробнее..."></textarea>
+        </label>
+
+        <div class="grid-2" id="timeFields">
+          <label class="field">
+            <span>Начало</span>
+            <input type="time" id="taskStart" />
+          </label>
+          <label class="field">
+            <span>Конец</span>
+            <input type="time" id="taskEnd" />
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Приоритет</span>
+          <select id="taskPriority">
+            <option value="A">A — важно и срочно</option>
+            <option value="B">B — важно, не срочно</option>
+            <option value="C">C — не важно, срочно</option>
+            <option value="D">D — не важно и не срочно</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Иконка</span>
+          <select id="taskIcon">
+            <option value="☀️">☀️ Утро</option>
+            <option value="💻">💻 Работа</option>
+            <option value="☕">☕ Кофе</option>
+            <option value="🏃‍♂️">🏃‍♂️ Спорт</option>
+            <option value="📖">📖 Учёба</option>
+            <option value="🎧">🎧 Музыка</option>
+            <option value="💬">💬 Встреча</option>
+            <option value="🍽️">🍽️ Еда</option>
+            <option value="🛒">🛒 Покупки</option>
+            <option value="🌙">🌙 Отдых</option>
+          </select>
+        </label>
+      </section>
+
+      <footer class="modal-footer">
+        <button class="btn" value="cancel">Отмена</button>
+        <button class="btn primary" id="submitTask">Сохранить</button>
+      </footer>
+    </form>
+  </dialog>
 
   <!-- Модалка настроек -->
   <dialog id="settingsModal" class="modal">
@@ -98,73 +147,38 @@
       <header class="modal-header">
         <h3>Настройки</h3>
         <button class="icon-btn" value="close">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
+          <svg width="20" height="20" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </button>
       </header>
 
       <section class="modal-body">
         <fieldset class="field">
-          <legend>Вид главной страницы</legend>
-          <label class="radio">
-            <input type="radio" name="layout" value="timeline" checked>
-            <span>Таймлайн</span>
-          </label>
-          <label class="radio">
-            <input type="radio" name="layout" value="cards">
-            <span>Карточки задач</span>
-          </label>
+          <legend>Вид главной</legend>
+          <label class="radio"><input type="radio" name="view" value="timeline" checked> Таймлайн</label>
+          <label class="radio"><input type="radio" name="view" value="cards"> Карточки</label>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend>Тема</legend>
+          <label class="radio"><input type="radio" name="theme" value="light" checked> Светлая</label>
+          <label class="radio"><input type="radio" name="theme" value="dark"> Тёмная</label>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend>Акцентный цвет</legend>
+          <div class="color-options">
+            <button class="color-swatch" data-color="#007aff" style="--c:#007aff"></button>
+            <button class="color-swatch" data-color="#6d4aff" style="--c:#6d4aff"></button>
+            <button class="color-swatch" data-color="#40cfff" style="--c:#40cfff"></button>
+            <button class="color-swatch" data-color="#ff4d6d" style="--c:#ff4d6d"></button>
+            <input type="color" id="customColor" value="#007aff">
+          </div>
         </fieldset>
       </section>
 
       <footer class="modal-footer">
         <button class="btn" value="cancel">Отмена</button>
         <button class="btn primary" id="saveSettings">Сохранить</button>
-      </footer>
-    </form>
-  </dialog>
-
-  <!-- Модалка добавления задачи -->
-  <dialog id="taskModal" class="modal">
-    <form method="dialog" class="modal-card" id="taskForm">
-      <header class="modal-header">
-        <h3 id="taskFormTitle">Новая задача</h3>
-        <button class="icon-btn" value="close">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </header>
-
-      <section class="modal-body grid">
-        <label class="field">
-          <span>Название</span>
-          <input type="text" id="taskTitle" required placeholder="Например: Утренняя пробежка" />
-        </label>
-        <label class="field">
-          <span>Описание</span>
-          <textarea id="taskDesc" rows="2" placeholder="Коротко о задаче"></textarea>
-        </label>
-        <div class="grid-2">
-          <label class="field">
-            <span>Начало</span>
-            <input type="time" id="taskStart" required />
-          </label>
-          <label class="field">
-            <span>Конец</span>
-            <input type="time" id="taskEnd" required />
-          </label>
-        </div>
-        <label class="field">
-          <span>Категория</span>
-          <input type="text" id="taskTag" placeholder="Работа, Учёба, Отдых…" />
-        </label>
-      </section>
-
-      <footer class="modal-footer">
-        <button class="btn" value="cancel">Отмена</button>
-        <button class="btn primary" id="submitTask">Сохранить</button>
       </footer>
     </form>
   </dialog>
