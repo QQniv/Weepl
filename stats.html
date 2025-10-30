@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Weepl — Аналитика</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .stats-grid{
+      display:grid;
+      gap:16px;
+      grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    }
+    .stat-card{
+      background:var(--bg-card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:16px 18px;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      justify-content:center;
+      transition:transform .2s ease, box-shadow .25s ease;
+    }
+    .stat-card:hover{
+      transform:translateY(-3px);
+      box-shadow:0 12px 32px rgba(0,0,0,.12);
+    }
+    .stat-card h4{
+      margin:0;
+      font-size:14px;
+      font-weight:600;
+      color:var(--text-muted);
+    }
+    .stat-card p{
+      margin:4px 0 0;
+      font-size:22px;
+      font-weight:800;
+      color:var(--text);
+    }
+    .chart{
+      margin-top:24px;
+      height:220px;
+      border-radius:var(--radius);
+      background:repeating-linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--accent) 20%, var(--bg)),
+        color-mix(in srgb, var(--accent) 20%, var(--bg)) 6px,
+        transparent 6px,
+        transparent 18px
+      );
+      display:grid;
+      place-items:center;
+      color:var(--text-muted);
+      font-weight:600;
+    }
+  </style>
+</head>
+<body>
+  <div class="app" data-theme="light">
+    <!-- Верхняя панель -->
+    <header class="topbar">
+      <h2 class="month">Аналитика</h2>
+    </header>
+
+    <main class="content">
+      <h3 class="section-title">Твоя продуктивность</h3>
+      <p class="section-sub">Weepl собирает статистику по задачам и событиям.</p>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h4>Выполнено задач</h4>
+          <p>32 / 40</p>
+        </div>
+        <div class="stat-card">
+          <h4>Средняя активность</h4>
+          <p>6.3 ч</p>
+        </div>
+        <div class="stat-card">
+          <h4>Эффективность</h4>
+          <p>86%</p>
+        </div>
+        <div class="stat-card">
+          <h4>Лучший день</h4>
+          <p>Вторник</p>
+        </div>
+      </div>
+
+      <div class="chart">
+        📈 Здесь скоро появится график динамики
+      </div>
+    </main>
+
+    <!-- Нижняя панель -->
+    <nav class="bottombar">
+      <a class="nav-btn" href="index.html">
+        <svg width="22" height="22" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+          <path d="M12 7v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span>День</span>
+      </a>
+
+      <a class="nav-btn" href="projects.html">
+        <svg width="22" height="22" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/>
+          <rect x="14" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/>
+          <rect x="3" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/>
+          <rect x="14" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        <span>Проекты</span>
+      </a>
+
+      <span class="nav-gap"></span>
+
+      <a class="nav-btn is-active" href="stats.html">
+        <svg width="22" height="22" viewBox="0 0 24 24">
+          <path d="M4 20v-8m6 8V4m6 16v-5m6 5v-9"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span>Аналитика</span>
+      </a>
+
+      <a class="nav-btn" href="settings.html">
+        <svg width="22" height="22" viewBox="0 0 24 24">
+          <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"
+                stroke="currentColor" stroke-width="2"/>
+          <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1v.17a2 2 0 1 1-4 0V21a1.7 1.7 0 0 0-.4-1 1.7 1.7 0 0 0-1-.6 1.7 1.7 0 0 0-1.87-.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1-.4H2.83a2 2 0 1 1 0-4H3a1.7 1.7 0 0 0 1-.4 1.7 1.7 0 0 0 .6-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06A2 2 0 1 1 7.03 2.8l.06.06A1.7 1.7 0 0 0 9 4.6c.37 0 .73-.14 1-.4a1.7 1.7 0 0 0 .4-1V2.83a2 2 0 1 1 4 0V3a1.7 1.7 0 0 0 .4 1c.27.26.63.4 1 .4a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c0 .37.14.73.4 1 .26.27.63.4 1 .4H21.2a2 2 0 1 1 0 4H20.8a1.7 1.7 0 0 0-1 .4c-.26.27-.4.63-.4 1z"
+                stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span>Настройки</span>
+      </a>
+    </nav>
+  </div>
+</body>
+</html>
