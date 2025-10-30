@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Weepl — Настройки</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app" data-theme="light">
+    <header class="topbar">
+      <h2 class="month">Настройки</h2>
+    </header>
+
+    <main class="content">
+      <fieldset class="field">
+        <legend>Вид главной</legend>
+        <label class="radio"><input type="radio" name="view" value="timeline" checked> Таймлайн</label>
+        <label class="radio"><input type="radio" name="view" value="cards"> Карточки</label>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend>Тема</legend>
+        <label class="radio"><input type="radio" name="theme" value="light" checked> Светлая</label>
+        <label class="radio"><input type="radio" name="theme" value="dark"> Тёмная</label>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend>Акцентный цвет</legend>
+        <div class="color-options">
+          <button class="color-swatch" data-color="#007aff" style="--c:#007aff"></button>
+          <button class="color-swatch" data-color="#6d4aff" style="--c:#6d4aff"></button>
+          <button class="color-swatch" data-color="#40cfff" style="--c:#40cfff"></button>
+          <button class="color-swatch" data-color="#ff4d6d" style="--c:#ff4d6d"></button>
+          <input type="color" value="#007aff" aria-label="Пользовательский цвет">
+        </div>
+      </fieldset>
+    </main>
+
+    <nav class="bottombar">
+      <a class="nav-btn" href="index.html">
+        <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>День</span>
+      </a>
+      <a class="nav-btn" href="projects.html">
+        <svg width="22" height="22" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/></svg>
+        <span>Проекты</span>
+      </a>
+
+      <span class="nav-gap"></span>
+
+      <a class="nav-btn" href="stats.html">
+        <svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 20v-8m6 8V4m6 16v-5m6 5v-9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Аналитика</span>
+      </a>
+      <a class="nav-btn is-active" href="settings.html">
+        <svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0
