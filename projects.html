@@ -5,32 +5,69 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Weepl — Проекты</title>
   <link rel="stylesheet" href="styles.css" />
+  <style>
+    .projects-wrap{padding:8px 16px 16px}
+    .projects-top{display:flex; align-items:center; justify-content:space-between; margin:8px 0 12px}
+    .projects-top .month{font-family:var(--impact); font-size:22px}
+    .pinned-head{display:flex; align-items:center; justify-content:space-between; margin:8px 0 10px}
+    .pinned-head .section-sub{margin:0}
+    .grid-pinned{display:grid; grid-template-columns:repeat(2,1fr); gap:12px}
+    .p-card{
+      background:var(--bg-card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow);
+      padding:12px; display:flex; flex-direction:column; gap:8px; transition:transform .2s, box-shadow .25s;
+    }
+    .p-card:hover{ transform:translateY(-3px); box-shadow:0 12px 32px rgba(0,0,0,.12) }
+    .p-card h4{margin:0; font-size:15px}
+    .p-mini{display:flex; align-items:center; gap:6px; color:var(--text-muted); font-size:12px}
+    .p-mini svg{opacity:.65}
+    .progress{
+      height:8px; background:var(--bg); border:1px solid var(--line); border-radius:8px; overflow:hidden
+    }
+    .progress > i{display:block; height:100%; width:0%; background:var(--accent); transition:width .35s ease}
+    /* список задач выбранного проекта */
+    .proj-panel{
+      margin-top:16px; background:var(--bg-card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow);
+      overflow:hidden
+    }
+    .proj-bar{display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:12px 14px; border-bottom:1px solid var(--line)}
+    .proj-bar .chip{background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:8px 10px; font-size:12px; color:var(--text-muted)}
+    .tasks-list{padding:8px 14px 12px}
+    .trow{display:grid; grid-template-columns:28px 1fr 56px; align-items:center; gap:10px; padding:8px 0; border-bottom:1px dashed var(--line)}
+    .trow:last-child{border-bottom:0}
+    .trow .n{width:22px; height:22px; border-radius:50%; background:var(--bg); border:1px solid var(--line); display:grid; place-items:center; font-size:12px; color:var(--text-muted)}
+    .trow .desc{display:flex; flex-direction:column}
+    .trow .desc .ttl{font-weight:700}
+    .trow .desc .sub{font-size:12px; color:var(--text-muted)}
+    .trow .state{display:flex; gap:8px; justify-content:flex-end}
+    .ct{width:18px; height:18px; border:2px solid var(--line); border-radius:4px; display:inline-block}
+    .ct.is-done{ background:var(--accent); border-color:var(--accent) }
+    @media (min-width:768px){ .grid-pinned{grid-template-columns:repeat(4,1fr)} }
+  </style>
 </head>
 <body>
   <div class="app" data-theme="light">
     <header class="topbar">
-      <h2 class="month">Проекты</h2>
+      <div class="projects-top" style="width:100%;">
+        <div class="month">Проекты</div>
+        <div class="year" id="projMonth"></div>
+      </div>
     </header>
 
-    <main class="content">
-      <p class="section-sub">Создавай проекты, чтобы группировать свои задачи.</p>
+    <main class="projects-wrap">
+      <div class="pinned-head">
+        <div class="section-sub">Закреплённые</div>
+        <button class="btn" id="seeAll">Показать все</button>
+      </div>
 
-      <div class="project-list">
-        <div class="project-card">
-          <h3>FS Engineering</h3>
-          <p>Всё по проекту фильтрации воды.</p>
-          <button class="btn primary">Открыть</button>
-        </div>
+      <div class="grid-pinned" id="pinnedGrid"></div>
 
-        <div class="project-card">
-          <h3>Учёба</h3>
-          <p>Задания и дедлайны университета.</p>
-          <button class="btn primary">Открыть</button>
+      <div class="proj-panel" id="projPanel" hidden>
+        <div class="proj-bar">
+          <div class="chip">Создан: <b id="createdAt">—</b></div>
+          <div class="chip">Дедлайн: <b id="dueAt">—</b></div>
         </div>
-
-        <div class="project-card add">
-          <button class="fab" aria-label="Добавить проект">+</button>
-        </div>
+        <div class="section-sub" style="padding:10px 14px 0;">Задачи</div>
+        <div class="tasks-list" id="tasksList"></div>
       </div>
     </main>
 
@@ -43,23 +80,101 @@
         <svg width="22" height="22" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/></svg>
         <span>Проекты</span>
       </a>
-
       <span class="nav-gap"></span>
-
       <a class="nav-btn" href="stats.html">
         <svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 20v-8m6 8V4m6 16v-5m6 5v-9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         <span>Аналитика</span>
       </a>
-      <button class="nav-btn" id="openSettings">
+      <a class="nav-btn" id="openSettings" href="settings.html">
         <svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1v.17a2 2 0 1 1-4 0V21a1.7 1.7 0 0 0-.4-1 1.7 1.7 0 0 0-1-.6 1.7 1.7 0 0 0-1.87-.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1-.4H2.83a2 2 0 1 1 0-4H3a1.7 1.7 0 0 0 1-.4 1.7 1.7 0 0 0 .6-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06A2 2 0 1 1 7.03 2.8l.06.06A1.7 1.7 0 0 0 9 4.6c.37 0 .73-.14 1-.4a1.7 1.7 0 0 0 .4-1V2.83a2 2 0 1 1 4 0V3a1.7 1.7 0 0 0 .4 1c.27.26.63.4 1 .4a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c0 .37.14.73.4 1 .26.27.63.4 1 .4H21.2a2 2 0 1 1 0 4H20.8a1.7 1.7 0 0 0-1 .4c-.26.27-.4.63-.4 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         <span>Настройки</span>
-      </button>
+      </a>
     </nav>
   </div>
 
   <script>
-    // кнопка настроек
-    document.getElementById('openSettings').onclick=()=>alert('Настройки доступны на главной');
+    // Демоданные проектов — потом подключим к твоему сториджу
+    const projects = [
+      {
+        id:"fs", title:"FS Engineering", created:"1 Июл", due:"12 Июл",
+        done:3, total:5, pinned:true,
+        tasks:[
+          {n:1, ttl:"Discovery Call", sub:"Понять цели проекта", done:true,  date:"1 Июл"},
+          {n:2, ttl:"UX Research",    sub:"Интервью и гипотезы", done:true,  date:"3 Июл"},
+          {n:3, ttl:"Wireframing",    sub:"Первые макеты",      done:true,  date:"9 Июл"},
+          {n:4, ttl:"Prototype",      sub:"Собрать интерактив", done:false, date:"—"},
+          {n:5, ttl:"Wireframing",    sub:"Итерация 2",         done:false, date:"—"},
+        ]
+      },
+      {
+        id:"uni", title:"Учёба", created:"20 Сен", due:"25 Дек",
+        done:6, total:10, pinned:true,
+        tasks:[
+          {n:1, ttl:"Курсовая",     sub:"Глава 1–2", done:true,  date:"22 Сен"},
+          {n:2, ttl:"Реферат",      sub:"Черновик",  done:true,  date:"3 Окт"},
+          {n:3, ttl:"Презентация",  sub:"Слайды",    done:false, date:"—"},
+          {n:4, ttl:"Семинар",      sub:"Подготовка",done:false, date:"—"},
+          {n:5, ttl:"Кейс-чемп",    sub:"Сабмит",    done:false, date:"—"},
+        ]
+      },
+      { id:"life", title:"Личное", created:"10 Окт", due:"—", done:4, total:8, pinned:false, tasks:[] },
+      { id:"side", title:"Сайд-проект", created:"15 Окт", due:"30 Дек", done:1, total:4, pinned:false, tasks:[] },
+    ];
+
+    // отрисовка закреплённых
+    const grid = document.getElementById('pinnedGrid');
+    const panel = document.getElementById('projPanel');
+    const createdAt = document.getElementById('createdAt');
+    const dueAt = document.getElementById('dueAt');
+    const tasksList = document.getElementById('tasksList');
+    const projMonth = document.getElementById('projMonth');
+    projMonth.textContent = new Date().toLocaleString('ru-RU',{month:'long', year:'numeric'});
+
+    const pinned = projects.filter(p=>p.pinned);
+    pinned.forEach(p=>{
+      const el = document.createElement('button');
+      el.className = 'p-card';
+      el.innerHTML = `
+        <div class="p-mini">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path d="M6 8h12M6 12h12M6 16h8" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          <span>${p.done}/${p.total} completed</span>
+        </div>
+        <h4>${p.title}</h4>
+        <div class="progress"><i style="width:${Math.round((p.done/p.total)*100)}%"></i></div>
+      `;
+      el.onclick = ()=> openProject(p);
+      grid.appendChild(el);
+    });
+
+    function openProject(p){
+      panel.hidden = false;
+      createdAt.textContent = p.created;
+      dueAt.textContent = p.due;
+      tasksList.innerHTML = '';
+      p.tasks.forEach(t=>{
+        const row = document.createElement('div');
+        row.className = 'trow';
+        row.innerHTML = `
+          <div class="n">${t.n}</div>
+          <div class="desc">
+            <div class="ttl">${t.ttl}</div>
+            <div class="sub">${t.sub}${t.date!=='—' ? ` • <span>${t.date}</span>`:''}</div>
+          </div>
+          <div class="state">
+            <span class="ct ${t.done?'is-done':''}"></span>
+          </div>
+        `;
+        row.querySelector('.ct').onclick = ()=>{
+          t.done = !t.done;
+          row.querySelector('.ct').classList.toggle('is-done', t.done);
+        };
+        tasksList.appendChild(row);
+      });
+      // авто-скролл к панели
+      panel.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+
+    document.getElementById('seeAll').onclick = ()=> alert('Режим «Все проекты» добавим после интеграции со сториджем.');
   </script>
 </body>
 </html>
