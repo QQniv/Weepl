@@ -1,9 +1,9 @@
 /* =========================================================
-   WEEPL — app.js (fixes)
-   - Центрируем выбранную/сегодняшнюю дату в ленте
-   - Ровная сетка событий/задач
-   - Нормальное закрытие модалок (крестик/Отмена/ESC)
-   - Мелкие UX-улучшения
+   WEEPL — app.js (fixes + padded calendar)
+   - Центрируем выбранную/сегодняшнюю дату в ленте (всегда)
+   - Добавлены дни соседних месяцев (приглушены)
+   - Клик по «внешнему» дню переключает текущий месяц
+   - Ровная сетка, нормальное закрытие модалок
    ========================================================= */
 
 const app = document.getElementById("app");
@@ -39,8 +39,8 @@ const inputPriority = $("#taskPriority");
 const inputIcon  = $("#taskIcon");
 
 /* --------- STATE --------- */
-let currentDate = new Date();
-let selectedDate = new Date();
+let currentDate = new Date();   // месяц в шапке
+let selectedDate = new Date();  // выбранный день
 let tasks = JSON.parse(localStorage.getItem("weepl_tasks") || "[]");
 let settings = JSON.parse(localStorage.getItem("weepl_settings") || `{
   "theme":"light",
@@ -61,42 +61,69 @@ applyTheme(settings.theme);
 applyAccent(settings.accent);
 app.dataset.view = settings.view;
 
-/* =========================================================
-   Calendar strip
-   ========================================================= */
-function renderCalendar(date, centerSelected = true){
-  dateStrip.innerHTML="";
-  const start = new Date(date.getFullYear(), date.getMonth(), 1);
-  const end = new Date(date.getFullYear(), date.getMonth()+1, 0);
+function applyTheme(theme){ app.dataset.theme = theme; }
+function applyAccent(color){ document.documentElement.style.setProperty("--accent", color); }
 
-  monthLabel.textContent = start.toLocaleString("ru-RU",{month:"long"}).replace(/^./,c=>c.toUpperCase());
-  yearLabel.textContent = start.getFullYear();
+/* =========================================================
+   Calendar strip (с паддингами)
+   ========================================================= */
+const PAD = 7; // по 7 дней слева/справа — гарантирует центрирование
+
+function renderCalendar(date, centerSelected = true){
+  dateStrip.innerHTML = "";
+
+  const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+  const monthEnd   = new Date(date.getFullYear(), date.getMonth()+1, 0);
+
+  monthLabel.textContent = monthStart.toLocaleString("ru-RU",{month:"long"}).replace(/^./,c=>c.toUpperCase());
+  yearLabel.textContent  = monthStart.getFullYear();
+
+  // границы с «паддингом» из соседних месяцев
+  const start = new Date(monthStart); start.setDate(start.getDate()-PAD);
+  const end   = new Date(monthEnd);   end.setDate(end.getDate()+PAD);
 
   let selectedEl = null;
 
-  for(let d=1; d<=end.getDate(); d++){
-    const cur = new Date(date.getFullYear(), date.getMonth(), d);
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)){
+    const cur = new Date(d);
+    const inThisMonth = (cur.getMonth() === monthStart.getMonth());
+
     const el = document.createElement("button");
     el.type = "button";
-    el.className="date";
-    if(isSameDate(cur,new Date())) el.classList.add("is-today");
-    if(isSameDate(cur,selectedDate)) { el.classList.add("is-selected"); selectedEl = el; }
+    el.className = "date" + (inThisMonth ? "" : " is-outside");
+    if (isSameDate(cur, new Date()))     el.classList.add("is-today");
+    if (isSameDate(cur, selectedDate)) { el.classList.add("is-selected"); selectedEl = el; }
 
-    el.innerHTML=`
+    el.innerHTML = `
       <div class="dow">${cur.toLocaleDateString("ru-RU",{weekday:"short"})}</div>
-      <div class="day">${d}</div>
-      <div class="mon">${cur.toLocaleDateString("ru-RU",{month:"short"})}</div>`;
-    el.onclick=()=>{
-      selectedDate=cur;
-      renderCalendar(cur);
+      <div class="day">${cur.getDate()}</div>
+      <div class="mon">${cur.toLocaleDateString("ru-RU",{month:"short"})}</div>
+    `;
+
+    el.onclick = () => {
+      selectedDate = cur;
+      // если клик по «внешнему» дню — переключим отображаемый месяц
+      if (cur.getMonth() !== currentDate.getMonth() || cur.getFullYear() !== currentDate.getFullYear()){
+        currentDate = new Date(cur.getFullYear(), cur.getMonth(), 1);
+      }
+      renderCalendar(currentDate);
       renderTasks();
     };
+
     dateStrip.appendChild(el);
   }
 
-  // центрируем выбранную дату (по умолчанию это сегодня)
-  if (centerSelected && selectedEl) {
-    selectedEl.scrollIntoView({inline:"center", behavior:"smooth", block:"nearest"});
+  // мягко центрируем выбранный день
+  if (centerSelected && selectedEl){
+    // scrollIntoView с inline:center работает в Safari/iOS 16+, оставляю запасной просчёт
+    try {
+      selectedEl.scrollIntoView({ inline: "center", behavior: "smooth", block: "nearest" });
+    } catch {
+      const wrap = dateStrip;
+      const targetCenter = selectedEl.offsetLeft + selectedEl.offsetWidth/2;
+      const to = targetCenter - wrap.clientWidth/2;
+      wrap.scrollTo({ left: Math.max(0, to), behavior: "smooth" });
+    }
   }
 }
 
@@ -107,8 +134,9 @@ function renderTasks(){
   const dateKey = fmtDate(selectedDate);
   const daily = tasks.filter(t=>t.date===dateKey);
 
-  todayTitle.textContent = isSameDate(selectedDate,new Date()) ? "Сегодня" :
-    selectedDate.toLocaleDateString("ru-RU",{day:"numeric",month:"long"});
+  todayTitle.textContent = isSameDate(selectedDate,new Date())
+    ? "Сегодня"
+    : selectedDate.toLocaleDateString("ru-RU",{day:"numeric",month:"long"});
 
   timelineView.innerHTML="";
   cardsView.innerHTML="";
@@ -323,9 +351,6 @@ colorSwatches.forEach(b=>{
   });
 });
 
-function applyTheme(theme){ app.dataset.theme=theme; }
-function applyAccent(color){ document.documentElement.style.setProperty("--accent",color); }
-
 /* =========================================================
    Modal open/close (iOS-friendly)
    ========================================================= */
@@ -357,8 +382,21 @@ function saveTasks(){ localStorage.setItem("weepl_tasks", JSON.stringify(tasks))
 /* =========================================================
    Navigation
    ========================================================= */
-btnPrev.onclick=()=>{ currentDate.setMonth(currentDate.getMonth()-1); renderCalendar(currentDate); };
-btnNext.onclick=()=>{ currentDate.setMonth(currentDate.getMonth()+1); renderCalendar(currentDate); };
+btnPrev.onclick=()=>{ 
+  currentDate.setMonth(currentDate.getMonth()-1); 
+  // держим выбранный день в соседнем месяце, если он выпадет
+  const d = Math.min(selectedDate.getDate(), new Date(currentDate.getFullYear(), currentDate.getMonth()+1, 0).getDate());
+  selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), d);
+  renderCalendar(currentDate, true); 
+  renderTasks();
+};
+btnNext.onclick=()=>{ 
+  currentDate.setMonth(currentDate.getMonth()+1); 
+  const d = Math.min(selectedDate.getDate(), new Date(currentDate.getFullYear(), currentDate.getMonth()+1, 0).getDate());
+  selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), d);
+  renderCalendar(currentDate, true); 
+  renderTasks();
+};
 addBtn.onclick=()=>{
   editingId=null;
   taskForm.reset();
@@ -374,7 +412,7 @@ addBtn.onclick=()=>{
 };
 
 /* =========================================================
-   Init (центрируем сегодня)
+   Init
    ========================================================= */
 renderCalendar(currentDate, true);
 renderTasks();
