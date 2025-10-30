@@ -1,6 +1,8 @@
 /* =====================================================
-   WEEPL — styles.css (final enhanced)
+   WEEPL — styles.css (final enhanced+fixes)
    - Крупнее капсулы дат + spring-анимация при выборе
+   - Контент капсул не вылезает (flex + min-height)
+   - Карточки событий/задач выше по вертикали
    - Подсветка активного дня и hover glow
    - Ровная сетка, унифицированные кнопки
    ===================================================== */
@@ -67,20 +69,30 @@ body{
 }
 .dates::-webkit-scrollbar{display:none}
 
+/* капсула даты — контент всегда помещается */
 .date{
   scroll-snap-align:center;
   flex:0 0 118px;
+
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+  min-height:118px;
+
   border-radius:32px;
   background:var(--bg-card);
   border:2px solid var(--line);
   box-shadow:var(--shadow);
-  padding:12px 12px 14px;
+  padding:14px 14px 16px;
   text-align:center;
+
+  line-height:1.05;
+  word-break:keep-all;
+  white-space:nowrap;
+
   transition:transform .2s, background .25s, border-color .25s, color .25s, box-shadow .25s;
   cursor:pointer;
 }
 .date:hover{ box-shadow:0 8px 24px rgba(0,0,0,.1); transform:translateY(-2px) }
-.date .day{ font-family:var(--impact); font-size:38px; margin:2px 0 6px }
+.date .day{ font-family:var(--impact); font-size:40px; margin:2px 0 6px; line-height:1 }
 .date .dow,.date .mon{ font-size:13px; color:var(--text-muted) }
 .date.is-outside{ opacity:.55 }
 .date.is-today{ outline:2px dashed rgba(0,122,255,.25); outline-offset:-8px }
@@ -139,7 +151,10 @@ body{
   border:1px solid var(--line);
   border-radius:var(--radius);
   box-shadow:var(--shadow);
-  padding:12px 14px;
+
+  /* выше по вертикали */
+  padding:16px 18px;
+  min-height:72px;
 }
 .event .title{ font-weight:700 }
 .event .meta{ font-size:12px; color:var(--text-muted) }
@@ -151,11 +166,15 @@ body{
   border:1px solid var(--line);
   border-radius:var(--radius);
   box-shadow:var(--shadow);
-  padding:12px 14px;
-  display:flex; align-items:center; gap:10px; width:100%;
+
+  /* выше по вертикали */
+  padding:16px 18px;
+  min-height:72px;
+
+  display:flex; align-items:center; gap:12px; width:100%;
 }
 .task .check{
-  width:22px; height:22px; border-radius:6px;
+  width:24px; height:24px; border-radius:8px;
   border:2px solid var(--accent); color:var(--accent);
   display:grid; place-items:center; flex-shrink:0; background:#fff;
 }
@@ -163,6 +182,13 @@ body{
 .task .name{ font-weight:700 }
 .task .priority{ font-size:12px; color:var(--text-muted) }
 .task.is-done{ opacity:.6; text-decoration:line-through }
+
+/* если в карточках будут картинки — не «вылезают» */
+.event .card img,
+.task .info img{
+  display:block; max-width:100%; height:auto;
+  border-radius:12px; object-fit:cover; overflow:clip;
+}
 
 /* ====== Bottom bar + FAB ====== */
 .fab{
