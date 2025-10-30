@@ -7,34 +7,41 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app" data-theme="light">
+  <div class="app" id="app" data-theme="light" data-view="timeline">
     <header class="topbar">
       <h2 class="month">Настройки</h2>
     </header>
 
     <main class="content">
-      <fieldset class="field">
-        <legend>Вид главной</legend>
-        <label class="radio"><input type="radio" name="view" value="timeline" checked> Таймлайн</label>
-        <label class="radio"><input type="radio" name="view" value="cards"> Карточки</label>
-      </fieldset>
+      <form id="settingsForm" class="grid">
+        <fieldset class="field">
+          <legend>Вид главной</legend>
+          <label class="radio"><input type="radio" name="view" value="timeline"> Таймлайн</label>
+          <label class="radio"><input type="radio" name="view" value="cards"> Карточки</label>
+        </fieldset>
 
-      <fieldset class="field">
-        <legend>Тема</legend>
-        <label class="radio"><input type="radio" name="theme" value="light" checked> Светлая</label>
-        <label class="radio"><input type="radio" name="theme" value="dark"> Тёмная</label>
-      </fieldset>
+        <fieldset class="field">
+          <legend>Тема</legend>
+          <label class="radio"><input type="radio" name="theme" value="light"> Светлая</label>
+          <label class="radio"><input type="radio" name="theme" value="dark"> Тёмная</label>
+        </fieldset>
 
-      <fieldset class="field">
-        <legend>Акцентный цвет</legend>
-        <div class="color-options">
-          <button class="color-swatch" data-color="#007aff" style="--c:#007aff"></button>
-          <button class="color-swatch" data-color="#6d4aff" style="--c:#6d4aff"></button>
-          <button class="color-swatch" data-color="#40cfff" style="--c:#40cfff"></button>
-          <button class="color-swatch" data-color="#ff4d6d" style="--c:#ff4d6d"></button>
-          <input type="color" value="#007aff" aria-label="Пользовательский цвет">
+        <fieldset class="field">
+          <legend>Акцентный цвет</legend>
+          <div class="color-options">
+            <button class="color-swatch" data-color="#007aff" style="--c:#007aff" type="button"></button>
+            <button class="color-swatch" data-color="#6d4aff" style="--c:#6d4aff" type="button"></button>
+            <button class="color-swatch" data-color="#40cfff" style="--c:#40cfff" type="button"></button>
+            <button class="color-swatch" data-color="#ff4d6d" style="--c:#ff4d6d" type="button"></button>
+            <input type="color" id="customColor" value="#007aff" aria-label="Пользовательский цвет">
+          </div>
+        </fieldset>
+
+        <div style="display:flex; gap:10px; justify-content:flex-end">
+          <a class="btn" href="index.html">Отмена</a>
+          <button class="btn primary" type="submit">Сохранить</button>
         </div>
-      </fieldset>
+      </form>
     </main>
 
     <nav class="bottombar">
@@ -46,12 +53,54 @@
         <svg width="22" height="22" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2"/></svg>
         <span>Проекты</span>
       </a>
-
       <span class="nav-gap"></span>
-
       <a class="nav-btn" href="stats.html">
         <svg width="22" height="22" viewBox="0 0 24 24"><path d="M4 20v-8m6 8V4m6 16v-5m6 5v-9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         <span>Аналитика</span>
       </a>
       <a class="nav-btn is-active" href="settings.html">
-        <svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0
+        <svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1v.17a2 2 0 1 1-4 0V21a1.7 1.7 0 0 0-.4-1 1.7 1.7 0 0 0-1-.6 1.7 1.7 0 0 0-1.87-.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1-.4H2.83a2 2 0 1 1 0-4H3a1.7 1.7 0 0 0 1-.4 1.7 1.7 0 0 0 .6-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06A2 2 0 1 1 7.03 2.8l.06.06A1.7 1.7 0 0 0 9 4.6c.37 0 .73-.14 1-.4a1.7 1.7 0 0 0 .4-1V2.83a2 2 0 1 1 4 0V3a1.7 1.7 0 0 0 .4 1c.27.26.63.4 1 .4a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c0 .37.14.73.4 1 .26.27.63.4 1 .4H21.2a2 2 0 1 1 0 4H20.8a1.7 1.7 0 0 0-1 .4c-.26.27-.4.63-.4 1z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span>Настройки</span>
+      </a>
+    </nav>
+  </div>
+
+  <script>
+    // загрузка текущих настроек
+    const app = document.getElementById('app');
+    const stored = JSON.parse(localStorage.getItem('weepl_settings') || `{"theme":"light","view":"timeline","accent":"#007aff"}`);
+
+    // выставляем значения
+    app.dataset.theme = stored.theme;
+    app.dataset.view = stored.view;
+    document.querySelector(`input[name="theme"][value="${stored.theme}"]`).checked = true;
+    document.querySelector(`input[name="view"][value="${stored.view}"]`).checked = true;
+    document.documentElement.style.setProperty('--accent', stored.accent);
+    const custom = document.getElementById('customColor'); if (custom) custom.value = stored.accent;
+
+    // быстрый выбор свотчами
+    document.querySelectorAll('.color-swatch').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const c = b.dataset.color;
+        document.documentElement.style.setProperty('--accent', c);
+        if (custom) custom.value = c;
+      });
+    });
+
+    // изменение темы/вида — живой предпросмотр
+    document.querySelectorAll('input[name="theme"]').forEach(r=>r.addEventListener('change',()=> app.dataset.theme = r.value));
+    document.querySelectorAll('input[name="view"]').forEach(r=>r.addEventListener('change',()=> app.dataset.view = r.value));
+    custom?.addEventListener('input', (e)=> document.documentElement.style.setProperty('--accent', e.target.value));
+
+    // сохранение
+    document.getElementById('settingsForm').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const theme = document.querySelector('input[name="theme"]:checked').value;
+      const view  = document.querySelector('input[name="view"]:checked').value;
+      const accent = document.getElementById('customColor')?.value || stored.accent;
+      localStorage.setItem('weepl_settings', JSON.stringify({theme, view, accent}));
+      window.location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>
