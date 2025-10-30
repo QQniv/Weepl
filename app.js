@@ -5,7 +5,18 @@
    - Клик по «внешнему» дню переключает текущий месяц
    - Ровная сетка, нормальное закрытие модалок
    ========================================================= */
+const openCalendarBtn = document.getElementById("openCalendar");
+const drawer = document.getElementById("calendarDrawer");
+const backdrop = document.getElementById("drawerBackdrop");
+const calMonth = document.getElementById("calMonth");
+const calYear  = document.getElementById("calYear");
+const calGrid  = document.getElementById("calGrid");
+const calPrev  = document.getElementById("calPrev");
+const calNext  = document.getElementById("calNext");
+const calClose = document.getElementById("calClose");
+const calToday = document.getElementById("calToday");
 
+let calDate = new Date(); // текущий месяц в шите
 const app = document.getElementById("app");
 const dateStrip = document.getElementById("dateStrip");
 const monthLabel = document.getElementById("monthLabel");
