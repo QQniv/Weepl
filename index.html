@@ -5,26 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Weepl v3 — Сегодня</title>
 
-  <!-- iOS PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <!-- Fonts (сначала прелоад шрифтов, затем стили) -->
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
-  <!-- Momo Trust Display для заголовков -->
   <link href="https://fonts.googleapis.com/css2?family=Momo+Trust+Display:wght@400;700&display=swap" rel="stylesheet">
 
-  <!-- Основные стили -->
   <link rel="stylesheet" href="styles.css">
 
-  <!-- Быстрый слой для шрифта заголовков (гарантируем применение) -->
+  <!-- Хедлайн шрифт + фиксированная шапка -->
   <style>
-    :root{ --heading-font: "Momo Trust Display", Sora, Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; --safe-top: env(safe-area-inset-top); }
-    header .title h1,
-    .card h3{ font-family: var(--heading-font); letter-spacing:.2px; }
-    /* фиксированная шапка */
+    :root{
+      --heading-font: "Momo Trust Display", Sora, Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      --safe-top: env(safe-area-inset-top);
+    }
+    header .title h1, .card h3{ font-family: var(--heading-font); letter-spacing:.2px; }
+
     header{
       position: fixed; top: 0; left: 0; right: 0; z-index: 20;
       padding: calc(20px + var(--safe-top)) var(--page-x) 10px !important;
@@ -41,6 +40,9 @@
     }
     main{ padding-top: calc(var(--header-h, 96px) + 16px); }
     .grid{ margin-top: 6px; }
+
+    /* когда модалка открыта — убираем прокрутку фона */
+    html.modal-open, body.modal-open{ overflow:hidden; }
   </style>
 </head>
 
@@ -144,7 +146,7 @@
         Аналитика
       </button>
       <button role="tab">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33л-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 5 15.4a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 3.7l.06.06A1.65 1.65 0 0 0 8.6 4.1h.01A1.65 1.65 0 0 0 10.1 3H10a2 2 0 1 1 4 0v.09c.46.17.86.49 1.11.92.25.43.33.93.24 1.41"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33л-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 5 15.4a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 3.7l.06.06A1.65 1.65 0 0 0 8.6 4.1h.01A1.65 1.65 0  0 0 10.1 3H10a2 2 0 1 1 4 0v.09c.46.17.86.49 1.11.92.25.43.33.93.24 1.41"/></svg>
         Настройки
       </button>
     </div>
@@ -175,7 +177,7 @@
     window.addEventListener('resize', updateHeaderOffset);
     window.addEventListener('orientationchange', ()=> setTimeout(updateHeaderOffset, 250));
 
-    // AI советы (не менял)
+    // AI советы
     const tips=[ 'Заверши энергозатратные задачи до обеда — окно фокуса выше на 18–25%.','Планируй «глубокую работу» блоками по 50–90 минут, между ними — 10–15 минут разгрузки.','Спроси себя «что сдвинет проект сильнее всего?» и сделай это первым.','Отключи уведомления на 45 минут — вероятность прерываний падает вдвое.','Запиши 3 задачи дня. Остальное — в бэклог. Чёткие границы уменьшают прокрастинацию.','Сложное разбей на микрошаги по 5–10 минут — стартовать всегда легче.','Подготовь завтра сегодня: 5 минут вечером экономят 20 утром.','Планируй созвоны во второй половине дня — у утреннего мозга выше креативность.','Оцени «стоимость контекста»: сгруппируй похожие задачи в один слот.','Выбери «анти-задачу»: что НЕ делать сегодня, чтобы сохранить фокус.' ];
     const aiText=document.getElementById('aiText'), aiTip=document.getElementById('aiTip');
     const seed=()=>{ const s=localStorage.getItem('weepl-tip-index'); if(s!==null) return +s; const d=new Date(); const k=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); return k%tips.length; };
