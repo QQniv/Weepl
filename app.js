@@ -1,8 +1,9 @@
 /* =========================================================
-   WEEPL v3 — app.js (editor++ + priority colors)
-   - Модалка больше, шрифты ≥16px (нет зума на iOS)
-   - Сегменты важности A / B / C
-   - Цвет карточки по важности (аккуратный пастельный тинт)
+   WEEPL v3 — app.js (mobile-safe editor + Eisenhower A/B/C/D)
+   - Модалка: адаптивная, без зума на iOS, не «едет», max-height + внутренний скролл
+   - Сетки в модалке: авто-fit, на мобилке становятся в столбик
+   - Приоритеты по Эйзенхауэру A/B/C/D с подписями
+   - Цвет карточек по приоритету (light/dark тины)
    - Параллакс, пружинки, быстрый аддер, редактирование/удаление
    ========================================================= */
 
@@ -26,7 +27,7 @@
   /* --------------------- PARALLAX BACKDROP --------------------- */
   let sy = window.scrollY, vx = 0, rafId=null;
   function onScroll(){ sy = window.scrollY || window.pageYOffset; req(); }
-  function onPointerMove(e){ const w = innerWidth, h = innerHeight; vx = (e.clientX / w) - .5; req(); }
+  function onPointerMove(e){ const w = innerWidth; vx = (e.clientX / w) - .5; req(); }
   function req(){ if (!rafId) rafId = requestAnimationFrame(tick); }
   function tick(){ rafId=null; const py = -(sy * 0.03), px = vx * 10; if (bg) bg.style.transform=`translate3d(${px}px,${py}px,0)`; if (veil) veil.style.transform=`translate3d(${px*.6}px,${py*.5}px,0)`; }
   addEventListener('scroll', onScroll, {passive:true});
@@ -54,35 +55,34 @@
   }
   springStep();
 
-  /* --------------------- PRIORITY COLORS --------------------- */
-  // мягкий тинт поверх панели (разный для тем)
-  const LIGHT_TINT = { A:'rgba(255, 93, 93, .18)', B:'rgba(255, 195, 80, .16)', C:'rgba(120, 205, 255, .16)' };
-  const DARK_TINT  = { A:'rgba(255, 93, 93, .20)', B:'rgba(255, 195, 80, .18)', C:'rgba(120, 205, 255, .20)' };
+  /* --------------------- PRIORITY COLORS (Eisenhower) --------------------- */
+  const PR_LABEL = { A:'Сделать сейчас', B:'Запланировать', C:'Делегировать', D:'Убрать/Отменить' };
+  const LIGHT_TINT = { A:'rgba(255, 93, 93, .18)', B:'rgba(255,195, 80, .16)', C:'rgba(120,205,255, .16)', D:'rgba(150,160,180,.14)' };
+  const DARK_TINT  = { A:'rgba(255, 93, 93, .22)', B:'rgba(255,195, 80, .20)', C:'rgba(120,205,255, .20)', D:'rgba(140,150,170,.18)' };
 
   function applyPriorityStyle(el, prio='B'){
     const theme = document.body.dataset.theme === 'dark' ? 'dark' : 'light';
     const tint = (theme === 'dark' ? DARK_TINT : LIGHT_TINT)[prio] || LIGHT_TINT.B;
-    // слой-тинт + базовая панель
     el.style.background = `linear-gradient(${tint}, ${tint}), var(--panel)`;
     el.dataset.prio = prio;
-    // бейдж в meta
-    const badgeSel = '.meta span[data-role="prio"]';
-    let badge = el.querySelector(badgeSel);
+
+    // бейдж слева в meta
+    let badge = el.querySelector('.meta [data-role="prio"]');
+    const dotColor = tint.replace(/\.1[46]/,'.9').replace(/\.2[02]/,'.9');
     if (!badge){
       const left = el.querySelector('.meta span:first-child');
       if (left){
-        left.insertAdjacentHTML('afterbegin', `<span data-role="prio" style="display:inline-flex;align-items:center;gap:6px;margin-right:10px;font-weight:700">
-          <span style="width:10px;height:10px;border-radius:50%;background:${tint.replace('.18','.9').replace('.20','.9')}"></span>${prio}
-        </span>`);
+        left.innerHTML = `<span data-role="prio" style="display:inline-flex;align-items:center;gap:6px;margin-right:10px;font-weight:800">
+          <span style="width:10px;height:10px;border-radius:50%;background:${dotColor}"></span>${prio}</span>` + left.innerHTML;
       }
     } else {
-      badge.lastChild.nodeValue = prio; // текст буквы
-      const dot = badge.querySelector('span');
-      if (dot) dot.style.background = tint.replace('.18','.9').replace('.20','.9');
+      badge.lastChild.nodeValue = prio;
+      const dot = badge.querySelector('span'); if (dot) dot.style.background = dotColor;
     }
+    el.style.opacity = prio==='D' ? .95 : 1;
   }
 
-  /* --------------------- QUICK ADD / EDITOR --------------------- */
+  /* --------------------- QUICK ADD / EDITOR (mobile-safe) --------------------- */
   function ensureEditorUI(){
     if ($('#taskOverlay')) return;
 
@@ -111,7 +111,8 @@
     Object.assign(overlay.style, {
       position:'fixed', inset:'0', display:'none',
       alignItems:'center', justifyContent:'center',
-      background:'rgba(0,0,0,.25)', zIndex:'40'
+      background:'rgba(0,0,0,.25)', zIndex:'40',
+      padding:'calc(10px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left))'
     });
     overlay.addEventListener('click', e=>{ if (e.target===overlay) closeEditor(); });
 
@@ -119,72 +120,117 @@
     const modal = document.createElement('div');
     modal.id = 'taskModal';
     Object.assign(modal.style, {
-      width:'min(680px, 94vw)',
+      width:'min(700px, 94vw)',
+      maxHeight:'min(80vh, 720px)',              // не выше экрана
+      display:'flex', flexDirection:'column',    // заголовок + скроллящаяся форма
+      overflow:'hidden',
       background:'var(--panel)', color:'var(--ink)',
       borderRadius:'24px',
       boxShadow:'0 18px 60px rgba(0,0,0,.25)',
       backdropFilter:'blur(20px)', WebkitBackdropFilter:'blur(20px)',
-      padding:'22px'
+      padding:'0'                                // паддинги у контента
     });
-    modal.innerHTML = `
-      <h3 id="tmTitle" style="margin:0 0 14px; font:600 20px/1.25 Sora, Inter, sans-serif">Новая задача</h3>
-      <form id="tmForm" style="display:grid; gap:12px; font-size:16px">
-        <input required id="tmInputTitle" placeholder="Заголовок"
-          style="font-size:16px;padding:14px 16px;border-radius:14px;border:1px solid color-mix(in oklab, var(--ink) 10%, transparent);background:rgba(255,255,255,.68)"/>
-        <input id="tmInputNote" placeholder="Описание (необязательно)"
-          style="font-size:16px;padding:14px 16px;border-radius:14px;border:1px solid color-mix(in oklab, var(--ink) 10%, transparent);background:rgba(255,255,255,.68)"/>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
-          <input id="tmInputTag"  placeholder="Тег (например, Фокус)"
-            style="font-size:16px;padding:14px 16px;border-radius:14px;border:1px solid color-mix(in oklab, var(--ink) 10%, transparent);background:rgba(255,255,255,.68)"/>
-          <input id="tmInputTime" placeholder="Время (напр. 14:30)"
-            style="font-size:16px;padding:14px 16px;border-radius:14px;border:1px solid color-mix(in oklab, var(--ink) 10%, transparent);background:rgba(255,255,255,.68)"/>
-        </div>
+    // header
+    const header = document.createElement('div');
+    Object.assign(header.style, {
+      padding:'18px 22px 8px',
+      borderTopLeftRadius:'24px', borderTopRightRadius:'24px',
+      font:'600 20px/1.25 Sora, Inter, system-ui'
+    });
+    header.id = 'tmTitle'; header.textContent = 'Новая задача';
 
-        <!-- PRIORITY -->
-        <div>
-          <div style="margin:6px 0 8px; font:600 14px/1 Inter, system-ui">Важность</div>
-          <div id="tmPriority" role="tablist" aria-label="Важность" style="display:flex; gap:8px">
-            ${['A','B','C'].map(letter => `
-              <button type="button" data-val="${letter}" role="tab"
-                style="flex:1;padding:12px 0;border:none;border-radius:12px;cursor:pointer;font:700 16px Inter,system-ui;
-                       background:${letter==='A'?'rgba(255,93,93,.18)':letter==='B'?'rgba(255,195,80,.16)':'rgba(120,205,255,.16)'};">
-                ${letter}
-              </button>`).join('')}
-          </div>
-        </div>
+    // scroll area
+    const scroller = document.createElement('div');
+    Object.assign(scroller.style, {
+      overflow:'auto',
+      padding:'0 22px 18px'
+    });
 
-        <div style="display:flex; gap:12px; justify-content:space-between; margin-top:10px">
-          <button type="button" id="tmDelete"
-            style="padding:12px 16px;border-radius:12px;border:none;background:rgba(255,82,82,.12);color:#b21;cursor:pointer;display:none">Удалить</button>
-          <div style="display:flex; gap:10px">
-            <button type="button" id="tmCancel"
-              style="padding:12px 16px;border-radius:12px;border:none;background:rgba(255,255,255,.6);cursor:pointer">Отмена</button>
-            <button type="submit" id="tmSave"
-              style="padding:12px 16px;border-radius:12px;border:none;background:linear-gradient(135deg, rgba(200,182,255,.98), rgba(184,224,255,.98));font-weight:800;cursor:pointer">Сохранить</button>
-          </div>
+    // form
+    const form = document.createElement('form');
+    form.id = 'tmForm';
+    Object.assign(form.style, { display:'grid', gap:'12px', fontSize:'16px' });
+
+    // inputs
+    const inputStyles = 'font-size:16px;padding:14px 16px;border-radius:14px;border:1px solid color-mix(in oklab, var(--ink) 10%, transparent);background:rgba(255,255,255,.68)';
+    form.innerHTML = `
+      <input required id="tmInputTitle" placeholder="Заголовок" style="${inputStyles}"/>
+      <input id="tmInputNote" placeholder="Описание (необязательно)" style="${inputStyles}"/>
+      <div id="tmRow" style="display:grid; gap:12px">
+        <input id="tmInputTag"  placeholder="Тег (например, Фокус)" style="${inputStyles}"/>
+        <input id="tmInputTime" placeholder="Время (напр. 14:30)" style="${inputStyles}"/>
+      </div>
+
+      <div>
+        <div style="margin:6px 0 8px; font:600 14px/1 Inter, system-ui">Важность (матрица Эйзенхауэра)</div>
+        <div id="tmPriority" role="tablist" aria-label="Важность" style="display:grid; gap:8px"></div>
+      </div>
+
+      <div style="display:flex; gap:12px; justify-content:space-between; margin-top:10px">
+        <button type="button" id="tmDelete"
+          style="padding:12px 16px;border-radius:12px;border:none;background:rgba(255,82,82,.12);color:#b21;cursor:pointer;display:none">Удалить</button>
+        <div style="display:flex; gap:10px">
+          <button type="button" id="tmCancel"
+            style="padding:12px 16px;border-radius:12px;border:none;background:rgba(255,255,255,.6);cursor:pointer">Отмена</button>
+          <button type="submit" id="tmSave"
+            style="padding:12px 16px;border-radius:12px;border:none;background:linear-gradient(135deg, rgba(200,182,255,.98), rgba(184,224,255,.98));font-weight:800;cursor:pointer">Сохранить</button>
         </div>
-      </form>
+      </div>
     `;
+
+    // priority buttons (auto-fit, подписи)
+    const pr = ['A','B','C','D'];
+    const prWrap = form.querySelector('#tmPriority');
+    Object.assign(prWrap.style, { gridTemplateColumns:'repeat(auto-fit, minmax(72px, 1fr))' });
+    pr.forEach(letter=>{
+      const tint = ({A:LIGHT_TINT.A,B:LIGHT_TINT.B,C:LIGHT_TINT.C,D:LIGHT_TINT.D})[letter];
+      const b = document.createElement('button');
+      b.type='button'; b.dataset.val=letter; b.role='tab';
+      b.style.cssText = `padding:12px 8px;border:none;border-radius:12px;cursor:pointer;font:700 15px Inter,system-ui;background:${tint}`;
+      b.innerHTML = `${letter}<div style="font:600 12px/1.2 Inter,system-ui;opacity:.8;margin-top:4px">${PR_LABEL[letter]}</div>`;
+      prWrap.appendChild(b);
+    });
+
+    // actions
+    const footerPad = document.createElement('div');
+    Object.assign(footerPad.style, { height:'6px' }); // небольшой буфер
+
+    scroller.appendChild(form);
+    scroller.appendChild(footerPad);
+    modal.appendChild(header);
+    modal.appendChild(scroller);
+
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
     // events
     $('#tmCancel').addEventListener('click', closeEditor);
     $('#tmDelete').addEventListener('click', onDelete);
-    $('#tmForm').addEventListener('submit', onSave);
-    // priority switch
-    $('#tmPriority').addEventListener('click', e=>{
+    form.addEventListener('submit', onSave);
+
+    prWrap.addEventListener('click', e=>{
       const btn = e.target.closest('button[data-val]');
       if (!btn) return;
       setPriority(btn.dataset.val);
     });
 
-    // hotkeys
     addEventListener('keydown', e=>{
-      const overlayOpen = overlay.style.display === 'flex';
-      if (e.key==='Escape' && overlayOpen) return closeEditor();
-      if ((e.key==='n'||e.key==='N'||e.key==='+') && !overlayOpen) openEditor();
+      const open = overlay.style.display==='flex';
+      if (e.key==='Escape' && open) return closeEditor();
+      if ((e.key==='n'||e.key==='N'||e.key==='+') && !open) openEditor();
     });
+
+    // responsive: 2 колонки на десктопе, 1 на мобилке
+    function layoutModal(){
+      const row = $('#tmRow');
+      const isMobile = window.innerWidth < 560;
+      row.style.gridTemplateColumns = isMobile ? '1fr' : '1fr 1fr';
+      // ограничим высоту ещё раз после ресайза/адресной строки
+      modal.style.maxHeight = 'min(80vh, 720px)';
+    }
+    layoutModal();
+    addEventListener('resize', layoutModal);
+    addEventListener('orientationchange', () => setTimeout(layoutModal, 250));
 
     // default selected
     setPriority('B');
@@ -199,18 +245,15 @@
     $$('#tmPriority button').forEach(b=>{
       const on = b.dataset.val === val;
       b.style.outline = on ? '2px solid var(--accent)' : 'none';
-      b.style.background = on
-        ? (val==='A'? LIGHT_TINT.A : val==='B'? LIGHT_TINT.B : LIGHT_TINT.C)
-        : (b.dataset.val==='A'? LIGHT_TINT.A : b.dataset.val==='B'? LIGHT_TINT.B : LIGHT_TINT.C);
     });
   }
 
   function openEditor(task){
-    const overlay = $('#taskOverlay'); const title = $('#tmTitle'); const delBtn = $('#tmDelete');
+    const overlay = $('#taskOverlay'); const titleEl = $('#tmTitle'); const delBtn = $('#tmDelete');
     CURRENT_ID = task?.id ?? null;
     setPriority(task?.priority || 'B');
 
-    title.textContent = CURRENT_ID ? 'Редактирование задачи' : 'Новая задача';
+    titleEl.textContent = CURRENT_ID ? 'Редактирование задачи' : 'Новая задача';
     delBtn.style.display = CURRENT_ID ? 'inline-block' : 'none';
 
     $('#tmInputTitle').value = task?.title ?? '';
@@ -222,11 +265,13 @@
     setTimeout(()=> overlay.style.opacity='1',0);
     $('#tmInputTitle').focus();
   }
+
   function closeEditor(){
     const overlay = $('#taskOverlay'); overlay.style.opacity='0';
     setTimeout(()=> overlay.style.display='none', 120);
     $('#tmForm').reset(); setPriority('B'); CURRENT_ID = null;
   }
+
   function onSave(e){
     e.preventDefault();
     const title = $('#tmInputTitle').value.trim(); if (!title) return;
@@ -245,6 +290,7 @@
     renderOrUpdate(task);
     closeEditor();
   }
+
   function onDelete(){
     if (!CURRENT_ID) return closeEditor();
     removeById(CURRENT_ID);
@@ -319,12 +365,11 @@
         else { renderTask(t); }
       });
     } else {
-      // проставим базовый приоритет демо-карточкам
       $$('.card').forEach(el=> applyPriorityStyle(el, 'B'));
     }
   }
 
-  /* --------------------- AI TIP (как было) --------------------- */
+  /* --------------------- AI TIP --------------------- */
   const tips = [
     'Заверши энергозатратные задачи до обеда — окно фокуса выше на 18–25%.',
     'Планируй «глубокую работу» блоками по 50–90 минут, между ними — 10–15 минут разгрузки.',
