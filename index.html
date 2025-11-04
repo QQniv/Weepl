@@ -1,205 +1,42 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Weepl v3 — Сегодня</title>
+
+  <!-- iOS PWA: убираем чёрную полосу, растягиваем фон под статус-бар -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Основные стили -->
   <link rel="stylesheet" href="styles.css">
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Weepl v3 — Сегодня</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
-
-<style>
-:root{
-  --page-x: clamp(14px, 5vw, 64px);
-  --wrap: 1240px;
-  --radius: 22px;
-  --shadow: 0 12px 40px rgba(0,0,0,.10);
-  --shadow-soft: 0 8px 26px rgba(0,0,0,.08);
-  --t: .32s cubic-bezier(.22,.61,.36,1);
-  --accent:#7D8BFF;
-
-  /* light */
-  --bg:#F4F6FB;
-  --panel: rgba(255,255,255,.72);
-  --ink:#101318;
-  --muted:#586070;
-
-  /* более сочные семена */
-  --gA:#A9D4FF; /* голубой */
-  --gB:#C8A5FF; /* лиловый */
-  --gC:#FFE3F3; /* теплый розовый */
-  --gD:#EAF3FF; /* белёсый для вуали */
-}
-
-[data-theme="dark"]{
-  --bg:#0F1115;
-  --panel: rgba(18,20,26,.62);
-  --ink:#F2F4F8;
-  --muted:#9AA5B3;
-  --accent:#9C7EFF;
-
-  --gA:#1D2D56;
-  --gB:#3B2A69;
-  --gC:#4B223F;
-  --gD:#141821;
-}
-
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0; color:var(--ink);
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  background: var(--bg);
-  position:relative; overflow-x:hidden;
-}
-
-/* ====== ФОН (сочнее + лёгкая анимация) ====== */
-.bg, .bg-veil, .noise{position:fixed; inset:0; z-index:-2; pointer-events:none}
-
-.bg{
-  inset:-24% -12% -24% -12%;
-  background:
-    radial-gradient(1900px 1500px at 18% 0%,
-      color-mix(in oklab, var(--gA) 88%, white 12%) 0%, transparent 63%),
-    radial-gradient(2400px 1750px at 120% 120%,
-      color-mix(in oklab, var(--gB) 84%, var(--bg) 16%) 0%, transparent 68%),
-    radial-gradient(1400px 1200px at -10% 110%,
-      color-mix(in oklab, var(--gC) 65%, white 35%) 0%, transparent 62%);
-  filter: blur(16px);
-  animation: drift 28s ease-in-out infinite alternate;
-}
-@keyframes drift{
-  from { transform: translate3d(0,0,0) }
-  to   { transform: translate3d(1.6%, 1.2%, 0) }
-}
-
-.bg-veil{
-  z-index:-1;
-  background:
-    radial-gradient(2600px 1900px at 50% 118%,
-      color-mix(in oklab, var(--bg) 80%, var(--gD) 20%) 0%, transparent 74%);
-  filter: blur(36px);
-  opacity:.95;
-}
-
-/* шум */
-.noise{
-  z-index:-1;
-  background-image:url('data:image/svg+xml;utf8,<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/></filter><rect width="120" height="120" filter="url(%23n)" opacity="0.03"/></svg>');
-  mix-blend-mode:overlay;
-}
-
-.wrap{max-width:var(--wrap); margin:0 auto}
-header{
-  padding:28px var(--page-x) 8px;
-  display:flex; align-items:center; justify-content:space-between;
-}
-.title h1{
-  font-family:Sora, Inter, sans-serif;
-  font-size:clamp(26px, 4.2vw, 38px);
-  letter-spacing:-.5px; margin:0 0 4px;
-}
-.title .date{color:var(--muted); font-weight:500}
-
-/* toggle */
-.controls{display:flex; gap:10px; align-items:center}
-.icon-btn{
-  border:none; background:var(--panel); backdrop-filter: blur(14px);
-  padding:12px; border-radius:14px; cursor:pointer;
-  box-shadow:var(--shadow-soft);
-  transition:transform var(--t), background var(--t), opacity var(--t);
-  display:grid; place-items:center;
-}
-.icon-btn:hover{ transform: translateY(-2px) }
-.icon-btn svg{ width:20px; height:20px; stroke:var(--ink); opacity:.9 }
-
-/* content */
-main{ padding:8px var(--page-x) 24px }
-
-/* AI capsule */
-.ai-tip{
-  position:relative;
-  background: linear-gradient(135deg, rgba(200,182,255,.98), rgba(184,224,255,.98));
-  color:#0f1115; padding:16px 44px 16px 18px; border-radius:18px;
-  font-weight:600; box-shadow:var(--shadow);
-  display:flex; align-items:center; gap:10px;
-  transition: transform var(--t), box-shadow var(--t), opacity var(--t);
-  cursor:pointer;
-}
-.ai-tip:hover{ transform:translateY(-2px); box-shadow:0 18px 50px rgba(0,0,0,.14) }
-.ai-dot{ width:10px; height:10px; border-radius:50%;
-  background: radial-gradient(circle at 30% 30%, #fff, #1110);
-  outline:6px solid rgba(255,255,255,.35);
-}
-/* refresh icon */
-.ai-refresh{
-  position:absolute; right:10px; top:50%; transform:translateY(-50%);
-  width:26px; height:26px; border-radius:10px;
-  display:grid; place-items:center;
-  background:rgba(255,255,255,.55);
-  backdrop-filter: blur(6px);
-}
-.ai-refresh svg{ width:16px; height:16px; stroke:#222 }
-
-/* GRID (мозаика) */
-.grid{ margin-top:18px }
-.grid-inner{
-  display:grid; grid-template-columns: repeat(12, minmax(0,1fr));
-  gap:16px; grid-auto-flow:dense;
-}
-
-.card{
-  background:var(--panel); backdrop-filter: blur(16px);
-  border-radius:var(--radius); box-shadow:var(--shadow);
-  padding:18px 18px 16px; display:flex; flex-direction:column; justify-content:space-between;
-  transition: transform var(--t), box-shadow var(--t), background var(--t);
-  opacity:0; transform: translateY(8px);
-  animation:cardIn .6s ease forwards;
-}
-@keyframes cardIn{to{opacity:1; transform:translateY(0)}}
-.card:hover{ transform: translateY(-3px); box-shadow: 0 16px 46px rgba(0,0,0,.12) }
-
-.card h3{ font-family:Sora, Inter, sans-serif; font-size:16.5px; margin:0 0 6px; letter-spacing:-.2px }
-.card p{ margin:0; color:var(--muted); font-size:13.5px }
-.meta{ display:flex; align-items:center; justify-content:space-between; margin-top:14px; color:var(--muted); font-weight:600 }
-
-/* формы */
-.square{ grid-column: span 4; height:220px }
-.wide  { grid-column: span 8; height:220px }
-.tall  { grid-column: span 4; height:340px }
-
-/* планшетный брейкпоинт, мобильная мозаика сохраняется */
-@media (max-width: 1000px){
-  .square{grid-column: span 6}
-  .wide{grid-column: span 12}
-  .tall{grid-column: span 6}
-}
-
-/* dock */
-nav{ position:sticky; bottom:0; z-index:5; padding-top:6px }
-.dock{
-  margin:0 var(--page-x) calc(12px + env(safe-area-inset-bottom));
-  background:var(--panel); backdrop-filter: blur(18px);
-  border-radius:20px; box-shadow:var(--shadow-soft);
-  display:flex; justify-content:space-between; padding:8px;
-}
-.dock button{
-  flex:1; display:flex; gap:8px; align-items:center; justify-content:center;
-  padding:10px 6px; border:none; background:transparent; cursor:pointer;
-  color:var(--muted); font-weight:600; border-radius:14px;
-  transition: background var(--t), color var(--t), transform var(--t);
-}
-.dock button.active{ color:var(--ink); background: rgba(255,255,255,.35) }
-[data-theme="dark"] .dock button.active{ background: rgba(255,255,255,.06) }
-.dock svg{ width:18px; height:18px; stroke: currentColor }
-
-.icon-btn:focus-visible, .dock button:focus-visible, .card:focus-visible{
-  outline:2px solid var(--accent); outline-offset:2px;
-}
-</style>
+  <!-- Небольшие доп.правки для липкой шапки -->
+  <style>
+    /* липкая шапка с блюром и безопасной зоной для вырезов */
+    header{
+      position: sticky;
+      top: env(safe-area-inset-top);
+      z-index: 20;
+      padding-top: calc(20px + env(safe-area-inset-top)) !important;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      background: color-mix(in oklab, var(--panel) 85%, transparent 15%);
+      border-bottom: 1px solid color-mix(in oklab, var(--ink) 8%, transparent);
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+    }
+    /* чтобы контент не уезжал под шапку при самом первом экране */
+    main{ scroll-margin-top: calc(56px + env(safe-area-inset-top)); }
+  </style>
 </head>
+
 <body data-theme="light">
   <!-- Фон -->
   <div class="bg"></div>
@@ -306,60 +143,56 @@ nav{ position:sticky; bottom:0; z-index:5; padding-top:6px }
     </div>
   </nav>
 
-<script>
-  // ТЕМА
-  const body = document.body;
-  const toggle = document.getElementById('themeToggle');
-  const sun = document.getElementById('sunIcon');
-  const moon = document.getElementById('moonIcon');
-  function setTheme(t){
-    body.dataset.theme = t;
-    const isDark = t === 'dark';
-    sun.style.display = isDark ? 'none' : 'block';
-    moon.style.display = isDark ? 'block' : 'none';
-    localStorage.setItem('weepl-theme', t);
-  }
-  setTheme(localStorage.getItem('weepl-theme') || 'light');
-  toggle.addEventListener('click', ()=> setTheme(body.dataset.theme === 'light' ? 'dark' : 'light'));
+  <script>
+    // ТЕМА
+    const body = document.body;
+    const toggle = document.getElementById('themeToggle');
+    const sun = document.getElementById('sunIcon');
+    const moon = document.getElementById('moonIcon');
+    function setTheme(t){
+      body.dataset.theme = t;
+      const isDark = t === 'dark';
+      sun.style.display = isDark ? 'none' : 'block';
+      moon.style.display = isDark ? 'block' : 'none';
+      localStorage.setItem('weepl-theme', t);
+    }
+    setTheme(localStorage.getItem('weepl-theme') || 'light');
+    toggle.addEventListener('click', ()=> setTheme(body.dataset.theme === 'light' ? 'dark' : 'light'));
 
-  // AI СОВЕТЫ
-  const tips = [
-    'Заверши энергозатратные задачи до обеда — окно фокуса выше на 18–25%.',
-    'Планируй «глубокую работу» блоками по 50–90 минут, между ними — 10–15 минут разгрузки.',
-    'Спроси себя «что сдвинет проект сильнее всего?» и сделай это первым.',
-    'Отключи уведомления на 45 минут — вероятность прерываний падает вдвое.',
-    'Запиши 3 задачи дня. Остальное — в бэклог. Чёткие границы уменьшают прокрастинацию.',
-    'Сложное разбей на микрошаги по 5–10 минут — стартовать всегда легче.',
-    'Подготовь завтра сегодня: 5 минут вечером экономят 20 утром.',
-    'Планируй созвоны во второй половине дня — у утреннего мозга выше креативность.',
-    'Оцени «стоимость контекста»: сгруппируй похожие задачи в один слот.',
-    'Выбери «анти-задачу»: что НЕ делать сегодня, чтобы сохранить фокус.'
-  ];
-
-  const aiText = document.getElementById('aiText');
-  const aiTip = document.getElementById('aiTip');
-
-  // Дет. «совет дня» от даты + возможность перелистывать
-  function seedIndex(){
-    const saved = localStorage.getItem('weepl-tip-index');
-    if(saved !== null) return parseInt(saved,10);
-    const d = new Date();
-    const key = d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.getDate();
-    return key % tips.length;
-  }
-  let tipIndex = seedIndex();
-  function renderTip(){
-    aiText.textContent = 'AI-совет: ' + tips[tipIndex];
-    localStorage.setItem('weepl-tip-index', tipIndex.toString());
-  }
-  renderTip();
-
-  aiTip.addEventListener('click', ()=>{
-    tipIndex = (tipIndex + 1) % tips.length;
-    aiTip.style.opacity = .85;
-    setTimeout(()=>{ aiTip.style.opacity = 1; }, 160);
+    // AI СОВЕТЫ (как в прошлой версии)
+    const tips = [
+      'Заверши энергозатратные задачи до обеда — окно фокуса выше на 18–25%.',
+      'Планируй «глубокую работу» блоками по 50–90 минут, между ними — 10–15 минут разгрузки.',
+      'Спроси себя «что сдвинет проект сильнее всего?» и сделай это первым.',
+      'Отключи уведомления на 45 минут — вероятность прерываний падает вдвое.',
+      'Запиши 3 задачи дня. Остальное — в бэклог. Чёткие границы уменьшают прокрастинацию.',
+      'Сложное разбей на микрошаги по 5–10 минут — стартовать всегда легче.',
+      'Подготовь завтра сегодня: 5 минут вечером экономят 20 утром.',
+      'Планируй созвоны во второй половине дня — у утреннего мозга выше креативность.',
+      'Оцени «стоимость контекста»: сгруппируй похожие задачи в один слот.',
+      'Выбери «анти-задачу»: что НЕ делать сегодня, чтобы сохранить фокус.'
+    ];
+    const aiText = document.getElementById('aiText');
+    const aiTip = document.getElementById('aiTip');
+    function seedIndex(){
+      const saved = localStorage.getItem('weepl-tip-index');
+      if(saved !== null) return parseInt(saved,10);
+      const d = new Date();
+      const key = d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.getDate();
+      return key % tips.length;
+    }
+    let tipIndex = seedIndex();
+    function renderTip(){
+      aiText.textContent = 'AI-совет: ' + tips[tipIndex];
+      localStorage.setItem('weepl-tip-index', tipIndex.toString());
+    }
     renderTip();
-  });
-</script>
+    aiTip.addEventListener('click', ()=>{
+      tipIndex = (tipIndex + 1) % tips.length;
+      aiTip.style.opacity = .85;
+      setTimeout(()=>{ aiTip.style.opacity = 1; }, 160);
+      renderTip();
+    });
+  </script>
 </body>
 </html>
