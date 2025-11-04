@@ -1,19 +1,14 @@
 /* =========================================================
-   WEEPL v3 — app.js (Momo Trust + autoFit priority labels)
-   - Заголовки: шрифт Momo Trust Display (через CSS — см. styles.css)
-   - Кнопки A/B/C/D: авто-подбор подписи (ResizeObserver), переносы
-   - Модалка: мобильная адаптация, без iOS-зума
-   - Приоритеты по Эйзенхауэру, тинты, редактирование/удаление, параллакс
+   WEEPL v3 — app.js (robust init: overlay first; plus fixed)
    ========================================================= */
-
 (() => {
-  const $ = (s, r=document) => r.querySelector(s);
+  const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
   const grid = $('.grid-inner');
   const bg = $('.bg'), veil = $('.bg-veil');
   const STORAGE_KEY = 'weepl-tasks';
 
-  /* ------------ utils ------------ */
+  /* utils */
   const load = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); } catch { return []; } };
   const save = arr => localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
   const escapeHTML = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -21,7 +16,7 @@
   const upsert = t => { const a=load(); const i=a.findIndex(x=>x.id===t.id); if(i<0)a.push(t); else a[i]=t; save(a); };
   const removeById = id => save(load().filter(t=>t.id!==id));
 
-  /* ------------ backdrop ------------ */
+  /* backdrop parallax */
   let sy = scrollY, vx=0, raf=null;
   addEventListener('scroll', ()=>{ sy=scrollY||pageYOffset; req(); }, {passive:true});
   addEventListener('pointermove', e=>{ vx=(e.clientX/innerWidth)-.5; req(); }, {passive:true});
@@ -29,13 +24,13 @@
   const tick=()=>{ raf=null; const py=-(sy*0.03), px=vx*10; if(bg)bg.style.transform=`translate3d(${px}px,${py}px,0)`; if(veil)veil.style.transform=`translate3d(${px*.6}px,${py*.5}px,0)`; };
   req();
 
-  /* ------------ cards spring ------------ */
+  /* spring on cards */
   let cards=$$('.card'); const st=new Map();
   const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting)e.target.classList.add('inview'); }),{threshold:.08});
   cards.forEach(c=>{ io.observe(c); c.style.cursor='pointer'; });
   (function anim(){ const vh=innerHeight; for(const el of cards){ const r=el.getBoundingClientRect(); const n=(r.top+r.height*.5 - vh*.5)/vh; const target=n*10; const s=st.get(el)||{y:0,vy:0}; s.vy+=(target-s.y)*.12; s.vy*=.85; s.y+=s.vy; st.set(el,s); el.style.transform=`translateY(${s.y.toFixed(2)}px)`; } requestAnimationFrame(anim); })();
 
-  /* ------------ Eisenhower ------------ */
+  /* priorities */
   const PR_LONG = { A:'Сделать сейчас', B:'Запланировать', C:'Делегировать', D:'Убрать/Отменить' };
   const PR_SHORT= { A:'Сейчас',          B:'План',          C:'Делег.',       D:'Убрать' };
   const LT = { A:'rgba(255, 93, 93, .18)', B:'rgba(255,195, 80,.16)', C:'rgba(120,205,255,.16)', D:'rgba(150,160,180,.14)' };
@@ -60,18 +55,21 @@
     el.style.opacity = pr==='D' ? .95 : 1;
   }
 
-  /* ------------ editor (mobile-safe) ------------ */
+  /* editor (build FIRST, so + always works) */
+  let CURRENT_ID=null, CURRENT_PRIORITY='B';
+
   function ensureEditor(){
     if($('#taskOverlay')) return;
 
     const fab = document.createElement('button');
     fab.id='quickAddBtn'; fab.innerHTML='+';
     Object.assign(fab.style,{
-      position:'fixed', right:'calc(16px + env(safe-area-inset-right))', bottom:'calc(80px + env(safe-area-inset-bottom))',
+      position:'fixed', right:'calc(16px + env(safe-area-inset-right))',
+      bottom:'calc(100px + env(safe-area-inset-bottom))', /* выше дока */
       width:'60px', height:'60px', borderRadius:'18px', border:'none', cursor:'pointer',
       fontSize:'30px', fontWeight:'700', lineHeight:'0', color:'#0f1115',
-      background:'rgba(255,255,255,.88)', boxShadow:'0 12px 30px rgba(0,0,0,.18)',
-      backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)', zIndex:'30'
+      background:'rgba(255,255,255,.9)', boxShadow:'0 16px 38px rgba(0,0,0,.22)',
+      backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)', zIndex:'60'
     });
     fab.addEventListener('click', ()=>openEditor());
     document.body.appendChild(fab);
@@ -79,7 +77,7 @@
     const overlay = document.createElement('div'); overlay.id='taskOverlay';
     Object.assign(overlay.style,{
       position:'fixed', inset:'0', display:'none', alignItems:'center', justifyContent:'center',
-      background:'rgba(0,0,0,.25)', zIndex:'40',
+      background:'rgba(0,0,0,.25)', zIndex:'80',
       padding:'calc(10px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left))'
     });
     overlay.addEventListener('click', e=>{ if(e.target===overlay) closeEditor(); });
@@ -126,11 +124,13 @@
 
     const prWrap = form.querySelector('#tmPriority');
 
-    /* ====== PRIORITY BUTTONS with autoFit ====== */
+    /* priority buttons + autofit */
+    const PR_LONG = { A:'Сделать сейчас', B:'Запланировать', C:'Делегировать', D:'Убрать/Отменить' };
+    const PR_SHORT= { A:'Сейчас', B:'План', C:'Делег.', D:'Убрать' };
     const LT_MAP = {A:LT.A,B:LT.B,C:LT.C,D:LT.D};
 
-    function isCompact(){ return innerWidth < 390; }
-    function labelFor(l){ return isCompact()? PR_SHORT[l] : PR_LONG[l]; }
+    const isCompact = () => innerWidth < 390;
+    const labelFor = l => isCompact()? PR_SHORT[l] : PR_LONG[l];
 
     function buildPriorityButtons(){
       prWrap.innerHTML = '';
@@ -152,40 +152,24 @@
         prWrap.appendChild(btn);
       });
 
-      highlightPriority();
-      autoFitPriorityLabels();         // <-- автоподбор
+      highlightPriority(); autoFitPriorityLabels();
     }
-
-    function highlightPriority(){
-      $$('#tmPriority button').forEach(b=>{
-        b.style.outline = (b.dataset.val === CURRENT_PRIORITY) ? '2px solid var(--accent)' : 'none';
-      });
-    }
-
-    // авто-подбор размера .pr-sub до тех пор, пока влезает в две строки
+    function highlightPriority(){ $$('#tmPriority button').forEach(b=>{ b.style.outline = (b.dataset.val === CURRENT_PRIORITY) ? '2px solid var(--accent)' : 'none'; }); }
     function autoFit(el, minPx=10, maxPx=12){
-      let size = maxPx;
-      el.style.fontSize = size+'px';
+      let size = maxPx; el.style.fontSize = size+'px';
       el.style.maxHeight = (parseFloat(getComputedStyle(el).lineHeight) * 2) + 'px';
-      // если всё равно не влезает — уменьшаем до minPx
-      while (el.scrollHeight > el.clientHeight && size > minPx){
-        size -= 0.5;
-        el.style.fontSize = size+'px';
-      }
+      while (el.scrollHeight > el.clientHeight && size > minPx){ size -= 0.5; el.style.fontSize = size+'px'; }
     }
     function autoFitPriorityLabels(){
       const subs = $$('.pr-sub', prWrap);
       subs.forEach(el => autoFit(el, 10, isCompact()?11.5:12));
-      // наблюдатель: на любое изменение размеров
       const ro = new ResizeObserver(()=> subs.forEach(el => autoFit(el, 10, isCompact()?11.5:12)));
       subs.forEach(el => ro.observe(el));
       addEventListener('resize', ()=> subs.forEach(el => autoFit(el, 10, isCompact()?11.5:12)));
       addEventListener('orientationchange', ()=> setTimeout(()=>subs.forEach(el => autoFit(el, 10, isCompact()?11.5:12)), 250));
     }
-
     buildPriorityButtons();
 
-    // сетка для Tag/Time
     function layoutRow(){
       const row = $('#tmRow');
       row.style.gridTemplateColumns = (innerWidth < 560) ? '1fr' : '1fr 1fr';
@@ -195,12 +179,9 @@
     addEventListener('resize', ()=>{ layoutRow(); buildPriorityButtons(); });
     addEventListener('orientationchange', ()=> setTimeout(()=>{ layoutRow(); buildPriorityButtons(); }, 250));
 
-    // actions
     prWrap.addEventListener('click', e=>{
-      const btn = e.target.closest('button[data-val]');
-      if (!btn) return;
-      setPriority(btn.dataset.val);
-      highlightPriority();
+      const btn = e.target.closest('button[data-val]'); if (!btn) return;
+      setPriority(btn.dataset.val); highlightPriority();
     });
 
     const footerPad = document.createElement('div'); footerPad.style.height='6px';
@@ -212,7 +193,6 @@
     $('#tmDelete').addEventListener('click', onDelete);
     form.addEventListener('submit', onSave);
 
-    // хоткеи
     addEventListener('keydown', e=>{
       const open = overlay.style.display==='flex';
       if(e.key==='Escape' && open) return closeEditor();
@@ -222,10 +202,10 @@
     setPriority('B');
   }
 
-  let CURRENT_ID=null, CURRENT_PRIORITY='B';
   function setPriority(v){ CURRENT_PRIORITY=v; }
 
   function openEditor(task){
+    ensureEditor(); // на всякий
     const overlay=$('#taskOverlay'), title=$('#tmTitle'), del=$('#tmDelete');
     CURRENT_ID = task?.id ?? null;
     setPriority(task?.priority || 'B');
@@ -238,11 +218,12 @@
     $('#tmInputTag').value   = task?.tag   ?? '';
     $('#tmInputTime').value  = task?.time  ?? '';
 
+    document.documentElement.classList.add('modal-open');
+    document.body.classList.add('modal-open');
     overlay.style.display='flex';
     setTimeout(()=> overlay.style.opacity='1',0);
     $('#tmInputTitle').focus();
 
-    // подсветка активной
     $$('#tmPriority button').forEach(b=>{
       b.style.outline = (b.dataset.val===CURRENT_PRIORITY)?'2px solid var(--accent)':'none';
     });
@@ -251,6 +232,8 @@
   function closeEditor(){
     const o=$('#taskOverlay'); o.style.opacity='0';
     setTimeout(()=> o.style.display='none', 120);
+    document.documentElement.classList.remove('modal-open');
+    document.body.classList.remove('modal-open');
     $('#tmForm').reset(); setPriority('B');
   }
 
@@ -277,15 +260,17 @@
     closeEditor();
   }
 
-  /* ------------ render ------------ */
+  /* render */
   function taskFromCardEl(el){
+    // берём текущий приоритет карточки (если уже был тинт)
+    const pr = el.dataset.prio || 'B';
     return {
       id:'t'+Date.now()+Math.random().toString(36).slice(2,6),
       title: el.querySelector('h3')?.textContent.trim() || 'Без названия',
       note : el.querySelector('p')?.textContent.trim()  || '',
       tag  : el.querySelector('.meta span:nth-child(1)')?.textContent.trim() || 'Задача',
       time : el.querySelector('.meta span:nth-child(2)')?.textContent.trim() || '',
-      priority:'B',
+      priority: pr,
       shape: el.classList.contains('tall') ? 'tall' : el.classList.contains('wide') ? 'wide' : 'square'
     };
   }
@@ -309,14 +294,26 @@
     applyPriorityStyle(el, t.priority||'B');
   }
 
-  grid.addEventListener('click', e=>{
+  // делегирование кликов: только по .card, баннер игнорируем
+  grid.addEventListener('click', (e)=>{
     const card=e.target.closest('.card'); if(!card) return;
     const id=card.dataset.id;
-    if(id){ openEditor(byId(id)); }
-    else { const t=taskFromCardEl(card); upsert(t); card.dataset.id=t.id; applyPriorityStyle(card,t.priority); openEditor(t); }
+
+    // гарантируем наличие overlay перед открытием
+    ensureEditor();
+
+    if(id){
+      openEditor(byId(id));
+    } else {
+      const t=taskFromCardEl(card);
+      upsert(t);
+      card.dataset.id=t.id;
+      applyPriorityStyle(card,t.priority); // визуально остаётся как есть
+      openEditor(t);
+    }
   });
 
-  /* ------------ boot ------------ */
+  /* boot: строим редактор СНАЧАЛА, чтобы + всегда работал */
   function ensureUI(){ ensureEditor(); }
   let shapeIdx=0; const pickNextShape=()=> (['square','tall','wide'][shapeIdx++%3]);
 
@@ -326,30 +323,12 @@
     if(stored.length){
       stored.forEach(t=>{
         const maybe=[...$$('.card')].find(el=>!el.dataset.id && (el.querySelector('h3')?.textContent.trim()===t.title));
-        if(maybe){ maybe.dataset.id=t.id; renderOrUpdate(t); } else { renderTask(t); }
+        if(maybe){ maybe.dataset.id=t.id; renderOrUpdate(t); }
+        else { renderTask(t); }
       });
     } else {
       $$('.card').forEach(el=>applyPriorityStyle(el,'B'));
     }
   }
-
-  /* ------------ AI tip ------------ */
-  const tips=[
-    'Заверши энергозатратные задачи до обеда — окно фокуса выше на 18–25%.',
-    'Планируй «глубокую работу» блоками по 50–90 минут, между ними — 10–15 минут разгрузки.',
-    'Спроси себя «что сдвинет проект сильнее всего?» и сделай это первым.',
-    'Отключи уведомления на 45 минут — вероятность прерываний падает вдвое.',
-    'Запиши 3 задачи дня. Остальное — в бэклог. Чёткие границы уменьшают прокрастинацию.',
-    'Сложное разбей на микрошаги по 5–10 минут — стартовать всегда легче.',
-    'Подготовь завтра сегодня: 5 минут вечером экономят 20 утром.',
-    'Планируй созвоны во второй половине дня — у утреннего мозга выше креативность.',
-    'Оцени «стоимость контекста»: сгруппируй похожие задачи в один слот.',
-    'Выбери «анти-задачу»: что НЕ делать сегодня, чтобы сохранить фокус.'
-  ];
-  const aiText=$('#aiText'), aiTip=$('#aiTip');
-  const seed=()=>{ const s=localStorage.getItem('weepl-tip-index'); if(s!==null) return +s; const d=new Date(); const k=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); return k%tips.length; };
-  let tipIndex=seed(); const renderTip=()=>{ if(aiText) aiText.textContent='AI-совет: '+tips[tipIndex]; localStorage.setItem('weepl-tip-index', String(tipIndex)); };
-  renderTip(); aiTip?.addEventListener('click',()=>{ tipIndex=(tipIndex+1)%tips.length; aiTip.style.opacity=.85; setTimeout(()=>aiTip.style.opacity=1,160); renderTip(); });
-
   boot();
 })();
