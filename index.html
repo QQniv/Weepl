@@ -25,10 +25,11 @@
   --ink:#101318;
   --muted:#586070;
 
-  /* seeds (повышенная насыщенность) */
-  --gA:#B9DCFF; /* холодное голубое */
-  --gB:#D2B7FF; /* лиловый */
-  --gC:#EAF3FF; /* белёсый */
+  /* более сочные семена */
+  --gA:#A9D4FF; /* голубой */
+  --gB:#C8A5FF; /* лиловый */
+  --gC:#FFE3F3; /* теплый розовый */
+  --gD:#EAF3FF; /* белёсый для вуали */
 }
 
 [data-theme="dark"]{
@@ -38,9 +39,10 @@
   --muted:#9AA5B3;
   --accent:#9C7EFF;
 
-  --gA:#203059;
-  --gB:#3A2A66;
-  --gC:#141821;
+  --gA:#1D2D56;
+  --gB:#3B2A69;
+  --gC:#4B223F;
+  --gD:#141821;
 }
 
 *{box-sizing:border-box}
@@ -52,28 +54,38 @@ body{
   position:relative; overflow-x:hidden;
 }
 
-/* ====== ФОН: заметнее и без резких полос ====== */
+/* ====== ФОН (сочнее + лёгкая анимация) ====== */
+.bg, .bg-veil, .noise{position:fixed; inset:0; z-index:-2; pointer-events:none}
+
 .bg{
-  position:fixed; inset:-24% -12% -24% -12%; z-index:-2;
+  inset:-24% -12% -24% -12%;
   background:
     radial-gradient(1900px 1500px at 18% 0%,
-      color-mix(in oklab, var(--gA) 85%, white 15%) 0%, transparent 63%),
+      color-mix(in oklab, var(--gA) 88%, white 12%) 0%, transparent 63%),
     radial-gradient(2400px 1750px at 120% 120%,
-      color-mix(in oklab, var(--gB) 82%, var(--bg) 18%) 0%, transparent 68%);
+      color-mix(in oklab, var(--gB) 84%, var(--bg) 16%) 0%, transparent 68%),
+    radial-gradient(1400px 1200px at -10% 110%,
+      color-mix(in oklab, var(--gC) 65%, white 35%) 0%, transparent 62%);
   filter: blur(16px);
+  animation: drift 28s ease-in-out infinite alternate;
 }
+@keyframes drift{
+  from { transform: translate3d(0,0,0) }
+  to   { transform: translate3d(1.6%, 1.2%, 0) }
+}
+
 .bg-veil{
-  position:fixed; inset:-28% -16% -28% -16%; z-index:-1;
+  z-index:-1;
   background:
     radial-gradient(2600px 1900px at 50% 118%,
-      color-mix(in oklab, var(--bg) 82%, var(--gC) 18%) 0%, transparent 72%);
+      color-mix(in oklab, var(--bg) 80%, var(--gD) 20%) 0%, transparent 74%);
   filter: blur(36px);
   opacity:.95;
 }
 
 /* шум */
 .noise{
-  position:fixed; inset:0; z-index:-1; pointer-events:none;
+  z-index:-1;
   background-image:url('data:image/svg+xml;utf8,<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/></filter><rect width="120" height="120" filter="url(%23n)" opacity="0.03"/></svg>');
   mix-blend-mode:overlay;
 }
@@ -104,29 +116,39 @@ header{
 
 /* content */
 main{ padding:8px var(--page-x) 24px }
+
+/* AI capsule */
 .ai-tip{
-  background: linear-gradient(135deg, rgba(200,182,255,.96), rgba(184,224,255,.96));
-  color:#0f1115; padding:16px 18px; border-radius:18px;
+  position:relative;
+  background: linear-gradient(135deg, rgba(200,182,255,.98), rgba(184,224,255,.98));
+  color:#0f1115; padding:16px 44px 16px 18px; border-radius:18px;
   font-weight:600; box-shadow:var(--shadow);
   display:flex; align-items:center; gap:10px;
   transition: transform var(--t), box-shadow var(--t), opacity var(--t);
+  cursor:pointer;
 }
 .ai-tip:hover{ transform:translateY(-2px); box-shadow:0 18px 50px rgba(0,0,0,.14) }
 .ai-dot{ width:10px; height:10px; border-radius:50%;
   background: radial-gradient(circle at 30% 30%, #fff, #1110);
   outline:6px solid rgba(255,255,255,.35);
 }
+/* refresh icon */
+.ai-refresh{
+  position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  width:26px; height:26px; border-radius:10px;
+  display:grid; place-items:center;
+  background:rgba(255,255,255,.55);
+  backdrop-filter: blur(6px);
+}
+.ai-refresh svg{ width:16px; height:16px; stroke:#222 }
 
-/* ===== GRID: одинаковая мозаика для desktop и mobile ===== */
+/* GRID (мозаика) */
 .grid{ margin-top:18px }
 .grid-inner{
-  display:grid;
-  grid-template-columns: repeat(12, minmax(0,1fr));
-  gap:16px;
-  grid-auto-flow:dense;
+  display:grid; grid-template-columns: repeat(12, minmax(0,1fr));
+  gap:16px; grid-auto-flow:dense;
 }
 
-/* формы и единые высоты, чтобы не было дыр */
 .card{
   background:var(--panel); backdrop-filter: blur(16px);
   border-radius:var(--radius); box-shadow:var(--shadow);
@@ -142,19 +164,19 @@ main{ padding:8px var(--page-x) 24px }
 .card p{ margin:0; color:var(--muted); font-size:13.5px }
 .meta{ display:flex; align-items:center; justify-content:space-between; margin-top:14px; color:var(--muted); font-weight:600 }
 
-/* shapes (везде одинаковые, в т.ч. на мобиле) */
+/* формы */
 .square{ grid-column: span 4; height:220px }
 .wide  { grid-column: span 8; height:220px }
 .tall  { grid-column: span 4; height:340px }
 
-/* небольшой брейкпоинт только для планшета, чтобы сетка не ломалась */
+/* планшетный брейкпоинт, мобильная мозаика сохраняется */
 @media (max-width: 1000px){
   .square{grid-column: span 6}
   .wide{grid-column: span 12}
   .tall{grid-column: span 6}
 }
 
-/* нижняя док-панель с safe-area */
+/* dock */
 nav{ position:sticky; bottom:0; z-index:5; padding-top:6px }
 .dock{
   margin:0 var(--page-x) calc(12px + env(safe-area-inset-bottom));
@@ -204,11 +226,18 @@ nav{ position:sticky; bottom:0; z-index:5; padding-top:6px }
     </header>
 
     <main>
-      <div class="ai-tip">
+      <!-- AI TIP -->
+      <div class="ai-tip" id="aiTip" title="Нажми, чтобы обновить совет">
         <span class="ai-dot"></span>
-        <span>AI-совет: завершай энергозатратные задачи до обеда — окно фокуса выше на 18–25%.</span>
+        <span id="aiText">Загружаю совет…</span>
+        <span class="ai-refresh" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+            <path d="M20 11a8 8 0 1 1-2.34-5.66M20 4v7h-7"></path>
+          </svg>
+        </span>
       </div>
 
+      <!-- GRID -->
       <section class="grid">
         <div class="grid-inner" aria-label="Задачи на сегодня">
           <article class="card wide" tabindex="0">
@@ -277,12 +306,11 @@ nav{ position:sticky; bottom:0; z-index:5; padding-top:6px }
   </nav>
 
 <script>
-  // Тема с сохранением
+  // ТЕМА
   const body = document.body;
   const toggle = document.getElementById('themeToggle');
   const sun = document.getElementById('sunIcon');
   const moon = document.getElementById('moonIcon');
-
   function setTheme(t){
     body.dataset.theme = t;
     const isDark = t === 'dark';
@@ -292,6 +320,45 @@ nav{ position:sticky; bottom:0; z-index:5; padding-top:6px }
   }
   setTheme(localStorage.getItem('weepl-theme') || 'light');
   toggle.addEventListener('click', ()=> setTheme(body.dataset.theme === 'light' ? 'dark' : 'light'));
+
+  // AI СОВЕТЫ
+  const tips = [
+    'Заверши энергозатратные задачи до обеда — окно фокуса выше на 18–25%.',
+    'Планируй «глубокую работу» блоками по 50–90 минут, между ними — 10–15 минут разгрузки.',
+    'Спроси себя «что сдвинет проект сильнее всего?» и сделай это первым.',
+    'Отключи уведомления на 45 минут — вероятность прерываний падает вдвое.',
+    'Запиши 3 задачи дня. Остальное — в бэклог. Чёткие границы уменьшают прокрастинацию.',
+    'Сложное разбей на микрошаги по 5–10 минут — стартовать всегда легче.',
+    'Подготовь завтра сегодня: 5 минут вечером экономят 20 утром.',
+    'Планируй созвоны во второй половине дня — у утреннего мозга выше креативность.',
+    'Оцени «стоимость контекста»: сгруппируй похожие задачи в один слот.',
+    'Выбери «анти-задачу»: что НЕ делать сегодня, чтобы сохранить фокус.'
+  ];
+
+  const aiText = document.getElementById('aiText');
+  const aiTip = document.getElementById('aiTip');
+
+  // Дет. «совет дня» от даты + возможность перелистывать
+  function seedIndex(){
+    const saved = localStorage.getItem('weepl-tip-index');
+    if(saved !== null) return parseInt(saved,10);
+    const d = new Date();
+    const key = d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.getDate();
+    return key % tips.length;
+  }
+  let tipIndex = seedIndex();
+  function renderTip(){
+    aiText.textContent = 'AI-совет: ' + tips[tipIndex];
+    localStorage.setItem('weepl-tip-index', tipIndex.toString());
+  }
+  renderTip();
+
+  aiTip.addEventListener('click', ()=>{
+    tipIndex = (tipIndex + 1) % tips.length;
+    aiTip.style.opacity = .85;
+    setTimeout(()=>{ aiTip.style.opacity = 1; }, 160);
+    renderTip();
+  });
 </script>
 </body>
 </html>
