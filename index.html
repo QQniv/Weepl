@@ -1,223 +1,328 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Weepl v3 — Сегодня</title>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
 
   <style>
-    :root {
-      --bg-light: #f6f7fb;
-      --bg-dark: #111317;
-      --text-light: #1b1f24;
-      --text-dark: #f2f2f2;
-      --accent: #9c7eff;
+    /* ========== THEME TOKENS ========== */
+    :root{
+      --page-x: clamp(16px, 6vw, 64px);
       --radius: 22px;
-      --transition: all 0.3s ease;
+      --radius-lg: 28px;
+      --shadow: 0 12px 40px rgba(0,0,0,.10);
+      --shadow-soft: 0 8px 26px rgba(0,0,0,.08);
+      --t: .3s cubic-bezier(.22,.61,.36,1);
+      --accent: #7D8BFF;
+
+      /* light */
+      --bg: #F3F5FA;
+      --panel: rgba(255,255,255,.72);
+      --ink: #111318;
+      --muted: #525a66;
+
+      /* gradient seeds */
+      --g1: #C9D6FF;
+      --g2: #E2E8F0;
+      --g3: #B8E1FF;
+      --g4: #F5D0FE;
     }
 
-    [data-theme="dark"] {
-      --bg: var(--bg-dark);
-      --text: var(--text-dark);
+    [data-theme="dark"]{
+      --bg: #0F1115;
+      --panel: rgba(18,20,26,.6);
+      --ink: #F2F4F8;
+      --muted: #98A2B3;
+      --g1: #1F2A44;
+      --g2: #141821;
+      --g3: #223047;
+      --g4: #2E1F3A;
+      --accent: #9C7EFF;
     }
 
-    [data-theme="light"] {
-      --bg: var(--bg-light);
-      --text: var(--text-light);
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--ink);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(1200px 800px at 20% -10%, var(--g3) 0%, transparent 55%),
+        radial-gradient(1000px 600px at 110% 0%, var(--g4) 0%, transparent 60%),
+        radial-gradient(900px 700px at -10% 90%, var(--g1) 0%, transparent 55%),
+        linear-gradient(180deg, var(--g2), var(--bg));
+      position:relative;
+      overflow-x:hidden;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Inter', sans-serif;
-      transition: var(--transition);
+    /* subtle noise overlay */
+    body::after{
+      content:"";
+      position:fixed; inset:0;
+      pointer-events:none;
+      background-image: url('data:image/svg+xml;utf8,<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/></filter><rect width="120" height="120" filter="url(%23n)" opacity="0.035"/></svg>');
+      mix-blend-mode: overlay;
     }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      overflow-x: hidden;
+    header{
+      padding: 28px var(--page-x) 8px;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .title h1{
+      font-family: Sora, Inter, sans-serif;
+      font-size: clamp(26px, 4.5vw, 38px);
+      letter-spacing:-0.5px;
+      margin:0 0 4px 0;
+    }
+    .title .date{
+      color:var(--muted);
+      font-weight:500;
     }
 
-    header {
-      padding: 32px 7vw 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-family: 'Space Grotesk', sans-serif;
+    /* theme toggle (SVG, no emoji) */
+    .controls{display:flex; gap:10px; align-items:center}
+    .icon-btn{
+      border:none; background:var(--panel); backdrop-filter: blur(14px);
+      padding:12px; border-radius:14px; cursor:pointer;
+      box-shadow: var(--shadow-soft);
+      transition: transform var(--t), background var(--t), opacity var(--t);
+      display:grid; place-items:center;
+    }
+    .icon-btn:hover{ transform: translateY(-2px) }
+    .icon-btn svg{ width:20px; height:20px; stroke:var(--ink); opacity:.9 }
+
+    main{ padding: 8px var(--page-x) 24px }
+
+    /* AI tip as gradient capsule */
+    .ai-tip{
+      background: linear-gradient(135deg, rgba(200,182,255,.9), rgba(184,224,255,.9));
+      color:#0f1115;
+      padding: 16px 18px;
+      border-radius: 18px;
+      font-weight: 600;
+      box-shadow: var(--shadow);
+      transition: box-shadow var(--t), transform var(--t), opacity var(--t);
+      display:flex; align-items:center; gap:10px;
+    }
+    .ai-tip:hover{ transform: translateY(-2px); box-shadow: 0 18px 50px rgba(0,0,0,.12) }
+    .ai-dot{
+      width:10px; height:10px; border-radius:50%;
+      background: radial-gradient(circle at 30% 30%, #fff, #1110);
+      outline: 6px solid rgba(255,255,255,.35);
+      filter: blur(.2px);
     }
 
-    header h1 {
-      font-size: 1.8rem;
-      letter-spacing: -0.5px;
+    /* GRID LAYOUT */
+    .grid{
+      margin-top:18px;
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
     }
 
-    .date {
-      opacity: 0.6;
-      font-size: 0.95rem;
-      font-weight: 500;
-    }
-
-    main {
-      padding: 0 7vw;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-      animation: fadeIn 1s ease forwards;
-      opacity: 0;
-    }
-
-    @keyframes fadeIn {
-      from {opacity: 0; transform: translateY(10px);}
-      to {opacity: 1; transform: translateY(0);}
-    }
-
-    .ai-tip {
-      background: linear-gradient(135deg, #c8b6ff, #b8e0ff);
-      color: #111;
-      padding: 16px 20px;
+    .card{
+      background: var(--panel);
+      backdrop-filter: blur(16px);
       border-radius: var(--radius);
-      font-size: 0.95rem;
-      font-weight: 500;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-      cursor: pointer;
-      transition: var(--transition);
+      box-shadow: var(--shadow);
+      padding: 18px 18px 16px;
+      display:flex; flex-direction:column; justify-content:space-between;
+      transition: transform var(--t), box-shadow var(--t), background var(--t);
+      opacity:0; transform: translateY(8px);
+      animation: cardIn .6s ease forwards;
+    }
+    @keyframes cardIn{to{opacity:1; transform:translateY(0)}}
+
+    .card:hover{ transform: translateY(-4px); box-shadow: 0 16px 48px rgba(0,0,0,.14) }
+
+    .card h3{
+      font-family: Sora, Inter, sans-serif;
+      font-size: 16.5px;
+      letter-spacing: -.2px;
+      margin:0 0 6px;
+    }
+    .card p{ margin:0; color:var(--muted); font-size: 13.5px }
+    .meta{ display:flex; align-items:center; justify-content:space-between; margin-top:14px; color:var(--muted); font-weight:600; }
+
+    /* shape variations */
+    .square{ grid-column: span 4; height: 180px }
+    .wide  { grid-column: span 8; height: 180px }
+    .tall  { grid-column: span 4; height: 380px }
+
+    /* RESPONSIVE */
+    @media (max-width: 1100px){
+      .square{grid-column: span 6}
+      .wide{grid-column: span 12}
+      .tall{grid-column: span 6}
+    }
+    @media (max-width: 640px){
+      .square,.wide,.tall{ grid-column: span 12; height:auto }
     }
 
-    .ai-tip:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+    /* bottom nav (no emoji) */
+    nav{
+      position:sticky; bottom:0; z-index:5;
+      background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.03)) ;
+      padding-top: 6px;
     }
-
-    .task-card {
-      background: rgba(255,255,255,0.7);
-      backdrop-filter: blur(12px);
-      border-radius: var(--radius);
-      padding: 20px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 6px 24px rgba(0,0,0,0.06);
-      cursor: pointer;
-      animation: floatUp 0.6s ease forwards;
-      opacity: 0;
+    .dock{
+      margin: 0 var(--page-x) 14px;
+      background: var(--panel); backdrop-filter: blur(18px);
+      border-radius: 20px; box-shadow: var(--shadow-soft);
+      display:flex; justify-content:space-between; padding:8px;
     }
-
-    .task-card:nth-child(1) {animation-delay: 0.1s;}
-    .task-card:nth-child(2) {animation-delay: 0.2s;}
-    .task-card:nth-child(3) {animation-delay: 0.3s;}
-
-    @keyframes floatUp {
-      from {opacity: 0; transform: translateY(10px);}
-      to {opacity: 1; transform: translateY(0);}
+    .dock button{
+      flex:1; display:flex; gap:8px; align-items:center; justify-content:center;
+      padding:10px 6px; border:none; background:transparent; cursor:pointer;
+      color:var(--muted); font-weight:600; border-radius:14px; transition: background var(--t), color var(--t), transform var(--t);
     }
+    .dock button.active{ color:var(--ink); background: rgba(255,255,255,.35) }
+    [data-theme="dark"] .dock button.active{ background: rgba(255,255,255,.06) }
+    .dock svg{ width:18px; height:18px; stroke: currentColor }
 
-    .task-info h3 {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 1.1rem;
-    }
-
-    .task-info p {
-      font-size: 0.9rem;
-      opacity: 0.6;
-    }
-
-    .time {
-      font-weight: 500;
-      font-size: 0.9rem;
-    }
-
-    nav {
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      padding: 16px 0;
-      background: rgba(255,255,255,0.4);
-      backdrop-filter: blur(18px);
-      border-top-left-radius: 28px;
-      border-top-right-radius: 28px;
-      box-shadow: 0 -10px 25px rgba(0,0,0,0.05);
-    }
-
-    nav button {
-      background: none;
-      border: none;
-      font-size: 1.2rem;
-      cursor: pointer;
-      color: var(--text);
-      opacity: 0.6;
-      transition: var(--transition);
-    }
-
-    nav button.active {
-      opacity: 1;
-      transform: scale(1.1);
-      color: var(--accent);
+    /* subtle focus ring */
+    .icon-btn:focus-visible, .dock button:focus-visible, .card:focus-visible{
+      outline: 2px solid var(--accent); outline-offset:2px;
     }
   </style>
 </head>
-
 <body data-theme="light">
   <header>
-    <div>
+    <div class="title">
       <h1>Сегодня</h1>
       <div class="date">Вторник, 4 ноября</div>
     </div>
-    <div class="profile">☀️</div>
+
+    <div class="controls">
+      <!-- theme toggle -->
+      <button class="icon-btn" id="themeToggle" aria-label="Переключить тему">
+        <svg id="sunIcon" viewBox="0 0 24 24" fill="none" stroke-width="1.8">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1.5-1.5M19 19l1.5 1.5M19 5l1.5-1.5M5 19L3.5 20.5"></path>
+        </svg>
+        <svg id="moonIcon" viewBox="0 0 24 24" fill="none" stroke-width="1.8" style="display:none">
+          <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+        </svg>
+      </button>
+    </div>
   </header>
 
   <main>
-    <div class="ai-tip">✨ AI совет: попробуй завершить самые энергозатратные задачи до обеда.</div>
-
-    <div class="task-card">
-      <div class="task-info">
-        <h3>Разработка интерфейса</h3>
-        <p>UI прототип Weepl v3</p>
-      </div>
-      <div class="time">09:00</div>
+    <div class="ai-tip">
+      <span class="ai-dot"></span>
+      <span>AI-совет: завершай энергозатратные задачи до обеда — окно фокуса выше на 18–25%.</span>
     </div>
 
-    <div class="task-card">
-      <div class="task-info">
-        <h3>Кофе и планирование</h3>
-        <p>10 минут тишины перед спринтом</p>
-      </div>
-      <div class="time">11:00</div>
-    </div>
+    <!-- GRID OF TASK CARDS -->
+    <section class="grid" aria-label="Задачи на сегодня">
+      <!-- WIDE -->
+      <article class="card wide" tabindex="0">
+        <div>
+          <h3>Разработка интерфейса</h3>
+          <p>UI прототип Weepl v3 — главная страница и навигация</p>
+        </div>
+        <div class="meta">
+          <span>Проект: Weepl</span>
+          <span>09:00</span>
+        </div>
+      </article>
 
-    <div class="task-card">
-      <div class="task-info">
-        <h3>Митинг с Артёмом</h3>
-        <p>Дизайн-сессия: новые анимации</p>
-      </div>
-      <div class="time">13:30</div>
-    </div>
+      <!-- SQUARE -->
+      <article class="card square" tabindex="0">
+        <div>
+          <h3>Кофе и планирование</h3>
+          <p>10 минут тишины, ревью задач</p>
+        </div>
+        <div class="meta">
+          <span>Фокус</span>
+          <span>11:00</span>
+        </div>
+      </article>
+
+      <!-- TALL -->
+      <article class="card tall" tabindex="0">
+        <div>
+          <h3>Митинг с Артёмом</h3>
+          <p>Дизайн-сессия: анимации и микроинтеракции</p>
+        </div>
+        <div class="meta">
+          <span>Созвон</span>
+          <span>13:30</span>
+        </div>
+      </article>
+
+      <!-- SQUARE -->
+      <article class="card square" tabindex="0">
+        <div>
+          <h3>Прогулка / перезагрузка</h3>
+          <p>Короткий спринт восстановления</p>
+        </div>
+        <div class="meta">
+          <span>Здоровье</span>
+          <span>15:10</span>
+        </div>
+      </article>
+
+      <!-- WIDE -->
+      <article class="card wide" tabindex="0">
+        <div>
+          <h3>Архив → разбор</h3>
+          <p>Ретроспектива: что отдать в «завтра», а что закрыть сегодня</p>
+        </div>
+        <div class="meta">
+          <span>Подведение итогов</span>
+          <span>17:00</span>
+        </div>
+      </article>
+    </section>
   </main>
 
   <nav>
-    <button class="active">🏠</button>
-    <button>📚</button>
-    <button>📈</button>
-    <button>⚙️</button>
+    <div class="dock" role="tablist" aria-label="Основная навигация">
+      <button class="active" role="tab" aria-selected="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 10.5l9-7 9 7V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10.5z"/></svg>
+        Сегодня
+      </button>
+      <button role="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6M7 16h5"/></svg>
+        Архив
+      </button>
+      <button role="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 17s3-6 9-6 9 6 9 6"/><circle cx="12" cy="11" r="2"/></svg>
+        Аналитика
+      </button>
+      <button role="tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 5 15.4a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 3.7l.06.06A1.65 1.65 0 0 0 8.6 4.1h.01A1.65 1.65 0 0 0 10.1 3H10a2 2 0 1 1 4 0v.09c.46.17.86.49 1.11.92.25.43.33.93.24 1.41"/></svg>
+        Настройки
+      </button>
+    </div>
   </nav>
 
   <script>
-    // Темная/светлая тема переключение
+    // Theme toggle
     const body = document.body;
-    const profile = document.querySelector('.profile');
-    profile.addEventListener('click', () => {
-      body.dataset.theme = body.dataset.theme === 'light' ? 'dark' : 'light';
+    const toggle = document.getElementById('themeToggle');
+    const sun = document.getElementById('sunIcon');
+    const moon = document.getElementById('moonIcon');
+
+    function setTheme(t){
+      body.dataset.theme = t;
+      const isDark = t === 'dark';
+      sun.style.display = isDark ? 'none' : 'block';
+      moon.style.display = isDark ? 'block' : 'none';
+      localStorage.setItem('weepl-theme', t);
+    }
+    const saved = localStorage.getItem('weepl-theme');
+    setTheme(saved || 'light');
+
+    toggle.addEventListener('click', ()=>{
+      setTheme(body.dataset.theme === 'light' ? 'dark' : 'light');
     });
   </script>
 </body>
