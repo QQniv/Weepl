@@ -5,18 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Weepl v3 — Сегодня</title>
 
-<!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
 
 <style>
-/* ===== TOKENS ===== */
 :root{
   --page-x: clamp(16px, 6vw, 64px);
   --wrap: 1240px;
   --radius: 22px;
-  --radius-lg: 28px;
   --shadow: 0 12px 40px rgba(0,0,0,.10);
   --shadow-soft: 0 8px 26px rgba(0,0,0,.08);
   --t: .32s cubic-bezier(.22,.61,.36,1);
@@ -28,11 +25,10 @@
   --ink:#101318;
   --muted:#586070;
 
-  /* gradient seeds (light) */
-  --g1:#CFE6FF;
-  --g2:#E8ECF4;
-  --g3:#D9C8FF;
-  --g4:#E9F1FF;
+  /* seeds */
+  --gA:#CFE6FF; /* холодное */
+  --gB:#D9C8FF; /* лиловый */
+  --gC:#EAF3FF; /* белёсый */
 }
 
 [data-theme="dark"]{
@@ -42,11 +38,9 @@
   --muted:#9AA5B3;
   --accent:#9C7EFF;
 
-  /* gradient seeds (dark) */
-  --g1:#1F2A44;
-  --g2:#141821;
-  --g3:#2B2140;
-  --g4:#1E2B46;
+  --gA:#1F2A44;
+  --gB:#2B2140;
+  --gC:#141821;
 }
 
 *{box-sizing:border-box}
@@ -54,35 +48,34 @@ html,body{height:100%}
 body{
   margin:0; color:var(--ink);
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  background:
-    radial-gradient(1200px 900px at 20% -20%, var(--g1) 0%, transparent 60%),
-    radial-gradient(1200px 900px at 120% 10%, var(--g3) 0%, transparent 62%),
-    radial-gradient(1200px 1000px at -15% 110%, var(--g4) 0%, transparent 60%),
-    linear-gradient(180deg, var(--g2) 0%, var(--bg) 100%);
+  background: var(--bg);
   position:relative; overflow-x:hidden;
 }
 
-/* soft film to kill any harsh banding near bottom */
-body::before{
-  content:""; position:fixed; inset:-20% -10% -10% -10%;
-  pointer-events:none;
+/* ====== НОВЫЙ ФОН (без резкой полосы) ====== */
+.bg{
+  position:fixed; inset:-20% -10% -20% -10%; z-index:-2;
   background:
-    radial-gradient(1400px 900px at 50% 120%, color-mix(in oklab, var(--bg) 80%, white 20%) 0%, transparent 65%),
-    radial-gradient(1600px 1000px at 50% 110%, color-mix(in oklab, var(--g2) 70%, var(--bg) 30%) 0%, transparent 70%);
+    radial-gradient(1800px 1400px at 20% 0%,   color-mix(in oklab, var(--gA) 70%, white 30%) 0%, transparent 62%),
+    radial-gradient(2200px 1600px at 120% 120%, color-mix(in oklab, var(--gB) 65%, var(--bg) 35%) 0%, transparent 68%);
   filter: blur(18px);
-  opacity:.85;
+}
+.bg-veil{
+  position:fixed; inset:-25% -15% -25% -15%; z-index:-1;
+  background:
+    radial-gradient(2400px 1800px at 50% 120%, color-mix(in oklab, var(--bg) 88%, var(--gC) 12%) 0%, transparent 70%);
+  filter: blur(34px);
+  opacity:.9;
 }
 
-/* subtle noise */
-body::after{
-  content:""; position:fixed; inset:0; pointer-events:none;
+/* мягкий шум */
+.noise{
+  position:fixed; inset:0; z-index:-1; pointer-events:none;
   background-image:url('data:image/svg+xml;utf8,<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/></filter><rect width="120" height="120" filter="url(%23n)" opacity="0.03"/></svg>');
   mix-blend-mode:overlay;
 }
 
-/* ===== LAYOUT ===== */
 .wrap{max-width:var(--wrap); margin:0 auto}
-
 header{
   padding:28px var(--page-x) 8px;
   display:flex; align-items:center; justify-content:space-between;
@@ -94,7 +87,6 @@ header{
 }
 .title .date{color:var(--muted); font-weight:500}
 
-/* theme toggle */
 .controls{display:flex; gap:10px; align-items:center}
 .icon-btn{
   border:none; background:var(--panel); backdrop-filter: blur(14px);
@@ -106,7 +98,7 @@ header{
 .icon-btn:hover{ transform: translateY(-2px) }
 .icon-btn svg{ width:20px; height:20px; stroke:var(--ink); opacity:.9 }
 
-/* main */
+/* content */
 main{ padding:8px var(--page-x) 24px }
 .ai-tip{
   background: linear-gradient(135deg, rgba(200,182,255,.92), rgba(184,224,255,.92));
@@ -121,54 +113,53 @@ main{ padding:8px var(--page-x) 24px }
   outline:6px solid rgba(255,255,255,.35);
 }
 
-/* grid (no odd gaps) */
+/* GRID */
 .grid{ margin-top:18px }
 .grid-inner{
   display:grid; grid-template-columns: repeat(12, 1fr);
   gap:16px; grid-auto-flow:dense;
 }
 
-/* unified heights per shape to avoid holes */
 .card{
   background:var(--panel); backdrop-filter: blur(16px);
   border-radius:var(--radius); box-shadow:var(--shadow);
-  padding:18px 18px 16px; display:flex; flex-direction:column;
-  justify-content:space-between;
+  padding:18px 18px 16px; display:flex; flex-direction:column; justify-content:space-between;
   transition: transform var(--t), box-shadow var(--t), background var(--t);
   opacity:0; transform: translateY(8px);
   animation:cardIn .6s ease forwards;
 }
 @keyframes cardIn{to{opacity:1; transform:translateY(0)}}
-.card:hover{ transform: translateY(-3px) ; box-shadow: 0 16px 46px rgba(0,0,0,.12) }
+.card:hover{ transform: translateY(-3px); box-shadow: 0 16px 46px rgba(0,0,0,.12) }
 
 .card h3{ font-family:Sora, Inter, sans-serif; font-size:16.5px; margin:0 0 6px; letter-spacing:-.2px }
 .card p{ margin:0; color:var(--muted); font-size:13.5px }
 .meta{ display:flex; align-items:center; justify-content:space-between; margin-top:14px; color:var(--muted); font-weight:600 }
 
-/* shapes */
+/* shapes — одинаковые высоты на десктопе */
 .square{ grid-column: span 4; height:220px }
 .wide  { grid-column: span 8; height:220px }
 .tall  { grid-column: span 4; height:340px }
 
-/* RESPONSIVE */
+/* адаптив */
 @media (max-width: 1200px){
   .square{grid-column: span 6}
   .wide{grid-column: span 12}
   .tall{grid-column: span 6}
 }
 @media (max-width: 760px){
-  .wrap{max-width: 720px}
   .grid-inner{ grid-template-columns: 1fr }
   .square,.wide,.tall{ grid-column: 1 / -1; height:auto }
 }
 
-/* bottom nav with safe-area */
+/* нижняя док-панель с safe-area и маской, чтобы фон не резался */
 nav{ position:sticky; bottom:0; z-index:5; padding-top:6px }
 .dock{
   margin:0 var(--page-x) calc(12px + env(safe-area-inset-bottom));
   background:var(--panel); backdrop-filter: blur(18px);
   border-radius:20px; box-shadow:var(--shadow-soft);
   display:flex; justify-content:space-between; padding:8px;
+  -webkit-mask-image: radial-gradient(140% 120% at 50% 120%, #000 60%, transparent 100%);
+          mask-image: radial-gradient(140% 120% at 50% 120%, #000 60%, transparent 100%);
 }
 .dock button{
   flex:1; display:flex; gap:8px; align-items:center; justify-content:center;
@@ -186,6 +177,11 @@ nav{ position:sticky; bottom:0; z-index:5; padding-top:6px }
 </style>
 </head>
 <body data-theme="light">
+  <!-- Фон -->
+  <div class="bg"></div>
+  <div class="bg-veil"></div>
+  <div class="noise"></div>
+
   <div class="wrap">
     <header>
       <div class="title">
@@ -280,7 +276,7 @@ nav{ position:sticky; bottom:0; z-index:5; padding-top:6px }
   </nav>
 
 <script>
-  // Theme toggle with persistence
+  // Тема с сохранением
   const body = document.body;
   const toggle = document.getElementById('themeToggle');
   const sun = document.getElementById('sunIcon');
