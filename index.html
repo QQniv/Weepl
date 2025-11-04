@@ -5,55 +5,41 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Weepl v3 — Сегодня</title>
 
-  <!-- iOS PWA: без чёрной полосы, фон под статус-бар -->
+  <!-- iOS PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <!-- Fonts -->
+  <!-- Fonts (сначала прелоад шрифтов, затем стили) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Momo Trust Display для заголовков -->
+  <link href="https://fonts.googleapis.com/css2?family=Momo+Trust+Display:wght@400;700&display=swap" rel="stylesheet">
 
   <!-- Основные стили -->
   <link rel="stylesheet" href="styles.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Momo+Trust+Display:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <!-- Правки для фиксированной шапки -->
+  <!-- Быстрый слой для шрифта заголовков (гарантируем применение) -->
   <style>
-    :root{ --safe-top: env(safe-area-inset-top); }
-
-    /* теперь шапка фиксированная и всегда видна */
+    :root{ --heading-font: "Momo Trust Display", Sora, Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; --safe-top: env(safe-area-inset-top); }
+    header .title h1,
+    .card h3{ font-family: var(--heading-font); letter-spacing:.2px; }
+    /* фиксированная шапка */
     header{
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 20;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 20;
       padding: calc(20px + var(--safe-top)) var(--page-x) 10px !important;
-      margin: 0 auto;
-      max-width: var(--wrap);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      margin: 0 auto; max-width: var(--wrap);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
       background: color-mix(in oklab, var(--panel) 88%, transparent 12%);
       border-bottom: 1px solid color-mix(in oklab, var(--ink) 8%, transparent);
-      border-bottom-left-radius: 16px;
-      border-bottom-right-radius: 16px;
+      border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
     }
-    /* мягкое затемнение стыка, чтобы не было «подглядывания» контента */
     header::after{
-      content:"";
-      position:absolute; left:0; right:0; bottom:-12px; height:24px;
-      pointer-events:none;
+      content:""; position:absolute; left:0; right:0; bottom:-12px; height:24px; pointer-events:none;
       background: linear-gradient(180deg, color-mix(in oklab, var(--panel) 55%, transparent) 0%, transparent 100%);
-      filter: blur(2px);
-      border-bottom-left-radius: 16px;
-      border-bottom-right-radius: 16px;
+      filter: blur(2px); border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
     }
-
-    /* отступ контента вниз = реальная высота шапки; дефолт 96px на случай первой отрисовки */
     main{ padding-top: calc(var(--header-h, 96px) + 16px); }
-
-    /* чтобы грид и док не уезжали под шапку на очень маленьких высотах */
     .grid{ margin-top: 6px; }
   </style>
 </head>
@@ -158,14 +144,14 @@
         Аналитика
       </button>
       <button role="tab">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 5 15.4a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 3.7l.06.06A1.65 1.65 0 0 0 8.6 4.1h.01A1.65 1.65 0 0 0 10.1 3H10a2 2 0 1 1 4 0v.09c.46.17.86.49 1.11.92.25.43.33.93.24 1.41"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33л-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 5 15.4a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 3.7l.06.06A1.65 1.65 0 0 0 8.6 4.1h.01A1.65 1.65 0 0 0 10.1 3H10a2 2 0 1 1 4 0v.09c.46.17.86.49 1.11.92.25.43.33.93.24 1.41"/></svg>
         Настройки
       </button>
     </div>
   </nav>
 
   <script>
-    // ===== ТЕМА
+    // ТЕМА
     const body = document.body;
     const toggle = document.getElementById('themeToggle');
     const sun = document.getElementById('sunIcon');
@@ -180,51 +166,23 @@
     setTheme(localStorage.getItem('weepl-theme') || 'light');
     toggle.addEventListener('click', ()=> setTheme(body.dataset.theme === 'light' ? 'dark' : 'light'));
 
-    // ===== ВЫСОТА ШАПКИ → ОТСТУП КОНТЕНТА
+    // Высота шапки → отступ контента
     function updateHeaderOffset(){
       const h = document.querySelector('header').getBoundingClientRect().height;
       document.documentElement.style.setProperty('--header-h', h + 'px');
     }
     window.addEventListener('load', updateHeaderOffset, { once:true });
     window.addEventListener('resize', updateHeaderOffset);
-    // На iOS смена ориентации и появление/скрытие адресной строки
     window.addEventListener('orientationchange', ()=> setTimeout(updateHeaderOffset, 250));
 
-    // ===== AI СОВЕТЫ
-    const tips = [
-      'Заверши энергозатратные задачи до обеда — окно фокуса выше на 18–25%.',
-      'Планируй «глубокую работу» блоками по 50–90 минут, между ними — 10–15 минут разгрузки.',
-      'Спроси себя «что сдвинет проект сильнее всего?» и сделай это первым.',
-      'Отключи уведомления на 45 минут — вероятность прерываний падает вдвое.',
-      'Запиши 3 задачи дня. Остальное — в бэклог. Чёткие границы уменьшают прокрастинацию.',
-      'Сложное разбей на микрошаги по 5–10 минут — стартовать всегда легче.',
-      'Подготовь завтра сегодня: 5 минут вечером экономят 20 утром.',
-      'Планируй созвоны во второй половине дня — у утреннего мозга выше креативность.',
-      'Оцени «стоимость контекста»: сгруппируй похожие задачи в один слот.',
-      'Выбери «анти-задачу»: что НЕ делать сегодня, чтобы сохранить фокус.'
-    ];
-    const aiText = document.getElementById('aiText');
-    const aiTip  = document.getElementById('aiTip');
-    function seedIndex(){
-      const saved = localStorage.getItem('weepl-tip-index');
-      if(saved !== null) return parseInt(saved,10);
-      const d = new Date();
-      const key = d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.getDate();
-      return key % tips.length;
-    }
-    let tipIndex = seedIndex();
-    function renderTip(){
-      aiText.textContent = 'AI-совет: ' + tips[tipIndex];
-      localStorage.setItem('weepl-tip-index', String(tipIndex));
-    }
-    renderTip();
-    aiTip.addEventListener('click', ()=>{
-      tipIndex = (tipIndex + 1) % tips.length;
-      aiTip.style.opacity = .85;
-      setTimeout(()=> aiTip.style.opacity = 1, 160);
-      renderTip();
-    });
+    // AI советы (не менял)
+    const tips=[ 'Заверши энергозатратные задачи до обеда — окно фокуса выше на 18–25%.','Планируй «глубокую работу» блоками по 50–90 минут, между ними — 10–15 минут разгрузки.','Спроси себя «что сдвинет проект сильнее всего?» и сделай это первым.','Отключи уведомления на 45 минут — вероятность прерываний падает вдвое.','Запиши 3 задачи дня. Остальное — в бэклог. Чёткие границы уменьшают прокрастинацию.','Сложное разбей на микрошаги по 5–10 минут — стартовать всегда легче.','Подготовь завтра сегодня: 5 минут вечером экономят 20 утром.','Планируй созвоны во второй половине дня — у утреннего мозга выше креативность.','Оцени «стоимость контекста»: сгруппируй похожие задачи в один слот.','Выбери «анти-задачу»: что НЕ делать сегодня, чтобы сохранить фокус.' ];
+    const aiText=document.getElementById('aiText'), aiTip=document.getElementById('aiTip');
+    const seed=()=>{ const s=localStorage.getItem('weepl-tip-index'); if(s!==null) return +s; const d=new Date(); const k=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); return k%tips.length; };
+    let tipIndex=seed(); const renderTip=()=>{ aiText.textContent='AI-совет: '+tips[tipIndex]; localStorage.setItem('weepl-tip-index', String(tipIndex)); };
+    renderTip(); aiTip.addEventListener('click', ()=>{ tipIndex=(tipIndex+1)%tips.length; aiTip.style.opacity=.85; setTimeout(()=> aiTip.style.opacity=1,160); renderTip(); });
   </script>
+
   <script src="app.js" defer></script>
 </body>
 </html>
