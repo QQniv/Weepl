@@ -1,8 +1,9 @@
 /* =========================================================
-   WEEPL v3 — app.js (mobile priority buttons fix)
-   - Кнопки A/B/C/D: переносы, центрирование, адаптивные подписи
-   - Модалка: max-height + внутренний скролл, без iOS-зума
-   - Всё остальное как было (редактирование, удаление, параллакс)
+   WEEPL v3 — app.js (Momo Trust + autoFit priority labels)
+   - Заголовки: шрифт Momo Trust Display (через CSS — см. styles.css)
+   - Кнопки A/B/C/D: авто-подбор подписи (ResizeObserver), переносы
+   - Модалка: мобильная адаптация, без iOS-зума
+   - Приоритеты по Эйзенхауэру, тинты, редактирование/удаление, параллакс
    ========================================================= */
 
 (() => {
@@ -10,7 +11,6 @@
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
   const grid = $('.grid-inner');
   const bg = $('.bg'), veil = $('.bg-veil');
-
   const STORAGE_KEY = 'weepl-tasks';
 
   /* ------------ utils ------------ */
@@ -92,7 +92,7 @@
     });
 
     const header = document.createElement('div'); header.id='tmTitle';
-    Object.assign(header.style,{ padding:'18px 22px 8px', borderTopLeftRadius:'24px', borderTopRightRadius:'24px', font:'600 20px/1.25 Sora, Inter, system-ui' });
+    Object.assign(header.style,{ padding:'18px 22px 8px', borderTopLeftRadius:'24px', borderTopRightRadius:'24px', font:'600 20px/1.25 var(--heading-font, Sora), Inter, system-ui' });
     header.textContent='Новая задача';
 
     const scroller = document.createElement('div');
@@ -126,67 +126,76 @@
 
     const prWrap = form.querySelector('#tmPriority');
 
-    // ——— построение кнопок приоритета (адаптивные подписи) ———
+    /* ====== PRIORITY BUTTONS with autoFit ====== */
+    const LT_MAP = {A:LT.A,B:LT.B,C:LT.C,D:LT.D};
+
     function isCompact(){ return innerWidth < 390; }
-    function labelFor(letter){
-      return isCompact() ? PR_SHORT[letter] : PR_LONG[letter];
-    }
+    function labelFor(l){ return isCompact()? PR_SHORT[l] : PR_LONG[l]; }
+
     function buildPriorityButtons(){
       prWrap.innerHTML = '';
-      // шире — чуть больше минимум, уже — компактнее
-      const minWidth = isCompact() ? 84 : 100;
+      const minWidth = isCompact()? 84 : 104;
       Object.assign(prWrap.style, { gridTemplateColumns:`repeat(auto-fit, minmax(${minWidth}px, 1fr))` });
 
       ['A','B','C','D'].forEach(letter=>{
-        const tint = ({A:LT.A,B:LT.B,C:LT.C,D:LT.D})[letter];
         const btn = document.createElement('button');
         btn.type='button'; btn.dataset.val=letter; btn.role='tab';
         btn.style.cssText = `
           display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
           padding:12px 10px;min-height:68px;border:none;border-radius:12px;cursor:pointer;
-          background:${tint}; text-align:center; white-space:normal; word-break:break-word;
+          background:${LT_MAP[letter]}; text-align:center; white-space:normal; word-break:break-word;
         `;
         btn.innerHTML = `
-          <div style="font:800 16px/1 Inter,system-ui">${letter}</div>
-          <div class="pr-sub" style="font:600 ${isCompact()? '11px' : '12px' }/1.15 Inter,system-ui;opacity:.85">${labelFor(letter)}</div>
+          <div class="pr-cap" style="font:800 16px/1 Inter,system-ui">${letter}</div>
+          <div class="pr-sub" style="font:600 12px/1.15 Inter,system-ui;opacity:.85">${labelFor(letter)}</div>
         `;
         prWrap.appendChild(btn);
       });
-      // подсветка активной
+
       highlightPriority();
+      autoFitPriorityLabels();         // <-- автоподбор
     }
 
     function highlightPriority(){
       $$('#tmPriority button').forEach(b=>{
-        const on = b.dataset.val === CURRENT_PRIORITY;
-        b.style.outline = on ? '2px solid var(--accent)' : 'none';
+        b.style.outline = (b.dataset.val === CURRENT_PRIORITY) ? '2px solid var(--accent)' : 'none';
       });
     }
 
-    // первичная сборка
-    buildPriorityButtons();
-
-    // перестраиваем при изменении ширины
-    let lastCompact = isCompact();
-    addEventListener('resize', ()=>{
-      const c = isCompact();
-      if (c !== lastCompact){
-        lastCompact = c;
-        buildPriorityButtons();
+    // авто-подбор размера .pr-sub до тех пор, пока влезает в две строки
+    function autoFit(el, minPx=10, maxPx=12){
+      let size = maxPx;
+      el.style.fontSize = size+'px';
+      el.style.maxHeight = (parseFloat(getComputedStyle(el).lineHeight) * 2) + 'px';
+      // если всё равно не влезает — уменьшаем до minPx
+      while (el.scrollHeight > el.clientHeight && size > minPx){
+        size -= 0.5;
+        el.style.fontSize = size+'px';
       }
-      layoutRow();
-    });
-    addEventListener('orientationchange', () => setTimeout(()=>{ buildPriorityButtons(); layoutRow(); }, 250));
+    }
+    function autoFitPriorityLabels(){
+      const subs = $$('.pr-sub', prWrap);
+      subs.forEach(el => autoFit(el, 10, isCompact()?11.5:12));
+      // наблюдатель: на любое изменение размеров
+      const ro = new ResizeObserver(()=> subs.forEach(el => autoFit(el, 10, isCompact()?11.5:12)));
+      subs.forEach(el => ro.observe(el));
+      addEventListener('resize', ()=> subs.forEach(el => autoFit(el, 10, isCompact()?11.5:12)));
+      addEventListener('orientationchange', ()=> setTimeout(()=>subs.forEach(el => autoFit(el, 10, isCompact()?11.5:12)), 250));
+    }
+
+    buildPriorityButtons();
 
     // сетка для Tag/Time
     function layoutRow(){
       const row = $('#tmRow');
       row.style.gridTemplateColumns = (innerWidth < 560) ? '1fr' : '1fr 1fr';
-      modal.style.maxHeight = 'min(80vh, 720px)'; // на случай прыжка адресной строки
+      modal.style.maxHeight = 'min(80vh, 720px)';
     }
     layoutRow();
+    addEventListener('resize', ()=>{ layoutRow(); buildPriorityButtons(); });
+    addEventListener('orientationchange', ()=> setTimeout(()=>{ layoutRow(); buildPriorityButtons(); }, 250));
 
-    // действия
+    // actions
     prWrap.addEventListener('click', e=>{
       const btn = e.target.closest('button[data-val]');
       if (!btn) return;
@@ -203,6 +212,7 @@
     $('#tmDelete').addEventListener('click', onDelete);
     form.addEventListener('submit', onSave);
 
+    // хоткеи
     addEventListener('keydown', e=>{
       const open = overlay.style.display==='flex';
       if(e.key==='Escape' && open) return closeEditor();
@@ -231,7 +241,8 @@
     overlay.style.display='flex';
     setTimeout(()=> overlay.style.opacity='1',0);
     $('#tmInputTitle').focus();
-    // обновим подсветку активной кнопки
+
+    // подсветка активной
     $$('#tmPriority button').forEach(b=>{
       b.style.outline = (b.dataset.val===CURRENT_PRIORITY)?'2px solid var(--accent)':'none';
     });
