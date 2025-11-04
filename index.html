@@ -11,7 +11,7 @@
 
 <style>
 :root{
-  --page-x: clamp(16px, 6vw, 64px);
+  --page-x: clamp(14px, 5vw, 64px);
   --wrap: 1240px;
   --radius: 22px;
   --shadow: 0 12px 40px rgba(0,0,0,.10);
@@ -25,9 +25,9 @@
   --ink:#101318;
   --muted:#586070;
 
-  /* seeds */
-  --gA:#CFE6FF; /* холодное */
-  --gB:#D9C8FF; /* лиловый */
+  /* seeds (повышенная насыщенность) */
+  --gA:#B9DCFF; /* холодное голубое */
+  --gB:#D2B7FF; /* лиловый */
   --gC:#EAF3FF; /* белёсый */
 }
 
@@ -38,8 +38,8 @@
   --muted:#9AA5B3;
   --accent:#9C7EFF;
 
-  --gA:#1F2A44;
-  --gB:#2B2140;
+  --gA:#203059;
+  --gB:#3A2A66;
   --gC:#141821;
 }
 
@@ -52,23 +52,26 @@ body{
   position:relative; overflow-x:hidden;
 }
 
-/* ====== НОВЫЙ ФОН (без резкой полосы) ====== */
+/* ====== ФОН: заметнее и без резких полос ====== */
 .bg{
-  position:fixed; inset:-20% -10% -20% -10%; z-index:-2;
+  position:fixed; inset:-24% -12% -24% -12%; z-index:-2;
   background:
-    radial-gradient(1800px 1400px at 20% 0%,   color-mix(in oklab, var(--gA) 70%, white 30%) 0%, transparent 62%),
-    radial-gradient(2200px 1600px at 120% 120%, color-mix(in oklab, var(--gB) 65%, var(--bg) 35%) 0%, transparent 68%);
-  filter: blur(18px);
+    radial-gradient(1900px 1500px at 18% 0%,
+      color-mix(in oklab, var(--gA) 85%, white 15%) 0%, transparent 63%),
+    radial-gradient(2400px 1750px at 120% 120%,
+      color-mix(in oklab, var(--gB) 82%, var(--bg) 18%) 0%, transparent 68%);
+  filter: blur(16px);
 }
 .bg-veil{
-  position:fixed; inset:-25% -15% -25% -15%; z-index:-1;
+  position:fixed; inset:-28% -16% -28% -16%; z-index:-1;
   background:
-    radial-gradient(2400px 1800px at 50% 120%, color-mix(in oklab, var(--bg) 88%, var(--gC) 12%) 0%, transparent 70%);
-  filter: blur(34px);
-  opacity:.9;
+    radial-gradient(2600px 1900px at 50% 118%,
+      color-mix(in oklab, var(--bg) 82%, var(--gC) 18%) 0%, transparent 72%);
+  filter: blur(36px);
+  opacity:.95;
 }
 
-/* мягкий шум */
+/* шум */
 .noise{
   position:fixed; inset:0; z-index:-1; pointer-events:none;
   background-image:url('data:image/svg+xml;utf8,<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/></filter><rect width="120" height="120" filter="url(%23n)" opacity="0.03"/></svg>');
@@ -87,6 +90,7 @@ header{
 }
 .title .date{color:var(--muted); font-weight:500}
 
+/* toggle */
 .controls{display:flex; gap:10px; align-items:center}
 .icon-btn{
   border:none; background:var(--panel); backdrop-filter: blur(14px);
@@ -101,7 +105,7 @@ header{
 /* content */
 main{ padding:8px var(--page-x) 24px }
 .ai-tip{
-  background: linear-gradient(135deg, rgba(200,182,255,.92), rgba(184,224,255,.92));
+  background: linear-gradient(135deg, rgba(200,182,255,.96), rgba(184,224,255,.96));
   color:#0f1115; padding:16px 18px; border-radius:18px;
   font-weight:600; box-shadow:var(--shadow);
   display:flex; align-items:center; gap:10px;
@@ -113,13 +117,16 @@ main{ padding:8px var(--page-x) 24px }
   outline:6px solid rgba(255,255,255,.35);
 }
 
-/* GRID */
+/* ===== GRID: одинаковая мозаика для desktop и mobile ===== */
 .grid{ margin-top:18px }
 .grid-inner{
-  display:grid; grid-template-columns: repeat(12, 1fr);
-  gap:16px; grid-auto-flow:dense;
+  display:grid;
+  grid-template-columns: repeat(12, minmax(0,1fr));
+  gap:16px;
+  grid-auto-flow:dense;
 }
 
+/* формы и единые высоты, чтобы не было дыр */
 .card{
   background:var(--panel); backdrop-filter: blur(16px);
   border-radius:var(--radius); box-shadow:var(--shadow);
@@ -135,31 +142,25 @@ main{ padding:8px var(--page-x) 24px }
 .card p{ margin:0; color:var(--muted); font-size:13.5px }
 .meta{ display:flex; align-items:center; justify-content:space-between; margin-top:14px; color:var(--muted); font-weight:600 }
 
-/* shapes — одинаковые высоты на десктопе */
+/* shapes (везде одинаковые, в т.ч. на мобиле) */
 .square{ grid-column: span 4; height:220px }
 .wide  { grid-column: span 8; height:220px }
 .tall  { grid-column: span 4; height:340px }
 
-/* адаптив */
-@media (max-width: 1200px){
+/* небольшой брейкпоинт только для планшета, чтобы сетка не ломалась */
+@media (max-width: 1000px){
   .square{grid-column: span 6}
   .wide{grid-column: span 12}
   .tall{grid-column: span 6}
 }
-@media (max-width: 760px){
-  .grid-inner{ grid-template-columns: 1fr }
-  .square,.wide,.tall{ grid-column: 1 / -1; height:auto }
-}
 
-/* нижняя док-панель с safe-area и маской, чтобы фон не резался */
+/* нижняя док-панель с safe-area */
 nav{ position:sticky; bottom:0; z-index:5; padding-top:6px }
 .dock{
   margin:0 var(--page-x) calc(12px + env(safe-area-inset-bottom));
   background:var(--panel); backdrop-filter: blur(18px);
   border-radius:20px; box-shadow:var(--shadow-soft);
   display:flex; justify-content:space-between; padding:8px;
-  -webkit-mask-image: radial-gradient(140% 120% at 50% 120%, #000 60%, transparent 100%);
-          mask-image: radial-gradient(140% 120% at 50% 120%, #000 60%, transparent 100%);
 }
 .dock button{
   flex:1; display:flex; gap:8px; align-items:center; justify-content:center;
