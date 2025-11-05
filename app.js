@@ -105,32 +105,48 @@ function userTasksCol(uid) {
   ); // но мы уже прокинули db, используем его
 }
 
-/* ---------- Modal open/close ---------- */
+/* --- open/close modal: без автофокуса, блокируем фон --- */
 function openModal() {
+  document.body.classList.add("modal-open");
   modal.setAttribute("aria-hidden", "false");
-  titleInput.focus();
-}
-function closeModal() {
-  modal.setAttribute("aria-hidden", "true");
-  taskForm.reset();
-  // вернуть видимость блоков по умолчанию
+
+  // по умолчанию показываем «Задача»
   scopeTask.hidden = false;
   scopeEvent.hidden = true;
   typeBtns.forEach((b) => b.classList.toggle("active", b.dataset.type === "task"));
 }
+
+function closeModal() {
+  document.body.classList.remove("modal-open");
+  modal.setAttribute("aria-hidden", "true");
+  taskForm.reset();
+  scopeTask.hidden = false;
+  scopeEvent.hidden = true;
+  typeBtns.forEach((b) => b.classList.toggle("active", b.dataset.type === "task"));
+}
+
 addTaskBtn.addEventListener("click", openModal);
 dockAddBtn.addEventListener("click", openModal);
 modalBackdrop.addEventListener("click", closeModal);
 $$('[data-close]').forEach((b)=>b.addEventListener("click", closeModal));
 
-/* ---------- Type toggle (task/event) ---------- */
+/* --- переключатель Задача / Событие: показываем ТОЛЬКО нужные поля --- */
 typeToggle.addEventListener("click", (e) => {
   const btn = e.target.closest(".type-btn");
   if (!btn) return;
   typeBtns.forEach((b) => b.classList.toggle("active", b === btn));
+
   const type = btn.dataset.type;
-  scopeTask.hidden  = type !== "task";
-  scopeEvent.hidden = type !== "event";
+  const isTask = type === "task";
+
+  scopeTask.hidden  = !isTask;  // Дата + Дедлайн
+  scopeEvent.hidden = isTask;   // Начало + Конец
+});
+
+/* --- На всякий случай жёстко выставим состояние при загрузке --- */
+document.addEventListener("DOMContentLoaded", () => {
+  scopeTask.hidden = false;     // по умолчанию: Задача
+  scopeEvent.hidden = true;
 });
 
 /* ---------- Submit form: add task/event ---------- */
