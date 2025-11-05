@@ -1,195 +1,135 @@
 /* ==========================================================================
-   Weepl v5 — styles.css
-   - Пастельные градиенты + liquid glass
-   - Карточки задач, капсула AI-совета, нижняя навигация, FAB
-   - Модальное редактирование A/B/C/D
-   - Адаптив, тёмная тема, reduce-motion
+   Weepl v5 — styles.css (для последнего index.html)
    ========================================================================== */
-
-/* ----------------------- CSS Variables ----------------------- */
 :root{
-  /* Светлая тема (по скринам) */
-  --bg:#0E111A;
-  --grad1:#ECF2FF; /* голубой лёд */
-  --grad2:#F4E7FF; /* лиловый дым */
-  --grad3:#FFE9D6; /* персик */
+  --bg1:#F6F8FF;
+  --g1:#EAF1FF;
+  --g2:#F3E8FF;
+  --g3:#FFEBDD;
 
-  --card:#FFFFFFE6;
-  --glass: rgba(255,255,255,.55);
-  --text:#101318;
-  --muted:#677089;
+  --text:#0F1420;
+  --muted:#73809B;
 
-  --primary:#4B72FF;
-  --ok:#2FCB89;
-  --warn:#FFB24D;
-  --danger:#FF6A59;
-
+  --card:#FFFFFFF2;
   --border:#00000010;
-  --shadow: 0 10px 30px rgba(16,19,24,.12);
+  --shadow:0 10px 30px rgba(24,32,56,.12);
   --r:22px;
 
-  --nav-bg: rgba(255,255,255,.8);
-  --tip-grad: linear-gradient(90deg, #CFE1FF 0%, #E6D6FF 45%, #FFE4D3 100%);
+  --primary:#3F63FF;
+  --navbg:rgba(255,255,255,.86);
 }
 
-/* Тёмная тема включается добавлением .theme-dark на <html> или <body> */
-.theme-dark{
-  --card: #111826E6;
-  --text:#E6EAF3;
-  --muted:#A6B0C8;
-  --border:#FFFFFF12;
-  --nav-bg: rgba(17,24,38,.75);
-  --shadow: 0 10px 30px rgba(0,0,0,.35);
-  --tip-grad: linear-gradient(90deg, #33466f 0%, #4d3c72 45%, #6b4a33 100%);
-}
-
-/* ----------------------- Base / Reset ----------------------- */
+/* Base */
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
   margin:0; color:var(--text);
   font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
   background:
-    radial-gradient(1200px 600px at 15% -10%, var(--grad1), transparent 55%),
-    radial-gradient(1000px 600px at 90% 0%, var(--grad2), transparent 60%),
-    radial-gradient(1000px 700px at 40% 100%, var(--grad3), transparent 60%),
-    var(--bg);
+    radial-gradient(1100px 600px at 15% -10%, var(--g1), transparent 55%),
+    radial-gradient(900px 600px  at 85% 0%,  var(--g2), transparent 60%),
+    radial-gradient(1000px 700px at 40% 100%, var(--g3), transparent 60%),
+    var(--bg1);
   background-attachment: fixed;
-  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color:transparent;
 }
-img{max-width:100%; height:auto; display:block}
-button{font:inherit}
-a{text-decoration:none; color:inherit}
+.h1{font-family:"Space Grotesk",Inter,sans-serif; font-weight:700}
 
-/* Утилиты */
-.hidden{display:none!important}
-.sr-only{position:absolute; clip:rect(1px,1px,1px,1px); padding:0; border:0; height:1px; width:1px; overflow:hidden}
-
-/* ----------------------- Top bar ----------------------- */
+/* Top bar */
 .top{
-  position:sticky; top:0; z-index:5;
+  position:sticky; top:0; z-index:10;
   padding:20px clamp(16px,4vw,24px) 12px;
   background: linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,.35));
   backdrop-filter:saturate(160%) blur(12px);
-  box-shadow: var(--shadow);
   border-bottom:1px solid var(--border);
 }
-.top h1{margin:0 0 4px; font: 800 28px/1.1 Inter, sans-serif;}
+.top h1{margin:0 0 4px; font: 700 30px/1.1 "Space Grotesk", Inter}
 .top .sub{color:var(--muted); font-weight:600}
 
-/* ----------------------- AI Tip ----------------------- */
+/* AI tip */
 .tip{
   margin:12px clamp(16px,4vw,24px) 0; padding:14px 16px; border-radius:18px;
-  background: var(--tip-grad);
-  color:#1a1f28; position:relative; display:flex; gap:10px; align-items:flex-start;
+  background: linear-gradient(90deg, #DCE9FF 0%, #EBDDFF 50%, #FFE7D6 100%);
+  color:#101520; display:flex; gap:12px; align-items:flex-start;
   box-shadow: var(--shadow); border:1px solid var(--border);
-  animation: floatIn .35s ease both;
 }
-.tip .ico{
-  width:22px; height:22px; border-radius:8px; background: #ffffffaa;
-  display:inline-grid; place-items:center; font-weight:800
-}
-.tip .act{margin-left:auto; opacity:.75; cursor:pointer; border:none; background:transparent}
+.tip .dot{width:10px;height:10px;border-radius:50%; background:#fff9; margin-top:6px}
 .tip b{display:block;margin-bottom:2px}
+.tip .act{margin-left:auto; border:none; background:transparent; cursor:pointer; font-weight:700; opacity:.75}
 
-/* ----------------------- Content + Cards ----------------------- */
-.content{padding:14px clamp(16px,4vw,24px) 96px}
-.grid{display:grid; gap:12px; grid-template-columns:1fr 1fr; align-items:stretch}
-@media (max-width:760px){ .grid{grid-template-columns:1fr} }
-
+/* Content grid + cards */
+.content{padding:14px clamp(16px,4vw,24px) 120px}
+.grid{
+  display:grid; gap:12px;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  align-items:stretch;
+}
 .card{
-  background: var(--card); border:1px solid var(--border); border-radius: var(--r);
-  padding:16px; box-shadow: var(--shadow);
-  transition: transform .12s ease, box-shadow .2s ease;
+  background:var(--card); border:1px solid var(--border); border-radius:var(--r);
+  padding:16px; box-shadow:var(--shadow);
+  transition:transform .12s ease, box-shadow .2s ease;
 }
-.card:hover{transform:translateY(-1px); box-shadow:0 14px 40px rgba(16,19,24,.18)}
-.card h3{margin:0 0 6px; font: 800 18px/1.2 Inter;}
+.card:hover{transform:translateY(-1px); box-shadow:0 14px 40px rgba(24,32,56,.18)}
+.card h3{margin:0 0 6px; font:700 20px/1.2 "Space Grotesk", Inter}
 .card .sub{color:var(--muted)}
-.meta{display:flex; gap:12px; margin-top:12px; color:#2b3240; font-weight:700}
-.theme-dark .meta{color:#D7DDF0}
-.badge{padding:4px 8px; border-radius:10px; background:#F2F5FF; border:1px solid #E4EAFF}
-.theme-dark .badge{background:#1a2236; border-color:#273250}
-.time{margin-left:auto}
+.meta{display:flex; gap:12px; margin-top:12px; align-items:center}
+.badge{padding:4px 10px; border-radius:10px; background:#F2F5FF; border:1px solid #E4EAFF; font-weight:700}
+.time{margin-left:auto; font-weight:700}
+.wide{grid-column:1/-1}
 
-.card.wide{grid-column:1/-1}
-
-/* ----------------------- FAB + Bottom Nav ----------------------- */
-.fab{
-  position: fixed; right: 18px; bottom: 90px;
-  width:60px; height:60px; border-radius:18px; border:none;
-  background: linear-gradient(180deg, var(--primary), #2E4BEA);
-  color:#fff; font-size:28px; font-weight:700; cursor:pointer;
-  box-shadow:0 14px 36px rgba(46,75,234,.35);
-  transition: transform .12s ease, box-shadow .2s;
-}
-.fab:active{transform:translateY(1px); box-shadow:0 10px 28px rgba(46,75,234,.28)}
-
+/* Bottom nav */
 .nav{
-  position: fixed; left:0; right:0; bottom:0; z-index:6;
-  display:flex; gap:8px; justify-content:space-around; align-items:center;
+  position:fixed; left:0; right:0; bottom:0; z-index:12;
+  display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
   padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);
-  background: var(--nav-bg); backdrop-filter: blur(14px) saturate(180%);
+  background:var(--navbg); backdrop-filter:blur(14px) saturate(180%);
   border-top:1px solid var(--border);
 }
 .nav .it{
-  flex:1; text-align:center; padding:10px 0; border-radius:14px; font-weight:700; color:#2c3342;
+  text-align:center; padding:10px 0; border-radius:14px; font-weight:700; color:#2c3342;
+  border:1px solid transparent;
 }
-.theme-dark .nav .it{color:#E6EAF3}
-.nav .it.active{ background:#F2F5FF; border:1px solid #E4EAFF}
-.theme-dark .nav .it.active{ background:#1b243a; border-color:#263254}
-.k{color:#8a93a9}
-.theme-dark .k{color:#A6B0C8}
+.nav .it.active{ background:#F2F5FF; border-color:#E4EAFF }
 
-/* ----------------------- Modal (Bottom Sheet) ----------------------- */
-.modal{
-  position:fixed; inset:0; display:none; place-items:end; background:rgba(10,14,20,.35);
-  animation: fadeIn .2s ease;
+/* FAB center */
+.fab{
+  position:fixed; left:50%; transform:translateX(-50%);
+  bottom: calc(70px + env(safe-area-inset-bottom));
+  width:66px; height:66px; border-radius:20px; border:none; cursor:pointer;
+  background:linear-gradient(180deg, var(--primary), #2E49EA);
+  color:#fff; font-size:36px; line-height:66px; font-weight:700;
+  box-shadow:0 16px 40px rgba(62,89,241,.35);
 }
-.modal.open{display:grid}
+
+/* Modal (bottom sheet) */
+.modal{position:fixed; inset:0; display:none; background:rgba(15,20,32,.35)}
+.modal.open{display:grid; place-items:end}
 .sheet{
-  width:100%; background:#fff; color:#111;
-  border-radius: 26px 26px 0 0; padding:18px 16px 22px; box-shadow:0 -10px 40px rgba(0,0,0,.22);
-  border:1px solid #00000010;
+  width:100%; max-height:85vh; overflow:auto;
+  background:#fff; color:#111; border-radius:26px 26px 0 0;
+  padding:18px 16px calc(16px + env(safe-area-inset-bottom));
+  box-shadow:0 -10px 40px rgba(0,0,0,.22); border:1px solid #00000010;
 }
-.theme-dark .sheet{background:#111826; color:#E6EAF3; border-color:#FFFFFF12}
-.sheet h4{margin:0 0 8px; font:800 18px/1 Inter;}
+.sheet h4{margin:0 0 12px; font:700 20px/1 "Space Grotesk", Inter}
 .row{display:flex; gap:10px; align-items:center; margin:12px 0}
 .inp,.btn{
   border:1px solid #E6E9F5; background:#FAFBFF; border-radius:14px; padding:12px 14px;
   font:600 15px/1 Inter; color:#111; width:100%;
 }
-.theme-dark .inp{background:#0f1524; border-color:#273250; color:#E6EAF3}
-.inp:focus{outline:2px solid #8EA2FF; outline-offset:0}
+.inp:focus{outline:2px solid #8EA2FF}
 .btn{width:auto; cursor:pointer}
 .btn.primary{background:#2F49F1; color:#fff; border-color:#2F49F1}
 .btn.ghost{background:#fff}
-.theme-dark .btn.ghost{background:#0f1524; color:#E6EAF3; border-color:#273250}
-
 .chips{display:flex; gap:8px; flex-wrap:wrap}
-.chip{
-  border-radius:12px; padding:10px 16px; font-weight:800; cursor:pointer; border:1px solid #0000;
-  transition: .15s transform;
-}
+.chip{border-radius:12px; padding:10px 16px; font-weight:800; cursor:pointer; border:1px solid #0000}
 .chip.A{background:#FFE5E2; border-color:#FFD2CD}
 .chip.B{background:#FFF3D9; border-color:#FFE4AD}
 .chip.C{background:#E9F8EF; border-color:#CFF4DD}
 .chip.D{background:#ECF1FF; border-color:#D9E4FF}
-.theme-dark .chip.A{background:#3b2321; border-color:#5b2f2a}
-.theme-dark .chip.B{background:#3b2f1e; border-color:#5b4927}
-.theme-dark .chip.C{background:#1f3a2a; border-color:#275c3b}
-.theme-dark .chip.D{background:#1c2747; border-color:#2c3a6f}
-.chip.active{outline:2px solid #202A; transform: translateY(-1px)}
+.chip.active{outline:2px solid #202A}
 
-/* ----------------------- Animations ----------------------- */
-@keyframes floatIn{
-  from{opacity:0; transform: translateY(6px)}
-  to{opacity:1; transform: translateY(0)}
-}
-@keyframes fadeIn{
-  from{opacity:0} to{opacity:1}
-}
-
-/* ----------------------- Accessibility ----------------------- */
-@media (prefers-reduced-motion: reduce){
-  *{animation:none!important; transition:none!important}
+/* Responsive */
+@media (max-width:760px){
+  .grid{grid-template-columns:1fr}
+  .wide{grid-column:auto}
 }
