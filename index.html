@@ -4,164 +4,168 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>Weepl v5 — Сегодня</title>
-  <meta name="theme-color" content="#0E111A"/>
+  <meta name="theme-color" content="#F6F8FF"/>
 
-  <!-- Шрифты: Inter + Anton для заголовков -->
+  <!-- Шрифты: Space Grotesk (заголовки), Inter (текст) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Anton&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
     :root{
-      /* Пастельная «утренний туман» + стекло */
-      --bg:#0E111A;
-      --grad1:#ECF2FF; /* голубой лед */
-      --grad2:#F4E7FF; /* лиловый дым */
-      --grad3:#FFE9D6; /* персик */
-      --card:#FFFFFFE6;
-      --glass: rgba(255,255,255,.55);
-      --text:#101318;
-      --muted:#677089;
-      --primary:#4B72FF;
-      --ok:#2FCB89;
-      --warn:#FFB24D;
-      --danger:#FF6A59;
+      /* Светлый «soft neo» градиент */
+      --bg1:#F6F8FF;   /* базовая подложка */
+      --g1:#EAF1FF;    /* голубой */
+      --g2:#F3E8FF;    /* лиловый */
+      --g3:#FFEBDD;    /* персик */
+      --text:#0F1420;
+      --muted:#73809B;
+
+      --card:#FFFFFFF2;
       --border:#00000010;
-      --shadow: 0 10px 30px rgba(16,19,24,.12);
+      --shadow:0 10px 30px rgba(24,32,56,.12);
       --r:22px;
+
+      --primary:#3F63FF;
+      --navbg:rgba(255,255,255,.86);
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
-      margin:0;color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      margin:0; color:var(--text);
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
       background:
-        radial-gradient(1200px 600px at 15% -10%, var(--grad1), transparent 55%),
-        radial-gradient(1000px 600px at 90% 0%, var(--grad2), transparent 60%),
-        radial-gradient(1000px 700px at 40% 100%, var(--grad3), transparent 60%),
-        var(--bg);
+        radial-gradient(1100px 600px at 15% -10%, var(--g1), transparent 55%),
+        radial-gradient(900px 600px  at 85% 0%,  var(--g2), transparent 60%),
+        radial-gradient(1000px 700px at 40% 100%, var(--g3), transparent 60%),
+        var(--bg1);
       background-attachment: fixed;
+      -webkit-tap-highlight-color:transparent;
     }
+    .h1{font-family:"Space Grotesk",Inter,sans-serif; font-weight:700}
 
-    /* Top bar */
+    /* ---------- Top bar ---------- */
     .top{
-      position:sticky; top:0; z-index:5;
+      position:sticky; top:0; z-index:10;
       padding:20px clamp(16px,4vw,24px) 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,.35)) ;
+      background: linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,.35));
       backdrop-filter:saturate(160%) blur(12px);
-      box-shadow: var(--shadow);
       border-bottom:1px solid var(--border);
     }
-    .top h1{margin:0 0 4px; font: 800 28px/1.1 Inter, sans-serif;}
+    .top h1{margin:0 0 4px; font: 700 30px/1.1 "Space Grotesk", Inter}
     .top .sub{color:var(--muted); font-weight:600}
 
-    /* AI tip capsule */
+    /* ---------- AI tip ---------- */
     .tip{
       margin:12px clamp(16px,4vw,24px) 0; padding:14px 16px; border-radius:18px;
-      background: linear-gradient(90deg, #CFE1FF 0%, #E6D6FF 45%, #FFE4D3 100%);
-      color:#1a1f28; position:relative; display:flex; gap:10px; align-items:flex-start;
-      box-shadow: var(--shadow);
+      background: linear-gradient(90deg, #DCE9FF 0%, #EBDDFF 50%, #FFE7D6 100%);
+      color:#101520; display:flex; gap:12px; align-items:flex-start;
+      box-shadow: var(--shadow); border:1px solid var(--border);
     }
-    .tip .ico{width:22px; height:22px; border-radius:8px; background: #ffffffaa; display:inline-grid; place-items:center; font-weight:800}
-    .tip .act{margin-left:auto; opacity:.7; cursor:pointer}
+    .tip .dot{width:10px;height:10px;border-radius:50%; background:#fff9; margin-top:6px}
     .tip b{display:block;margin-bottom:2px}
+    .tip .act{margin-left:auto; border:none; background:transparent; cursor:pointer; font-weight:700; opacity:.75}
 
-    /* Cards */
-    .content{padding:14px clamp(16px,4vw,24px) 96px}
-    .grid{display:grid; gap:12px; grid-template-columns:1fr 1fr; align-items:stretch}
-    @media (max-width:760px){ .grid{grid-template-columns:1fr} }
-
+    /* ---------- Content grid ---------- */
+    .content{padding:14px clamp(16px,4vw,24px) 120px}
+    .grid{
+      display:grid; gap:12px;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      align-items:stretch;
+    }
     .card{
-      background: var(--card); border:1px solid var(--border); border-radius: var(--r);
-      padding:16px; box-shadow: var(--shadow);
+      background:var(--card); border:1px solid var(--border); border-radius:var(--r);
+      padding:16px; box-shadow:var(--shadow);
+      transition:transform .12s ease, box-shadow .2s ease;
     }
-    .card h3{margin:0 0 6px; font: 800 18px/1.2 Inter;}
+    .card:hover{transform:translateY(-1px); box-shadow:0 14px 40px rgba(24,32,56,.18)}
+    .card h3{margin:0 0 6px; font:700 20px/1.2 "Space Grotesk", Inter}
     .card .sub{color:var(--muted)}
-    .meta{display:flex; gap:12px; margin-top:12px; color:#2b3240; font-weight:700}
-    .badge{padding:4px 8px; border-radius:10px; background:#F2F5FF; border:1px solid #E4EAFF}
-    .time{margin-left:auto; color:#2b3240}
+    .meta{display:flex; gap:12px; margin-top:12px; align-items:center}
+    .badge{padding:4px 10px; border-radius:10px; background:#F2F5FF; border:1px solid #E4EAFF; font-weight:700}
+    .time{margin-left:auto; font-weight:700}
 
-    /* Big wide card (первый блок дня) */
-    .card.wide{grid-column:1/-1}
+    .wide{grid-column:1/-1}
 
-    /* FAB + bottom nav */
-    .fab{
-      position: fixed; right: 18px; bottom: 90px;
-      width:60px; height:60px; border-radius:18px; border:none;
-      background: linear-gradient(180deg, var(--primary), #2E4BEA);
-      color:#fff; font-size:28px; font-weight:700; cursor:pointer; box-shadow:0 14px 36px rgba(46,75,234,.35);
-    }
+    /* ---------- Bottom nav (без эмодзи) ---------- */
     .nav{
-      position: fixed; left:0; right:0; bottom:0; z-index:6;
-      display:flex; gap:8px; justify-content:space-around; align-items:center;
+      position:fixed; left:0; right:0; bottom:0; z-index:12;
+      display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
       padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);
-      background: rgba(255,255,255,.8); backdrop-filter: blur(14px) saturate(180%);
+      background:var(--navbg); backdrop-filter:blur(14px) saturate(180%);
       border-top:1px solid var(--border);
     }
     .nav .it{
-      flex:1; text-align:center; padding:10px 0; border-radius:14px; font-weight:700; color:#2c3342;
+      text-align:center; padding:10px 0; border-radius:14px; font-weight:700; color:#2c3342;
     }
-    .nav .it.active{ background:#F2F5FF; border:1px solid #E4EAFF; }
+    .nav .it.active{ background:#F2F5FF; border:1px solid #E4EAFF }
 
-    /* Modal edit */
-    .modal{
-      position:fixed; inset:0; display:none; place-items:end; background:rgba(10,14,20,.4);
+    /* ---------- FAB по центру ---------- */
+    .fab{
+      position:fixed; left:50%; transform:translateX(-50%);
+      bottom: calc(70px + env(safe-area-inset-bottom));
+      width:66px; height:66px; border-radius:20px; border:none; cursor:pointer;
+      background:linear-gradient(180deg, var(--primary), #2E49EA);
+      color:#fff; font-size:36px; line-height:66px; font-weight:700;
+      box-shadow:0 16px 40px rgba(62,89,241,.35);
     }
-    .modal.open{display:grid}
+
+    /* ---------- Modal (full-height sheet) ---------- */
+    .modal{position:fixed; inset:0; display:none; background:rgba(15,20,32,.35)}
+    .modal.open{display:grid; place-items:end}
     .sheet{
-      width:100%; background:#fff; border-radius: 26px 26px 0 0; padding:18px 16px 22px; box-shadow:0 -10px 40px rgba(0,0,0,.2);
+      width:100%; max-height:85vh; overflow:auto;
+      background:#fff; color:#111; border-radius:26px 26px 0 0;
+      padding:18px 16px calc(16px + env(safe-area-inset-bottom));
+      box-shadow:0 -10px 40px rgba(0,0,0,.22); border:1px solid #00000010;
     }
-    .sheet h4{margin:0 0 8px; font:800 18px/1 Inter;}
+    .sheet h4{margin:0 0 12px; font:700 20px/1 "Space Grotesk", Inter}
     .row{display:flex; gap:10px; align-items:center; margin:12px 0}
-    .inp, .btn{border:1px solid #E6E9F5; background:#FAFBFF; border-radius:14px; padding:12px 14px; font:600 15px/1 Inter; color:#111}
-    .inp{flex:1}
-    .chips{display:flex; gap:8px; flex-wrap:wrap}
-    .chip{
-      border-radius:12px; padding:10px 16px; font-weight:800; cursor:pointer; border:1px solid #0000;
-      transition: .15s transform;
+    .inp,.btn{
+      border:1px solid #E6E9F5; background:#FAFBFF; border-radius:14px; padding:12px 14px;
+      font:600 15px/1 Inter; color:#111; width:100%;
     }
+    .inp:focus{outline:2px solid #8EA2FF}
+    .btn{width:auto; cursor:pointer}
+    .btn.primary{background:#2F49F1; color:#fff; border-color:#2F49F1}
+    .btn.ghost{background:#fff}
+    .chips{display:flex; gap:8px; flex-wrap:wrap}
+    .chip{border-radius:12px; padding:10px 16px; font-weight:800; cursor:pointer; border:1px solid #0000}
     .chip.A{background:#FFE5E2; border-color:#FFD2CD}
     .chip.B{background:#FFF3D9; border-color:#FFE4AD}
     .chip.C{background:#E9F8EF; border-color:#CFF4DD}
     .chip.D{background:#ECF1FF; border-color:#D9E4FF}
-    .chip.active{outline:2px solid #202A; transform: translateY(-1px)}
-    .actions{display:flex; justify-content:space-between; margin-top:12px}
-    .btn.primary{background:#2F49F1; color:#fff}
-    .btn.ghost{background:#fff}
+    .chip.active{outline:2px solid #202A}
 
-    /* Small helpers */
-    .k{color:#8a93a9}
-    .ic{font-style:normal}
+    /* ---------- Responsive ---------- */
+    @media (max-width:760px){
+      .grid{grid-template-columns:1fr}
+      .wide{grid-column:auto}
+    }
   </style>
 </head>
 <body>
 
-  <!-- Верхняя полоса -->
   <header class="top">
     <div class="sub">Вторник, 4 ноября</div>
-    <h1>Сегодня</h1>
+    <h1 class="h1">Сегодня</h1>
   </header>
 
-  <!-- AI-совет -->
-  <section class="tip" id="tip">
-    <div class="ico">✺</div>
+  <section class="tip">
+    <div class="dot"></div>
     <div>
       <b>AI-совет:</b>
       <span id="tipText">Запиши 3 задачи дня. Остальное — в бэклог. Чёткие границы уменьшают прокрастинацию.</span>
     </div>
-    <button class="act" id="tipRefresh" title="Обновить">↻</button>
+    <button class="act" id="tipRefresh" title="Обновить">Обновить</button>
   </section>
 
-  <!-- Контент: карточки задач/событий -->
   <main class="content">
-    <div class="grid" id="cards">
-      <!-- Широкая карточка — первая задача -->
-      <article class="card wide">
+    <section class="grid" id="cards">
+      <article class="card wide" data-id="t1">
         <h3>Разработка интерфейса</h3>
         <div class="sub">UI прототип Weepl v3 — главная страница и навигация</div>
-        <div class="meta">
-          <span class="badge">Проект: Weepl</span>
-          <span class="time">09:00</span>
-        </div>
+        <div class="meta"><span class="badge">Weepl</span><span class="time">09:00</span></div>
       </article>
 
       <article class="card" data-id="t2">
@@ -178,35 +182,35 @@
 
       <article class="card" data-id="t4">
         <h3>Прогулка</h3>
-        <div class="sub">15-20 минут</div>
+        <div class="sub">15–20 минут</div>
         <div class="meta"><span class="badge">Здоровье</span><span class="time">17:00</span></div>
       </article>
-    </div>
+    </section>
   </main>
 
-  <!-- Плавающая кнопка добавления -->
-  <button class="fab" id="add">＋</button>
+  <!-- Центрированный FAB -->
+  <button class="fab" id="add">+</button>
 
-  <!-- Нижняя навигация -->
+  <!-- Нижняя навигация без эмодзи -->
   <nav class="nav" role="tablist">
-    <div class="it active" data-tab="today">🏠<br><span class="k">Сегодня</span></div>
-    <div class="it" data-tab="archive">🗂️<br><span class="k">Архив</span></div>
-    <div class="it" data-tab="analytics">📈<br><span class="k">Аналитика</span></div>
-    <div class="it" data-tab="settings">⚙️<br><span class="k">Настройки</span></div>
+    <button class="it active" data-tab="today">Сегодня</button>
+    <button class="it" data-tab="archive">Архив</button>
+    <button class="it" data-tab="analytics">Аналитика</button>
+    <button class="it" data-tab="settings">Настройки</button>
   </nav>
 
-  <!-- Модалка редактирования/создания -->
+  <!-- Bottom sheet -->
   <div class="modal" id="modal">
     <div class="sheet">
-      <h4 id="modalTitle">Редактирование задачи</h4>
-      <div class="row"><input class="inp" id="fTitle" placeholder="Заголовок"/></div>
-      <div class="row"><input class="inp" id="fDesc" placeholder="Описание"/></div>
+      <h4 id="modalTitle">Новая задача</h4>
+      <div class="row"><input class="inp" id="fTitle" placeholder="Заголовок"></div>
+      <div class="row"><input class="inp" id="fDesc" placeholder="Описание"></div>
       <div class="row">
-        <input class="inp" id="fProject" placeholder="Проект"/>
-        <input class="inp" id="fTime" type="time" value="09:00"/>
+        <input class="inp" id="fProject" placeholder="Проект">
+        <input class="inp" id="fTime" type="time" value="09:00">
       </div>
       <div class="row">
-        <div class="k" style="min-width:80px;font-weight:800">Важность</div>
+        <div style="min-width:88px;font-weight:800;color:#55607a">Важность</div>
         <div class="chips" id="chips">
           <div class="chip A" data-v="A">A</div>
           <div class="chip B" data-v="B">B</div>
@@ -214,8 +218,8 @@
           <div class="chip D" data-v="D">D</div>
         </div>
       </div>
-      <div class="actions">
-        <button class="btn" id="delete" style="color:#d23">Удалить</button>
+      <div class="row" style="justify-content:space-between">
+        <button class="btn" id="delete" style="color:#d33">Удалить</button>
         <div>
           <button class="btn ghost" id="cancel">Отмена</button>
           <button class="btn primary" id="save">Сохранить</button>
@@ -225,103 +229,74 @@
   </div>
 
   <script>
-    // --- Данные (MVP локально). Потом заменим на БД + импорт расписания.
+    // Демо-данные
     let tasks = [
-      {id:"t1", title:"Разработка интерфейса", desc:"UI прототип Weepl v3 — главная страница и навигация", proj:"Weepl", time:"09:00", rank:"B"},
-      {id:"t2", title:"Кофе и планирование", desc:"10 минут тишины, ревью задач", proj:"Фокус", time:"11:00", rank:"B"},
-      {id:"t3", title:"Митинг с Артёмом", desc:"Дизайн-сессия: анимации и микроинтеракции", proj:"Созвон", time:"13:30", rank:"A"},
-      {id:"t4", title:"Прогулка", desc:"15-20 минут", proj:"Здоровье", time:"17:00", rank:"C"},
+      {id:"t1", title:"Разработка интерфейса", desc:"UI прототип Weepl v3 — главная страница и навигация", proj:"Weepl",  time:"09:00", rank:"A"},
+      {id:"t2", title:"Кофе и планирование",  desc:"10 минут тишины, ревью задач",                         proj:"Фокус",  time:"11:00", rank:"B"},
+      {id:"t3", title:"Митинг с Артёмом",      desc:"Дизайн-сессия: анимации и микроинтеракции",          proj:"Созвон", time:"13:30", rank:"A"},
+      {id:"t4", title:"Прогулка",              desc:"15–20 минут",                                     proj:"Здоровье", time:"17:00", rank:"C"},
     ];
+    const cards = document.getElementById('cards');
 
-    const elCards = document.getElementById('cards');
-    function cardTemplate(t, wide=false){
-      return `
-      <article class="card ${wide?'wide':''}" data-id="${t.id}">
+    function card(t, wide=false){
+      return `<article class="card ${wide?'wide':''}" data-id="${t.id}">
         <h3>${t.title}</h3>
         <div class="sub">${t.desc||''}</div>
-        <div class="meta">
-          <span class="badge">${t.proj||'Задачи'}</span>
-          <span class="time">${t.time||''}</span>
-        </div>
+        <div class="meta"><span class="badge">${t.proj||'Задачи'}</span><span class="time">${t.time||''}</span></div>
       </article>`;
     }
     function render(){
       const [first, ...rest] = tasks;
-      elCards.innerHTML = cardTemplate(first, true) + rest.map(t=>cardTemplate(t)).join('');
-      // клики -> редактирование
-      elCards.querySelectorAll('.card').forEach(c=>{
-        c.addEventListener('click', ()=> openModal(tasks.find(x=>x.id===c.dataset.id)));
+      cards.innerHTML = card(first, true) + rest.map(x=>card(x)).join('');
+      cards.querySelectorAll('.card').forEach(el=>{
+        el.onclick = ()=> openModal(tasks.find(t=>t.id===el.dataset.id));
       });
     }
     render();
 
-    // --- AI Tip (эвристика под MVP)
-    const tips = [
+    // AI-совет
+    const tips=[
       "Запиши 3 задачи дня. Остальное — в бэклог.",
-      "Сделай 25-минутную сессию на самую важную задачу (A).",
-      "Перед созвоном набросай 3 тезиса — это экономит 15 минут обсуждения.",
-      "План-буфер: оставляй 10% слотов пустыми для форс-мажоров.",
-      "Собери единый входящий — мозгу легче, когда хаос в одном месте."
+      "Сделай 25-минутную сессию на важную задачу (A).",
+      "Держи 10% времени пустым под форс-мажор.",
+      "Собери единый входящий — мозгу легче."
     ];
-    document.getElementById('tipRefresh').onclick = ()=>{
-      const s = tips[Math.floor(Math.random()*tips.length)];
-      document.getElementById('tipText').textContent = s;
+    document.getElementById('tipRefresh').onclick=()=>{
+      document.getElementById('tipText').textContent=tips[Math.floor(Math.random()*tips.length)];
     };
 
-    // --- Modal CRUD
-    const modal = document.getElementById('modal');
-    const fTitle = document.getElementById('fTitle');
-    const fDesc  = document.getElementById('fDesc');
-    const fProj  = document.getElementById('fProject');
-    const fTime  = document.getElementById('fTime');
-    const chips  = document.getElementById('chips');
-    const delBtn = document.getElementById('delete');
-
-    let current = null;
+    // Модалка
+    const modal=document.getElementById('modal');
+    const fTitle=document.getElementById('fTitle');
+    const fDesc=document.getElementById('fDesc');
+    const fProject=document.getElementById('fProject');
+    const fTime=document.getElementById('fTime');
+    const chips=document.getElementById('chips');
+    const delBtn=document.getElementById('delete');
+    let current=null;
 
     function openModal(data){
-      document.getElementById('modalTitle').textContent = data ? 'Редактирование задачи' : 'Новая задача';
-      current = data ? {...data} : {id:crypto.randomUUID(), title:'', desc:'', proj:'', time:'', rank:'C'};
-      fTitle.value = current.title||'';
-      fDesc.value  = current.desc||'';
-      fProj.value  = current.proj||'';
-      fTime.value  = current.time||'';
-      chips.querySelectorAll('.chip').forEach(c=>{
-        c.classList.toggle('active', c.dataset.v===current.rank);
-      });
-      delBtn.style.visibility = data ? 'visible' : 'hidden';
+      document.getElementById('modalTitle').textContent = data? "Редактирование задачи" : "Новая задача";
+      current = data? {...data} : {id:crypto.randomUUID(), title:"", desc:"", proj:"", time:"", rank:"C"};
+      fTitle.value=current.title||""; fDesc.value=current.desc||""; fProject.value=current.proj||""; fTime.value=current.time||"";
+      chips.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active', c.dataset.v===current.rank));
+      delBtn.style.visibility = data? 'visible':'hidden';
       modal.classList.add('open');
     }
-
-    // открыть модалку по FAB
-    document.getElementById('add').onclick = ()=> openModal(null);
-
-    // выбор ранга
+    document.getElementById('add').onclick=()=> openModal(null);
     chips.addEventListener('click', e=>{
-      const chip = e.target.closest('.chip'); if(!chip) return;
-      chips.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
-      chip.classList.add('active');
-      current.rank = chip.dataset.v;
+      const c=e.target.closest('.chip'); if(!c) return;
+      chips.querySelectorAll('.chip').forEach(x=>x.classList.remove('active')); c.classList.add('active'); current.rank=c.dataset.v;
     });
-
-    // действия
-    document.getElementById('cancel').onclick = ()=> modal.classList.remove('open');
-    document.getElementById('save').onclick = ()=>{
-      current.title = fTitle.value.trim();
-      current.desc  = fDesc.value.trim();
-      current.proj  = fProj.value.trim();
-      current.time  = fTime.value;
-      const i = tasks.findIndex(x=>x.id===current.id);
-      if(i>=0) tasks[i]=current; else tasks.splice(1,0,current); // новые идут после первой широкой
+    document.getElementById('cancel').onclick=()=> modal.classList.remove('open');
+    document.getElementById('save').onclick=()=>{
+      current.title=fTitle.value.trim(); current.desc=fDesc.value.trim(); current.proj=fProject.value.trim(); current.time=fTime.value;
+      const i=tasks.findIndex(x=>x.id===current.id);
+      if(i>=0) tasks[i]=current; else tasks.splice(1,0,current);
       modal.classList.remove('open'); render();
     };
-    delBtn.onclick = ()=>{
-      tasks = tasks.filter(x=>x.id!==current.id);
-      modal.classList.remove('open'); render();
-    };
-
-    // клики вне листа — закрыть
-    modal.addEventListener('click', (e)=>{ if(e.target===modal) modal.classList.remove('open'); });
+    delBtn.onclick=()=>{ tasks=tasks.filter(x=>x.id!==current.id); modal.classList.remove('open'); render(); };
+    modal.addEventListener('click', e=>{ if(e.target===modal) modal.classList.remove('open'); });
   </script>
 </body>
 </html>
