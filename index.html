@@ -1,302 +1,397 @@
-<!doctype html>
-<html lang="ru">
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Weepl v5 — Сегодня</title>
-  <meta name="theme-color" content="#F6F8FF"/>
 
-  <!-- Шрифты: Space Grotesk (заголовки), Inter (текст) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Anton&display=swap"
+    rel="stylesheet"
+  />
 
-  <style>
-    :root{
-      /* Светлый «soft neo» градиент */
-      --bg1:#F6F8FF;   /* базовая подложка */
-      --g1:#EAF1FF;    /* голубой */
-      --g2:#F3E8FF;    /* лиловый */
-      --g3:#FFEBDD;    /* персик */
-      --text:#0F1420;
-      --muted:#73809B;
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css" />
 
-      --card:#FFFFFFF2;
-      --border:#00000010;
-      --shadow:0 10px 30px rgba(24,32,56,.12);
-      --r:22px;
+  <!-- Favicons (optional) -->
+  <link rel="icon" href="favicon.ico" />
 
-      --primary:#3F63FF;
-      --navbg:rgba(255,255,255,.86);
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; color:var(--text);
-      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-      background:
-        radial-gradient(1100px 600px at 15% -10%, var(--g1), transparent 55%),
-        radial-gradient(900px 600px  at 85% 0%,  var(--g2), transparent 60%),
-        radial-gradient(1000px 700px at 40% 100%, var(--g3), transparent 60%),
-        var(--bg1);
-      background-attachment: fixed;
-      -webkit-tap-highlight-color:transparent;
-    }
-    .h1{font-family:"Space Grotesk",Inter,sans-serif; font-weight:700}
-
-    /* ---------- Top bar ---------- */
-    .top{
-      position:sticky; top:0; z-index:10;
-      padding:20px clamp(16px,4vw,24px) 12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,.35));
-      backdrop-filter:saturate(160%) blur(12px);
-      border-bottom:1px solid var(--border);
-    }
-    .top h1{margin:0 0 4px; font: 700 30px/1.1 "Space Grotesk", Inter}
-    .top .sub{color:var(--muted); font-weight:600}
-
-    /* ---------- AI tip ---------- */
-    .tip{
-      margin:12px clamp(16px,4vw,24px) 0; padding:14px 16px; border-radius:18px;
-      background: linear-gradient(90deg, #DCE9FF 0%, #EBDDFF 50%, #FFE7D6 100%);
-      color:#101520; display:flex; gap:12px; align-items:flex-start;
-      box-shadow: var(--shadow); border:1px solid var(--border);
-    }
-    .tip .dot{width:10px;height:10px;border-radius:50%; background:#fff9; margin-top:6px}
-    .tip b{display:block;margin-bottom:2px}
-    .tip .act{margin-left:auto; border:none; background:transparent; cursor:pointer; font-weight:700; opacity:.75}
-
-    /* ---------- Content grid ---------- */
-    .content{padding:14px clamp(16px,4vw,24px) 120px}
-    .grid{
-      display:grid; gap:12px;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      align-items:stretch;
-    }
-    .card{
-      background:var(--card); border:1px solid var(--border); border-radius:var(--r);
-      padding:16px; box-shadow:var(--shadow);
-      transition:transform .12s ease, box-shadow .2s ease;
-    }
-    .card:hover{transform:translateY(-1px); box-shadow:0 14px 40px rgba(24,32,56,.18)}
-    .card h3{margin:0 0 6px; font:700 20px/1.2 "Space Grotesk", Inter}
-    .card .sub{color:var(--muted)}
-    .meta{display:flex; gap:12px; margin-top:12px; align-items:center}
-    .badge{padding:4px 10px; border-radius:10px; background:#F2F5FF; border:1px solid #E4EAFF; font-weight:700}
-    .time{margin-left:auto; font-weight:700}
-
-    .wide{grid-column:1/-1}
-
-    /* ---------- Bottom nav (без эмодзи) ---------- */
-    .nav{
-      position:fixed; left:0; right:0; bottom:0; z-index:12;
-      display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
-      padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);
-      background:var(--navbg); backdrop-filter:blur(14px) saturate(180%);
-      border-top:1px solid var(--border);
-    }
-    .nav .it{
-      text-align:center; padding:10px 0; border-radius:14px; font-weight:700; color:#2c3342;
-    }
-    .nav .it.active{ background:#F2F5FF; border:1px solid #E4EAFF }
-
-    /* ---------- FAB по центру ---------- */
-    .fab{
-      position:fixed; left:50%; transform:translateX(-50%);
-      bottom: calc(70px + env(safe-area-inset-bottom));
-      width:66px; height:66px; border-radius:20px; border:none; cursor:pointer;
-      background:linear-gradient(180deg, var(--primary), #2E49EA);
-      color:#fff; font-size:36px; line-height:66px; font-weight:700;
-      box-shadow:0 16px 40px rgba(62,89,241,.35);
-    }
-
-    /* ---------- Modal (full-height sheet) ---------- */
-    .modal{position:fixed; inset:0; display:none; background:rgba(15,20,32,.35)}
-    .modal.open{display:grid; place-items:end}
-    .sheet{
-      width:100%; max-height:85vh; overflow:auto;
-      background:#fff; color:#111; border-radius:26px 26px 0 0;
-      padding:18px 16px calc(16px + env(safe-area-inset-bottom));
-      box-shadow:0 -10px 40px rgba(0,0,0,.22); border:1px solid #00000010;
-    }
-    .sheet h4{margin:0 0 12px; font:700 20px/1 "Space Grotesk", Inter}
-    .row{display:flex; gap:10px; align-items:center; margin:12px 0}
-    .inp,.btn{
-      border:1px solid #E6E9F5; background:#FAFBFF; border-radius:14px; padding:12px 14px;
-      font:600 15px/1 Inter; color:#111; width:100%;
-    }
-    .inp:focus{outline:2px solid #8EA2FF}
-    .btn{width:auto; cursor:pointer}
-    .btn.primary{background:#2F49F1; color:#fff; border-color:#2F49F1}
-    .btn.ghost{background:#fff}
-    .chips{display:flex; gap:8px; flex-wrap:wrap}
-    .chip{border-radius:12px; padding:10px 16px; font-weight:800; cursor:pointer; border:1px solid #0000}
-    .chip.A{background:#FFE5E2; border-color:#FFD2CD}
-    .chip.B{background:#FFF3D9; border-color:#FFE4AD}
-    .chip.C{background:#E9F8EF; border-color:#CFF4DD}
-    .chip.D{background:#ECF1FF; border-color:#D9E4FF}
-    .chip.active{outline:2px solid #202A}
-
-    /* ---------- Responsive ---------- */
-    @media (max-width:760px){
-      .grid{grid-template-columns:1fr}
-      .wide{grid-column:auto}
-    }
-  </style>
+  <!-- PWA meta (optional, на будущее) -->
+  <meta name="theme-color" content="#0d0f14" />
 </head>
+
 <body>
+  <div id="app">
+    <!-- ===== GLOBAL GRADIENT BACKDROP ===== -->
+    <div class="backdrop" aria-hidden="true"></div>
 
-  <header class="top">
-    <div class="sub">Вторник, 4 ноября</div>
-    <h1 class="h1">Сегодня</h1>
-  </header>
-
-  <section class="tip">
-    <div class="dot"></div>
-    <div>
-      <b>AI-совет:</b>
-      <span id="tipText">Запиши 3 задачи дня. Остальное — в бэклог. Чёткие границы уменьшают прокрастинацию.</span>
-    </div>
-    <button class="act" id="tipRefresh" title="Обновить">Обновить</button>
-  </section>
-
-  <main class="content">
-    <section class="grid" id="cards">
-      <article class="card wide" data-id="t1">
-        <h3>Разработка интерфейса</h3>
-        <div class="sub">UI прототип Weepl v3 — главная страница и навигация</div>
-        <div class="meta"><span class="badge">Weepl</span><span class="time">09:00</span></div>
-      </article>
-
-      <article class="card" data-id="t2">
-        <h3>Кофе и планирование</h3>
-        <div class="sub">10 минут тишины, ревью задач</div>
-        <div class="meta"><span class="badge">Фокус</span><span class="time">11:00</span></div>
-      </article>
-
-      <article class="card" data-id="t3">
-        <h3>Митинг с Артёмом</h3>
-        <div class="sub">Дизайн-сессия: анимации и микроинтеракции</div>
-        <div class="meta"><span class="badge">Созвон</span><span class="time">13:30</span></div>
-      </article>
-
-      <article class="card" data-id="t4">
-        <h3>Прогулка</h3>
-        <div class="sub">15–20 минут</div>
-        <div class="meta"><span class="badge">Здоровье</span><span class="time">17:00</span></div>
-      </article>
-    </section>
-  </main>
-
-  <!-- Центрированный FAB -->
-  <button class="fab" id="add">+</button>
-
-  <!-- Нижняя навигация без эмодзи -->
-  <nav class="nav" role="tablist">
-    <button class="it active" data-tab="today">Сегодня</button>
-    <button class="it" data-tab="archive">Архив</button>
-    <button class="it" data-tab="analytics">Аналитика</button>
-    <button class="it" data-tab="settings">Настройки</button>
-  </nav>
-
-  <!-- Bottom sheet -->
-  <div class="modal" id="modal">
-    <div class="sheet">
-      <h4 id="modalTitle">Новая задача</h4>
-      <div class="row"><input class="inp" id="fTitle" placeholder="Заголовок"></div>
-      <div class="row"><input class="inp" id="fDesc" placeholder="Описание"></div>
-      <div class="row">
-        <input class="inp" id="fProject" placeholder="Проект">
-        <input class="inp" id="fTime" type="time" value="09:00">
-      </div>
-      <div class="row">
-        <div style="min-width:88px;font-weight:800;color:#55607a">Важность</div>
-        <div class="chips" id="chips">
-          <div class="chip A" data-v="A">A</div>
-          <div class="chip B" data-v="B">B</div>
-          <div class="chip C" data-v="C">C</div>
-          <div class="chip D" data-v="D">D</div>
+    <!-- ===== TOP BAR ===== -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 id="todayTitle" class="title">Сегодня</h1>
+        <div class="subgrid">
+          <span id="todayFullDate" class="muted">Среда, 5 ноября 2025</span>
+          <span id="streakBadge" class="chip" title="Серия продуктивных дней">streak: 3</span>
         </div>
       </div>
-      <div class="row" style="justify-content:space-between">
-        <button class="btn" id="delete" style="color:#d33">Удалить</button>
-        <div>
-          <button class="btn ghost" id="cancel">Отмена</button>
-          <button class="btn primary" id="save">Сохранить</button>
+
+      <div class="topbar-right">
+        <button id="themeToggle" class="iconbtn" aria-label="Сменить тему" title="Сменить тему">
+          <!-- простая иконка: солнце/луна, заменим в JS -->
+          <svg width="20" height="20" viewBox="0 0 24 24" class="icon">
+            <circle cx="12" cy="12" r="5" />
+          </svg>
+        </button>
+        <button id="userMenu" class="avatar" aria-label="Профиль" title="Профиль">FS</button>
+      </div>
+    </header>
+
+    <!-- ===== CONTENT WRAPPER ===== -->
+    <main class="content">
+      <!-- ===== GRID LAYOUT: HERO ROW ===== -->
+      <section class="grid grid-hero">
+        <!-- AI Advisor (широкая карточка) -->
+        <article class="card ai-card" id="aiCard">
+          <div class="card-header">
+            <h2>ИИ совет</h2>
+            <span id="aiPulse" class="pulse" aria-hidden="true"></span>
+          </div>
+          <p id="aiAdvice" class="ai-text">
+            Загружаю анализ продуктивности…
+          </p>
+          <div class="ai-meta">
+            <span id="aiLastUpdated" class="muted">обновлено: —</span>
+            <button id="aiRefresh" class="ghostbtn">Обновить</button>
+          </div>
+        </article>
+
+        <!-- Сегодняшняя лента (таймлайн) -->
+        <article class="card timeline-card">
+          <div class="card-header">
+            <h2>Лента дня</h2>
+            <div class="header-actions">
+              <button id="jumpNow" class="ghostbtn">к текущему времени</button>
+            </div>
+          </div>
+          <div id="timeline" class="timeline">
+            <!-- Примерная разметка, JS будет рендерить события -->
+            <div class="tl-row now">
+              <span class="tl-time">14:00</span>
+              <div class="tl-dot"></div>
+              <div class="tl-content">Сейчас</div>
+            </div>
+
+            <div class="tl-row">
+              <span class="tl-time">16:00</span>
+              <div class="tl-dot"></div>
+              <div class="tl-content">
+                Встреча с девелопером • ЖК
+                <span class="tag">событие</span>
+              </div>
+            </div>
+
+            <div class="tl-row">
+              <span class="tl-time">18:00</span>
+              <div class="tl-dot"></div>
+              <div class="tl-content">
+                Презентация FS (дедлайн)
+                <span class="tag warn">задача</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Мини-календарь + быстрые фильтры -->
+        <article class="card calendar-card">
+          <div class="card-header">
+            <h2>Календарь</h2>
+            <div class="header-actions">
+              <button id="prevMonth" class="iconbtn" aria-label="Предыдущий месяц">
+                <svg width="18" height="18" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <button id="nextMonth" class="iconbtn" aria-label="Следующий месяц">
+                <svg width="18" height="18" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="mini-calendar" id="miniCalendar" aria-label="календарь месяца">
+            <!-- JS сгенерирует сетку дней -->
+          </div>
+          <div class="calendar-legend">
+            <span class="dot dot-task"></span> задачи
+            <span class="dot dot-event"></span> события
+          </div>
+          <div class="quick-filters">
+            <button data-range="today" class="chip ghost">сегодня</button>
+            <button data-range="week" class="chip ghost">неделя</button>
+            <button data-range="month" class="chip ghost">месяц</button>
+          </div>
+        </article>
+      </section>
+
+      <!-- ===== GRID LAYOUT: PROGRESS & MATRIX ===== -->
+      <section class="grid grid-secondary">
+        <!-- Прогресс привычек (плитка 2x2) -->
+        <article class="card habits-card">
+          <div class="card-header">
+            <h2>Привычки</h2>
+            <div class="header-actions">
+              <button id="editHabits" class="ghostbtn">настроить</button>
+            </div>
+          </div>
+
+          <div class="habits-grid">
+            <div class="habit">
+              <div class="habit-ring" data-progress="70">
+                <span>70%</span>
+              </div>
+              <div class="habit-info">
+                <h3>Сон</h3>
+                <p class="muted">7 из 10 часов</p>
+              </div>
+            </div>
+
+            <div class="habit">
+              <div class="habit-ring" data-progress="40">
+                <span>40%</span>
+              </div>
+              <div class="habit-info">
+                <h3>Тренировки</h3>
+                <p class="muted">2 из 5</p>
+              </div>
+            </div>
+
+            <div class="habit">
+              <div class="habit-ring" data-progress="85">
+                <span>85%</span>
+              </div>
+              <div class="habit-info">
+                <h3>Фокус</h3>
+                <p class="muted">высокий</p>
+              </div>
+            </div>
+
+            <div class="habit">
+              <div class="habit-ring" data-progress="55">
+                <span>55%</span>
+              </div>
+              <div class="habit-info">
+                <h3>Китайский</h3>
+                <p class="muted">11/20 знаков</p>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Матрица Эйзенхауэра (доска) -->
+        <article class="card matrix-card">
+          <div class="card-header">
+            <h2>Матрица Эйзенхауэра</h2>
+            <div class="header-actions">
+              <button id="matrixView" class="ghostbtn">перейти к доске</button>
+            </div>
+          </div>
+
+          <div class="matrix-grid" id="matrixGrid" aria-label="матрица задач">
+            <div class="quadrant q1">
+              <h3>Срочно & Важно</h3>
+              <ul class="pill-list" data-q="q1">
+                <li class="pill">Дедлайн: презентация FS</li>
+              </ul>
+            </div>
+            <div class="quadrant q2">
+              <h3>Не срочно & Важно</h3>
+              <ul class="pill-list" data-q="q2">
+                <li class="pill">Эссе по истории</li>
+              </ul>
+            </div>
+            <div class="quadrant q3">
+              <h3>Срочно & Неважно</h3>
+              <ul class="pill-list" data-q="q3">
+                <li class="pill">Ответить в чате</li>
+              </ul>
+            </div>
+            <div class="quadrant q4">
+              <h3>Не срочно & Неважно</h3>
+              <ul class="pill-list" data-q="q4">
+                <li class="pill">Покопаться в настройках</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- ===== GRID LAYOUT: TASK CARDS MOSAIC ===== -->
+      <section class="grid grid-mosaic">
+        <!-- Карточки задач — мозаичный/масонри вид (JS заполнит) -->
+        <article class="card mosaic-card" id="mosaicA">
+          <div class="card-header">
+            <h2>Сегодняшние задачи</h2>
+            <div class="header-actions">
+              <button id="sortByTime" class="ghostbtn">по времени</button>
+              <button id="sortByPriority" class="ghostbtn">по приоритету</button>
+            </div>
+          </div>
+          <div id="taskMasonry" class="masonry">
+            <!-- примерные заглушки -->
+            <div class="m-item priority-1">
+              <h4>Купить фильтры и UV-лампы</h4>
+              <div class="meta"><span>до 20:00</span> · <span>низкий приоритет</span></div>
+            </div>
+            <div class="m-item priority-3 wide">
+              <h4>Подготовить питч FS для девелопера</h4>
+              <div class="meta"><span>до 18:00</span> · <span>высокий приоритет</span></div>
+            </div>
+            <div class="m-item priority-2">
+              <h4>Китайский: 15 иероглифов</h4>
+              <div class="meta"><span>до 22:00</span> · <span>средний приоритет</span></div>
+            </div>
+            <div class="m-item priority-2 tall">
+              <h4>Тренировка (45 мин)</h4>
+              <div class="meta"><span>19:30</span> · <span>событие</span></div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Краткая статистика дня -->
+        <article class="card stats-card">
+          <div class="card-header">
+            <h2>Статистика дня</h2>
+          </div>
+          <ul class="stats">
+            <li><span class="label">Выполнено</span><span class="val" id="statDone">4</span></li>
+            <li><span class="label">Просрочено</span><span class="val warn" id="statOverdue">1</span></li>
+            <li><span class="label">Фокус</span><span class="val" id="statFocus">82%</span></li>
+          </ul>
+        </article>
+      </section>
+    </main>
+
+    <!-- ===== FLOATING ADD BUTTON ===== -->
+    <button id="addBtn" class="fab" aria-haspopup="dialog" aria-controls="addModal" title="Создать">
+      <svg width="22" height="22" viewBox="0 0 24 24" class="icon"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+
+    <!-- ===== CENTER MODAL: ADD TASK/EVENT ===== -->
+    <div id="addModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="addModalTitle" hidden>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="addModalTitle">Создание</h2>
+          <button id="closeModal" class="iconbtn" aria-label="Закрыть">
+            <svg width="18" height="18" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
         </div>
+
+        <div class="tabs" role="tablist" aria-label="Тип записи">
+          <button class="tab active" data-tab="task" role="tab" aria-selected="true">Задача</button>
+          <button class="tab" data-tab="event" role="tab" aria-selected="false">Событие</button>
+        </div>
+
+        <form id="createForm" autocomplete="off">
+          <div class="form-grid">
+            <label class="field">
+              <span>Название</span>
+              <input id="titleInput" name="title" type="text" placeholder="Например: «Презентация FS»" required />
+            </label>
+
+            <label class="field">
+              <span>Дата</span>
+              <input id="dateInput" name="date" type="date" required />
+            </label>
+
+            <label class="field only-task">
+              <span>Дедлайн</span>
+              <input id="timeDeadline" name="timeDeadline" type="time" />
+            </label>
+
+            <label class="field only-event" hidden>
+              <span>Начало</span>
+              <input id="timeStart" name="timeStart" type="time" />
+            </label>
+
+            <label class="field only-event" hidden>
+              <span>Конец</span>
+              <input id="timeEnd" name="timeEnd" type="time" />
+            </label>
+
+            <label class="field">
+              <span>Приоритет</span>
+              <select id="priorityInput" name="priority">
+                <option value="1">Низкий</option>
+                <option value="2" selected>Средний</option>
+                <option value="3">Высокий</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Категория</span>
+              <input id="categoryInput" name="category" type="text" placeholder="учёба / FS / спорт…" />
+            </label>
+
+            <label class="field full">
+              <span>Описание</span>
+              <textarea id="descInput" name="desc" rows="3" placeholder="Коротко о задаче или событии"></textarea>
+            </label>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" id="smartFill" class="ghostbtn">Умное заполнение</button>
+            <button type="submit" class="primary">Сохранить</button>
+          </div>
+        </form>
       </div>
     </div>
+
+    <!-- ===== TOASTS ===== -->
+    <div id="toastHost" class="toasts" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- ===== BOTTOM NAV (на будущее) ===== -->
+    <nav class="bottomnav" aria-label="Навигация">
+      <button class="navbtn active" data-view="today">Сегодня</button>
+      <button class="navbtn" data-view="calendar">Календарь</button>
+      <button class="navbtn" data-view="habits">Привычки</button>
+      <button class="navbtn" data-view="matrix">Матрица</button>
+      <button class="navbtn" data-view="settings">Настройки</button>
+    </nav>
   </div>
 
-  <script>
-    // Демо-данные
-    let tasks = [
-      {id:"t1", title:"Разработка интерфейса", desc:"UI прототип Weepl v3 — главная страница и навигация", proj:"Weepl",  time:"09:00", rank:"A"},
-      {id:"t2", title:"Кофе и планирование",  desc:"10 минут тишины, ревью задач",                         proj:"Фокус",  time:"11:00", rank:"B"},
-      {id:"t3", title:"Митинг с Артёмом",      desc:"Дизайн-сессия: анимации и микроинтеракции",          proj:"Созвон", time:"13:30", rank:"A"},
-      {id:"t4", title:"Прогулка",              desc:"15–20 минут",                                     proj:"Здоровье", time:"17:00", rank:"C"},
-    ];
-    const cards = document.getElementById('cards');
-
-    function card(t, wide=false){
-      return `<article class="card ${wide?'wide':''}" data-id="${t.id}">
-        <h3>${t.title}</h3>
-        <div class="sub">${t.desc||''}</div>
-        <div class="meta"><span class="badge">${t.proj||'Задачи'}</span><span class="time">${t.time||''}</span></div>
-      </article>`;
-    }
-    function render(){
-      const [first, ...rest] = tasks;
-      cards.innerHTML = card(first, true) + rest.map(x=>card(x)).join('');
-      cards.querySelectorAll('.card').forEach(el=>{
-        el.onclick = ()=> openModal(tasks.find(t=>t.id===el.dataset.id));
-      });
-    }
-    render();
-
-    // AI-совет
-    const tips=[
-      "Запиши 3 задачи дня. Остальное — в бэклог.",
-      "Сделай 25-минутную сессию на важную задачу (A).",
-      "Держи 10% времени пустым под форс-мажор.",
-      "Собери единый входящий — мозгу легче."
-    ];
-    document.getElementById('tipRefresh').onclick=()=>{
-      document.getElementById('tipText').textContent=tips[Math.floor(Math.random()*tips.length)];
-    };
-
-    // Модалка
-    const modal=document.getElementById('modal');
-    const fTitle=document.getElementById('fTitle');
-    const fDesc=document.getElementById('fDesc');
-    const fProject=document.getElementById('fProject');
-    const fTime=document.getElementById('fTime');
-    const chips=document.getElementById('chips');
-    const delBtn=document.getElementById('delete');
-    let current=null;
-
-    function openModal(data){
-      document.getElementById('modalTitle').textContent = data? "Редактирование задачи" : "Новая задача";
-      current = data? {...data} : {id:crypto.randomUUID(), title:"", desc:"", proj:"", time:"", rank:"C"};
-      fTitle.value=current.title||""; fDesc.value=current.desc||""; fProject.value=current.proj||""; fTime.value=current.time||"";
-      chips.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active', c.dataset.v===current.rank));
-      delBtn.style.visibility = data? 'visible':'hidden';
-      modal.classList.add('open');
-    }
-    document.getElementById('add').onclick=()=> openModal(null);
-    chips.addEventListener('click', e=>{
-      const c=e.target.closest('.chip'); if(!c) return;
-      chips.querySelectorAll('.chip').forEach(x=>x.classList.remove('active')); c.classList.add('active'); current.rank=c.dataset.v;
-    });
-    document.getElementById('cancel').onclick=()=> modal.classList.remove('open');
-    document.getElementById('save').onclick=()=>{
-      current.title=fTitle.value.trim(); current.desc=fDesc.value.trim(); current.proj=fProject.value.trim(); current.time=fTime.value;
-      const i=tasks.findIndex(x=>x.id===current.id);
-      if(i>=0) tasks[i]=current; else tasks.splice(1,0,current);
-      modal.classList.remove('open'); render();
-    };
-    delBtn.onclick=()=>{ tasks=tasks.filter(x=>x.id!==current.id); modal.classList.remove('open'); render(); };
-    modal.addEventListener('click', e=>{ if(e.target===modal) modal.classList.remove('open'); });
+  <!-- ===== FIREBASE CONFIG (заполни и оставь в репо) ===== -->
+  <script type="application/json" id="firebase-config">
+  {
+    "apiKey": "YOUR_API_KEY",
+    "authDomain": "YOUR_PROJECT_ID.firebaseapp.com",
+    "projectId": "YOUR_PROJECT_ID",
+    "storageBucket": "YOUR_PROJECT_ID.appspot.com",
+    "messagingSenderId": "YOUR_SENDER_ID",
+    "appId": "YOUR_APP_ID",
+    "measurementId": "YOUR_MEASUREMENT_ID"
+  }
   </script>
+
+  <!-- ===== SCRIPTS ===== -->
+  <!-- Firebase SDKs (модульные v10+) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-analytics.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    // Читаем конфиг из <script id="firebase-config">
+    const cfgEl = document.getElementById("firebase-config");
+    const firebaseConfig = JSON.parse(cfgEl.textContent.trim());
+
+    // Инициализация Firebase (доступно в app.js через window.FB)
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    window.FB = { app, analytics, auth, db };
+  </script>
+
+  <!-- Основная логика приложения -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>
