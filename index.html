@@ -8,24 +8,16 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Anton&display=swap"
-    rel="stylesheet"
-  />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Anton&display=swap" rel="stylesheet" />
 
   <!-- Styles -->
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- Favicons (optional) -->
-  <link rel="icon" href="favicon.ico" />
-
-  <!-- PWA meta (optional, на будущее) -->
   <meta name="theme-color" content="#0d0f14" />
 </head>
 
 <body>
   <div id="app">
-    <!-- ===== GLOBAL GRADIENT BACKDROP ===== -->
     <div class="backdrop" aria-hidden="true"></div>
 
     <!-- ===== TOP BAR ===== -->
@@ -33,255 +25,220 @@
       <div class="topbar-left">
         <h1 id="todayTitle" class="title">Сегодня</h1>
         <div class="subgrid">
-          <span id="todayFullDate" class="muted">Среда, 5 ноября 2025</span>
+          <span id="todayFullDate" class="muted">—</span>
           <span id="streakBadge" class="chip" title="Серия продуктивных дней">streak: 3</span>
         </div>
       </div>
 
       <div class="topbar-right">
         <button id="themeToggle" class="iconbtn" aria-label="Сменить тему" title="Сменить тему">
-          <!-- простая иконка: солнце/луна, заменим в JS -->
-          <svg width="20" height="20" viewBox="0 0 24 24" class="icon">
-            <circle cx="12" cy="12" r="5" />
+          <svg width="22" height="22" viewBox="0 0 24 24" class="icon" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="12" cy="12" r="5"></circle>
           </svg>
         </button>
         <button id="userMenu" class="avatar" aria-label="Профиль" title="Профиль">FS</button>
       </div>
     </header>
 
-    <!-- ===== CONTENT WRAPPER ===== -->
+    <!-- ====== VIEWS WRAPPER (SPA) ====== -->
     <main class="content">
-      <!-- ===== GRID LAYOUT: HERO ROW ===== -->
-      <section class="grid grid-hero">
-        <!-- AI Advisor (широкая карточка) -->
-        <article class="card ai-card" id="aiCard">
-          <div class="card-header">
-            <h2>ИИ совет</h2>
-            <span id="aiPulse" class="pulse" aria-hidden="true"></span>
-          </div>
-          <p id="aiAdvice" class="ai-text">
-            Загружаю анализ продуктивности…
-          </p>
-          <div class="ai-meta">
-            <span id="aiLastUpdated" class="muted">обновлено: —</span>
-            <button id="aiRefresh" class="ghostbtn">Обновить</button>
-          </div>
-        </article>
 
-        <!-- Сегодняшняя лента (таймлайн) -->
-        <article class="card timeline-card">
-          <div class="card-header">
-            <h2>Лента дня</h2>
-            <div class="header-actions">
-              <button id="jumpNow" class="ghostbtn">к текущему времени</button>
+      <!-- ============ VIEW: TODAY ============ -->
+      <section id="view-today" class="view active" aria-label="Сегодня">
+        <!-- HERO: AI + TIMELINE + CALENDAR -->
+        <section class="grid grid-hero">
+          <!-- AI -->
+          <article class="card ai-card clickable" id="aiCard" data-action="ai-refresh">
+            <div class="card-header">
+              <h2>ИИ совет</h2>
+              <span id="aiPulse" class="pulse" aria-hidden="true"></span>
             </div>
-          </div>
-          <div id="timeline" class="timeline">
-            <!-- Примерная разметка, JS будет рендерить события -->
-            <div class="tl-row now">
-              <span class="tl-time">14:00</span>
-              <div class="tl-dot"></div>
-              <div class="tl-content">Сейчас</div>
+            <p id="aiAdvice" class="ai-text">Загружаю анализ…</p>
+            <div class="ai-meta">
+              <span id="aiLastUpdated" class="muted">обновлено: —</span>
+              <button id="aiRefresh" class="ghostbtn">Обновить</button>
             </div>
+          </article>
 
-            <div class="tl-row">
-              <span class="tl-time">16:00</span>
-              <div class="tl-dot"></div>
-              <div class="tl-content">
-                Встреча с девелопером • ЖК
-                <span class="tag">событие</span>
+          <!-- TIMELINE -->
+          <article class="card timeline-card">
+            <div class="card-header">
+              <h2>Лента дня</h2>
+              <div class="header-actions">
+                <button id="jumpNow" class="ghostbtn">к текущему времени</button>
+              </div>
+            </div>
+            <div id="timeline" class="timeline">
+              <div class="tl-row now">
+                <span class="tl-time">14:00</span>
+                <div class="tl-dot"></div>
+                <div class="tl-content">Сейчас</div>
+              </div>
+            </div>
+          </article>
+
+          <!-- CALENDAR (mini square) -->
+          <article class="card calendar-card clickable" data-nav="calendar">
+            <div class="card-header">
+              <h2>Календарь</h2>
+              <div class="header-actions">
+                <button id="prevMonth" class="iconbtn" aria-label="Предыдущий месяц">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+                <button id="nextMonth" class="iconbtn" aria-label="Следующий месяц">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 6l6 6-6 6"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="mini-calendar" id="miniCalendar" aria-label="календарь месяца"></div>
+            <div class="calendar-legend">
+              <span class="dot dot-task"></span> задачи
+              <span class="dot dot-event"></span> события
+            </div>
+            <div class="quick-filters">
+              <button data-range="today" class="chip ghost">сегодня</button>
+              <button data-range="week" class="chip ghost">неделя</button>
+              <button data-range="month" class="chip ghost">месяц</button>
+            </div>
+          </article>
+        </section>
+
+        <!-- SECONDARY: HABITS CAROUSEL -->
+        <section class="grid">
+          <article class="card habits-card">
+            <div class="card-header">
+              <h2>Привычки</h2>
+              <div class="header-actions">
+                <button id="editHabits" class="ghostbtn" data-nav="habits">настроить</button>
               </div>
             </div>
 
-            <div class="tl-row">
-              <span class="tl-time">18:00</span>
-              <div class="tl-dot"></div>
-              <div class="tl-content">
-                Презентация FS (дедлайн)
-                <span class="tag warn">задача</span>
+            <!-- горизонтальная стопка с scroll-snap -->
+            <div class="habits-rail" id="habitsRail" tabindex="0" aria-label="Привычки, листай влево/вправо">
+              <div class="habit-card">
+                <div class="habit-ring" data-progress="70"><span>70%</span></div>
+                <div class="habit-info">
+                  <h3>Сон</h3>
+                  <p class="muted">7 из 10 часов</p>
+                </div>
+              </div>
+              <div class="habit-card">
+                <div class="habit-ring" data-progress="40"><span>40%</span></div>
+                <div class="habit-info">
+                  <h3>Тренировки</h3>
+                  <p class="muted">2 из 5</p>
+                </div>
+              </div>
+              <div class="habit-card">
+                <div class="habit-ring" data-progress="85"><span>85%</span></div>
+                <div class="habit-info">
+                  <h3>Фокус</h3>
+                  <p class="muted">высокий</p>
+                </div>
+              </div>
+              <div class="habit-card">
+                <div class="habit-ring" data-progress="55"><span>55%</span></div>
+                <div class="habit-info">
+                  <h3>Китайский</h3>
+                  <p class="muted">11/20 знаков</p>
+                </div>
               </div>
             </div>
-          </div>
-        </article>
+          </article>
+        </section>
 
-        <!-- Мини-календарь + быстрые фильтры -->
-        <article class="card calendar-card">
+        <!-- MOSAIC TASKS + STATS -->
+        <section class="grid grid-mosaic">
+          <article class="card mosaic-card" id="mosaicA">
+            <div class="card-header">
+              <h2>Сегодняшние задачи</h2>
+              <div class="header-actions">
+                <button id="sortByTime" class="ghostbtn">по времени</button>
+                <button id="sortByPriority" class="ghostbtn">по приоритету</button>
+              </div>
+            </div>
+            <div id="taskMasonry" class="masonry"></div>
+          </article>
+
+          <article class="card stats-card clickable" data-action="open-stats">
+            <div class="card-header"><h2>Статистика дня</h2></div>
+            <ul class="stats">
+              <li><span class="label">Выполнено</span><span class="val" id="statDone">0</span></li>
+              <li><span class="label">Просрочено</span><span class="val warn" id="statOverdue">0</span></li>
+              <li><span class="label">Фокус</span><span class="val" id="statFocus">0%</span></li>
+            </ul>
+          </article>
+        </section>
+      </section>
+
+      <!-- ============ VIEW: CALENDAR (full) ============ -->
+      <section id="view-calendar" class="view" aria-label="Календарь" hidden>
+        <article class="card">
           <div class="card-header">
             <h2>Календарь</h2>
             <div class="header-actions">
-              <button id="prevMonth" class="iconbtn" aria-label="Предыдущий месяц">
-                <svg width="18" height="18" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
-              </button>
-              <button id="nextMonth" class="iconbtn" aria-label="Следующий месяц">
-                <svg width="18" height="18" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
-              </button>
+              <button id="calBackToday" class="ghostbtn">сегодня</button>
             </div>
           </div>
-          <div class="mini-calendar" id="miniCalendar" aria-label="календарь месяца">
-            <!-- JS сгенерирует сетку дней -->
-          </div>
-          <div class="calendar-legend">
-            <span class="dot dot-task"></span> задачи
-            <span class="dot dot-event"></span> события
-          </div>
-          <div class="quick-filters">
-            <button data-range="today" class="chip ghost">сегодня</button>
-            <button data-range="week" class="chip ghost">неделя</button>
-            <button data-range="month" class="chip ghost">месяц</button>
-          </div>
+          <div id="calendarGrid" class="calendar-full"></div>
         </article>
       </section>
 
-      <!-- ===== GRID LAYOUT: PROGRESS & MATRIX ===== -->
-      <section class="grid grid-secondary">
-        <!-- Прогресс привычек (плитка 2x2) -->
-        <article class="card habits-card">
+      <!-- ============ VIEW: HABITS (full) ============ -->
+      <section id="view-habits" class="view" aria-label="Привычки" hidden>
+        <article class="card">
           <div class="card-header">
             <h2>Привычки</h2>
             <div class="header-actions">
-              <button id="editHabits" class="ghostbtn">настроить</button>
+              <button id="addHabit" class="ghostbtn">добавить</button>
             </div>
           </div>
-
-          <div class="habits-grid">
-            <div class="habit">
-              <div class="habit-ring" data-progress="70">
-                <span>70%</span>
-              </div>
-              <div class="habit-info">
-                <h3>Сон</h3>
-                <p class="muted">7 из 10 часов</p>
-              </div>
-            </div>
-
-            <div class="habit">
-              <div class="habit-ring" data-progress="40">
-                <span>40%</span>
-              </div>
-              <div class="habit-info">
-                <h3>Тренировки</h3>
-                <p class="muted">2 из 5</p>
-              </div>
-            </div>
-
-            <div class="habit">
-              <div class="habit-ring" data-progress="85">
-                <span>85%</span>
-              </div>
-              <div class="habit-info">
-                <h3>Фокус</h3>
-                <p class="muted">высокий</p>
-              </div>
-            </div>
-
-            <div class="habit">
-              <div class="habit-ring" data-progress="55">
-                <span>55%</span>
-              </div>
-              <div class="habit-info">
-                <h3>Китайский</h3>
-                <p class="muted">11/20 знаков</p>
-              </div>
-            </div>
-          </div>
+          <div id="habitsEditor" class="habits-editor">Здесь будет редактор привычек.</div>
         </article>
+      </section>
 
-        <!-- Матрица Эйзенхауэра (доска) -->
-        <article class="card matrix-card">
-          <div class="card-header">
-            <h2>Матрица Эйзенхауэра</h2>
-            <div class="header-actions">
-              <button id="matrixView" class="ghostbtn">перейти к доске</button>
-            </div>
-          </div>
-
-          <div class="matrix-grid" id="matrixGrid" aria-label="матрица задач">
-            <div class="quadrant q1">
-              <h3>Срочно & Важно</h3>
-              <ul class="pill-list" data-q="q1">
-                <li class="pill">Дедлайн: презентация FS</li>
-              </ul>
-            </div>
-            <div class="quadrant q2">
-              <h3>Не срочно & Важно</h3>
-              <ul class="pill-list" data-q="q2">
-                <li class="pill">Эссе по истории</li>
-              </ul>
-            </div>
-            <div class="quadrant q3">
-              <h3>Срочно & Неважно</h3>
-              <ul class="pill-list" data-q="q3">
-                <li class="pill">Ответить в чате</li>
-              </ul>
-            </div>
-            <div class="quadrant q4">
-              <h3>Не срочно & Неважно</h3>
-              <ul class="pill-list" data-q="q4">
-                <li class="pill">Покопаться в настройках</li>
-              </ul>
-            </div>
+      <!-- ============ VIEW: MATRIX (separate) ============ -->
+      <section id="view-matrix" class="view" aria-label="Матрица" hidden>
+        <article class="card">
+          <div class="card-header"><h2>Матрица Эйзенхауэра</h2></div>
+          <div class="matrix-grid" id="matrixGrid">
+            <div class="quadrant q1"><h3>Срочно & Важно</h3><ul class="pill-list" data-q="q1"></ul></div>
+            <div class="quadrant q2"><h3>Не срочно & Важно</h3><ul class="pill-list" data-q="q2"></ul></div>
+            <div class="quadrant q3"><h3>Срочно & Неважно</h3><ul class="pill-list" data-q="q3"></ul></div>
+            <div class="quadrant q4"><h3>Не срочно & Неважно</h3><ul class="pill-list" data-q="q4"></ul></div>
           </div>
         </article>
       </section>
 
-      <!-- ===== GRID LAYOUT: TASK CARDS MOSAIC ===== -->
-      <section class="grid grid-mosaic">
-        <!-- Карточки задач — мозаичный/масонри вид (JS заполнит) -->
-        <article class="card mosaic-card" id="mosaicA">
-          <div class="card-header">
-            <h2>Сегодняшние задачи</h2>
-            <div class="header-actions">
-              <button id="sortByTime" class="ghostbtn">по времени</button>
-              <button id="sortByPriority" class="ghostbtn">по приоритету</button>
-            </div>
-          </div>
-          <div id="taskMasonry" class="masonry">
-            <!-- примерные заглушки -->
-            <div class="m-item priority-1">
-              <h4>Купить фильтры и UV-лампы</h4>
-              <div class="meta"><span>до 20:00</span> · <span>низкий приоритет</span></div>
-            </div>
-            <div class="m-item priority-3 wide">
-              <h4>Подготовить питч FS для девелопера</h4>
-              <div class="meta"><span>до 18:00</span> · <span>высокий приоритет</span></div>
-            </div>
-            <div class="m-item priority-2">
-              <h4>Китайский: 15 иероглифов</h4>
-              <div class="meta"><span>до 22:00</span> · <span>средний приоритет</span></div>
-            </div>
-            <div class="m-item priority-2 tall">
-              <h4>Тренировка (45 мин)</h4>
-              <div class="meta"><span>19:30</span> · <span>событие</span></div>
-            </div>
-          </div>
-        </article>
-
-        <!-- Краткая статистика дня -->
-        <article class="card stats-card">
-          <div class="card-header">
-            <h2>Статистика дня</h2>
-          </div>
-          <ul class="stats">
-            <li><span class="label">Выполнено</span><span class="val" id="statDone">4</span></li>
-            <li><span class="label">Просрочено</span><span class="val warn" id="statOverdue">1</span></li>
-            <li><span class="label">Фокус</span><span class="val" id="statFocus">82%</span></li>
+      <!-- ============ VIEW: SETTINGS ============ -->
+      <section id="view-settings" class="view" aria-label="Настройки" hidden>
+        <article class="card">
+          <div class="card-header"><h2>Настройки</h2></div>
+          <ul class="settings-list">
+            <li><button class="ghostbtn" id="setLight">Тема: светлая</button></li>
+            <li><button class="ghostbtn" id="setDark">Тема: тёмная</button></li>
+            <li><button class="ghostbtn" id="signinGoogle">Войти через Google</button></li>
+            <li><button class="ghostbtn" id="signout">Выйти</button></li>
           </ul>
         </article>
       </section>
+
     </main>
 
-    <!-- ===== FLOATING ADD BUTTON ===== -->
+    <!-- FAB -->
     <button id="addBtn" class="fab" aria-haspopup="dialog" aria-controls="addModal" title="Создать">
-      <svg width="22" height="22" viewBox="0 0 24 24" class="icon"><path d="M12 5v14M5 12h14"/></svg>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
     </button>
 
-    <!-- ===== CENTER MODAL: ADD TASK/EVENT ===== -->
+    <!-- MODAL: ADD -->
     <div id="addModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="addModalTitle" hidden>
       <div class="modal-content">
         <div class="modal-header">
           <h2 id="addModalTitle">Создание</h2>
           <button id="closeModal" class="iconbtn" aria-label="Закрыть">
-            <svg width="18" height="18" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
 
@@ -292,51 +249,19 @@
 
         <form id="createForm" autocomplete="off">
           <div class="form-grid">
-            <label class="field">
-              <span>Название</span>
-              <input id="titleInput" name="title" type="text" placeholder="Например: «Презентация FS»" required />
-            </label>
-
-            <label class="field">
-              <span>Дата</span>
-              <input id="dateInput" name="date" type="date" required />
-            </label>
-
-            <label class="field only-task">
-              <span>Дедлайн</span>
-              <input id="timeDeadline" name="timeDeadline" type="time" />
-            </label>
-
-            <label class="field only-event" hidden>
-              <span>Начало</span>
-              <input id="timeStart" name="timeStart" type="time" />
-            </label>
-
-            <label class="field only-event" hidden>
-              <span>Конец</span>
-              <input id="timeEnd" name="timeEnd" type="time" />
-            </label>
-
-            <label class="field">
-              <span>Приоритет</span>
+            <label class="field"><span>Название</span><input id="titleInput" name="title" type="text" placeholder="Напр.: «Презентация FS»" required /></label>
+            <label class="field"><span>Дата</span><input id="dateInput" name="date" type="date" required /></label>
+            <label class="field only-task"><span>Дедлайн</span><input id="timeDeadline" name="timeDeadline" type="time" /></label>
+            <label class="field only-event" hidden><span>Начало</span><input id="timeStart" name="timeStart" type="time" /></label>
+            <label class="field only-event" hidden><span>Конец</span><input id="timeEnd" name="timeEnd" type="time" /></label>
+            <label class="field"><span>Приоритет</span>
               <select id="priorityInput" name="priority">
-                <option value="1">Низкий</option>
-                <option value="2" selected>Средний</option>
-                <option value="3">Высокий</option>
+                <option value="1">Низкий</option><option value="2" selected>Средний</option><option value="3">Высокий</option>
               </select>
             </label>
-
-            <label class="field">
-              <span>Категория</span>
-              <input id="categoryInput" name="category" type="text" placeholder="учёба / FS / спорт…" />
-            </label>
-
-            <label class="field full">
-              <span>Описание</span>
-              <textarea id="descInput" name="desc" rows="3" placeholder="Коротко о задаче или событии"></textarea>
-            </label>
+            <label class="field"><span>Категория</span><input id="categoryInput" name="category" type="text" placeholder="учёба / FS / спорт…" /></label>
+            <label class="field full"><span>Описание</span><textarea id="descInput" name="desc" rows="3" placeholder="Коротко о задаче/событии"></textarea></label>
           </div>
-
           <div class="modal-actions">
             <button type="button" id="smartFill" class="ghostbtn">Умное заполнение</button>
             <button type="submit" class="primary">Сохранить</button>
@@ -345,10 +270,10 @@
       </div>
     </div>
 
-    <!-- ===== TOASTS ===== -->
+    <!-- TOASTS -->
     <div id="toastHost" class="toasts" aria-live="polite" aria-atomic="true"></div>
 
-    <!-- ===== BOTTOM NAV (на будущее) ===== -->
+    <!-- NAV -->
     <nav class="bottomnav" aria-label="Навигация">
       <button class="navbtn active" data-view="today">Сегодня</button>
       <button class="navbtn" data-view="calendar">Календарь</button>
@@ -358,7 +283,7 @@
     </nav>
   </div>
 
-  <!-- ===== FIREBASE CONFIG (заполни и оставь в репо) ===== -->
+  <!-- FIREBASE CONFIG -->
   <script type="application/json" id="firebase-config">
   {
     "apiKey": "YOUR_API_KEY",
@@ -371,19 +296,14 @@
   }
   </script>
 
-  <!-- ===== SCRIPTS ===== -->
-  <!-- Firebase SDKs (модульные v10+) -->
+  <!-- Firebase SDK init -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-analytics.js";
     import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
     import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-
-    // Читаем конфиг из <script id="firebase-config">
     const cfgEl = document.getElementById("firebase-config");
     const firebaseConfig = JSON.parse(cfgEl.textContent.trim());
-
-    // Инициализация Firebase (доступно в app.js через window.FB)
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
     const auth = getAuth(app);
@@ -391,7 +311,6 @@
     window.FB = { app, analytics, auth, db };
   </script>
 
-  <!-- Основная логика приложения -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
