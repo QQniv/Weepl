@@ -1,1 +1,307 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <title>Weepl — личный планер</title>
 
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Заголовки — Momo Trust Display; текст — Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Momo+Trust+Display:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="./styles.css" />
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PWA (подключим позже, оставляю места) -->
+  <!-- <link rel="manifest" href="/manifest.webmanifest"> -->
+  <!-- <link rel="apple-touch-icon" href="/icons/icon-192.png"> -->
+</head>
+<body class="theme-light">
+
+  <!-- Safe area wrapper -->
+  <div id="app" class="app">
+
+    <!-- ===== Top Bar: дата + аватар + настройки ===== -->
+    <header class="topbar">
+      <div class="date" id="fullDate">Thursday, 16 March 2025</div>
+
+      <div class="topbar-actions">
+        <button class="icon-btn" id="notifBtn" aria-label="Уведомления">
+          <i data-lucide="bell"></i>
+          <span class="dot" id="notifDot" hidden></span>
+        </button>
+        <button class="icon-btn" id="settingsBtn" aria-label="Настройки">
+          <i data-lucide="settings-2"></i>
+        </button>
+        <button class="avatar-btn" id="avatarBtn" aria-label="Профиль">
+          <img id="avatarImg" src="./assets/avatar-default.png" alt="avatar" />
+        </button>
+      </div>
+    </header>
+
+    <!-- ===== Greeting card ===== -->
+    <section class="card card-hero">
+      <div class="breadcrumb">
+        <span class="crumb">Overview</span>
+      </div>
+
+      <h1 class="greeting" id="greetingTitle">
+        Привет, <span id="userFirstName">Alexia</span>!
+        <span class="hello-badge">
+          <img src="./assets/avatar-default.png" alt="" />
+        </span>
+      </h1>
+
+      <p class="today-brief">
+        У тебя <strong id="todayCount">3</strong> задач(и) на сегодня
+      </p>
+
+      <div class="chips">
+        <button class="chip" id="openGoals">
+          <i data-lucide="target"></i>
+          <span>Цели</span>
+          <span class="chip-value" id="goalsProgress">8/10</span>
+        </button>
+
+        <button class="chip" id="openStreak">
+          <i data-lucide="zap"></i>
+          <span>Стрик</span>
+          <span class="chip-value" id="streakDays">12 дней</span>
+        </button>
+
+        <button class="chip" id="openFeeling">
+          <i data-lucide="smile"></i>
+          <span>Ощущения</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== Daily Progress ===== -->
+    <section class="card card-progress accent-lime">
+      <div class="card-head">
+        <div class="progress-title">
+          <span id="progressPct">78%</span>
+          <small>ежедневный прогресс</small>
+        </div>
+        <button class="circle-btn" id="addTaskBtn" aria-label="Добавить">
+          <i data-lucide="plus"></i>
+        </button>
+      </div>
+
+      <div class="segmented">
+        <button class="seg active" data-tab="tasks">Задачи</button>
+        <button class="seg" data-tab="todo">To&nbsp;Do <span id="todoCount" class="seg-count">3</span></button>
+        <button class="seg" data-tab="done">Сделано <span id="doneCount" class="seg-count">17</span></button>
+      </div>
+
+      <div class="tasks-preview" id="tasksPreview">
+        <!-- демо элементы, дальше app.js заменит на реальные -->
+        <div class="task-pill prio-A">Подготовить доклад — 14:00</div>
+        <div class="task-pill prio-B">Тренировка — 18:30</div>
+        <div class="task-pill prio-C">Позвонить в деканат</div>
+      </div>
+    </section>
+
+    <!-- ===== Activity + AI совет ===== -->
+    <section class="card card-activity accent-blue">
+      <div class="card-head">
+        <div class="activity-title">
+          <span class="big" id="doneTotal">137</span>
+          <small>выполнено всего</small>
+        </div>
+
+        <div class="toggle" role="tablist">
+          <button class="toggle-btn active" data-mode="tasks">Задачи</button>
+          <button class="toggle-btn" data-mode="goals">Цели</button>
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <canvas id="activityChart" height="140" aria-label="Диаграмма активности"></canvas>
+      </div>
+
+      <div class="ai-advice" id="aiAdvice">
+        <div class="ai-head">
+          <i data-lucide="bot"></i>
+          <span>Совет ИИ</span>
+        </div>
+        <p class="ai-text">
+          Сегодня у тебя пиковая нагрузка в 13–15. Начни с задач класса <b>A</b>, поставь фокус на 25 минут и убери уведомления на час.
+        </p>
+      </div>
+    </section>
+
+    <!-- ===== Floating Dock (обособленные иконки) ===== -->
+    <nav class="dock" aria-label="Навигация">
+      <button class="dock-btn active" data-route="home" aria-label="Главная">
+        <i data-lucide="home"></i>
+      </button>
+      <button class="dock-btn" data-route="calendar" aria-label="Календарь">
+        <i data-lucide="calendar"></i>
+      </button>
+      <button class="dock-btn primary" id="dockAdd" aria-label="Добавить">
+        <i data-lucide="plus"></i>
+      </button>
+      <button class="dock-btn" data-route="analytics" aria-label="Аналитика">
+        <i data-lucide="bar-chart-3"></i>
+      </button>
+      <button class="dock-btn" data-route="settings" aria-label="Настройки">
+        <i data-lucide="sliders-horizontal"></i>
+      </button>
+    </nav>
+
+    <!-- ===== Modal: Add Task/Event ===== -->
+    <div class="modal" id="taskModal" aria-hidden="true">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle">
+        <div class="sheet-handle"></div>
+
+        <div class="modal-head">
+          <h2 id="taskModalTitle">Новая запись</h2>
+
+          <div class="type-toggle" role="tablist">
+            <button class="type-btn active" data-type="task">Задача</button>
+            <button class="type-btn" data-type="event">Событие</button>
+          </div>
+        </div>
+
+        <form id="taskForm" autocomplete="off">
+          <div class="field">
+            <label>Название</label>
+            <input id="titleInput" type="text" placeholder="Что нужно сделать?" required />
+          </div>
+
+          <!-- Для задачи: дедлайн -->
+          <div class="grid two" data-scope="task">
+            <div class="field">
+              <label>Дата</label>
+              <input id="dateInput" type="date" />
+            </div>
+            <div class="field">
+              <label>Время (дедлайн)</label>
+              <input id="timeInput" type="time" />
+            </div>
+          </div>
+
+          <!-- Для события: интервал -->
+          <div class="grid two" data-scope="event" hidden>
+            <div class="field">
+              <label>Начало</label>
+              <input id="startInput" type="datetime-local" />
+            </div>
+            <div class="field">
+              <label>Конец</label>
+              <input id="endInput" type="datetime-local" />
+            </div>
+          </div>
+
+          <div class="grid two">
+            <div class="field">
+              <label>Категория</label>
+              <select id="categoryInput">
+                <option value="study">Учёба</option>
+                <option value="work">Работа</option>
+                <option value="health">Здоровье</option>
+                <option value="personal">Личное</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Приоритет (Эйзенхауэр)</label>
+              <div class="matrix">
+                <input type="radio" name="prio" id="prioA" value="A" checked />
+                <label for="prioA" class="prio prio-A" title="Срочно и важно">A</label>
+
+                <input type="radio" name="prio" id="prioB" value="B" />
+                <label for="prioB" class="prio prio-B" title="Важно, не срочно">B</label>
+
+                <input type="radio" name="prio" id="prioC" value="C" />
+                <label for="prioC" class="prio prio-C" title="Срочно, не важно">C</label>
+
+                <input type="radio" name="prio" id="prioD" value="D" />
+                <label for="prioD" class="prio prio-D" title="Ни срочно, ни важно">D</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid two">
+            <div class="field">
+              <label>Помодоро</label>
+              <select id="pomodoroInput">
+                <option value="off">Выкл.</option>
+                <option value="25-5">25/5</option>
+                <option value="50-10">50/10</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Повторение</label>
+              <select id="repeatInput">
+                <option value="none">Нет</option>
+                <option value="daily">Каждый день</option>
+                <option value="weekly">Каждую неделю</option>
+                <option value="monthly">Каждый месяц</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Заметка</label>
+            <textarea id="noteInput" rows="2" placeholder="Комментарий (необязательно)"></textarea>
+          </div>
+
+          <div class="actions">
+            <button type="button" class="btn ghost" data-close>Отмена</button>
+            <button type="submit" class="btn primary" id="saveTaskBtn">
+              <i data-lucide="check"></i>Сохранить
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div><!-- /#app -->
+
+  <!-- ===== Firebase (ESM, v10+) ===== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getStorage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+    // import { getMessaging } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js"; // включим для push позже
+
+    // ⚠️ ЗАМЕНИ на свои ключи (Project Settings → General → Your apps)
+    const firebaseConfig = {
+      apiKey:        "YOUR_API_KEY",
+      authDomain:    "YOUR_PROJECT.firebaseapp.com",
+      projectId:     "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId:         "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+    const storage = getStorage(app);
+    // const messaging = getMessaging(app);
+
+    // Прокинем в window для app.js
+    window.__WEEPL__ = { app, auth, db, storage };
+  </script>
+
+  <!-- App JS -->
+  <script defer src="./app.js"></script>
+
+  <!-- Инициализация иконок -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) window.lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
