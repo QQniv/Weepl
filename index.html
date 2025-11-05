@@ -1,179 +1,327 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Weepl v4 — Сегодня</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>Weepl v5 — Сегодня</title>
+  <meta name="theme-color" content="#0E111A"/>
 
-  <!-- iOS PWA -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-  <!-- Fonts -->
+  <!-- Шрифты: Inter + Anton для заголовков -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700&family=Momo+Trust+Display:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Anton&display=swap" rel="stylesheet">
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="styles.css">
-
-  <!-- Headline + фиксированная шапка -->
   <style>
     :root{
-      --heading-font: "Momo Trust Display", Sora, Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      --safe-top: env(safe-area-inset-top);
+      /* Пастельная «утренний туман» + стекло */
+      --bg:#0E111A;
+      --grad1:#ECF2FF; /* голубой лед */
+      --grad2:#F4E7FF; /* лиловый дым */
+      --grad3:#FFE9D6; /* персик */
+      --card:#FFFFFFE6;
+      --glass: rgba(255,255,255,.55);
+      --text:#101318;
+      --muted:#677089;
+      --primary:#4B72FF;
+      --ok:#2FCB89;
+      --warn:#FFB24D;
+      --danger:#FF6A59;
+      --border:#00000010;
+      --shadow: 0 10px 30px rgba(16,19,24,.12);
+      --r:22px;
     }
-    header .title h1, .card h3{ font-family: var(--heading-font); letter-spacing:.2px; }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background:
+        radial-gradient(1200px 600px at 15% -10%, var(--grad1), transparent 55%),
+        radial-gradient(1000px 600px at 90% 0%, var(--grad2), transparent 60%),
+        radial-gradient(1000px 700px at 40% 100%, var(--grad3), transparent 60%),
+        var(--bg);
+      background-attachment: fixed;
+    }
 
-    header{
-      position: fixed; top: 0; left: 0; right: 0; z-index: 20;
-      padding: calc(20px + var(--safe-top)) var(--page-x) 10px !important;
-      margin: 0 auto; max-width: var(--wrap);
-      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-      background: color-mix(in oklab, var(--panel) 88%, transparent 12%);
-      border-bottom: 1px solid color-mix(in oklab, var(--ink) 8%, transparent);
-      border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
+    /* Top bar */
+    .top{
+      position:sticky; top:0; z-index:5;
+      padding:20px clamp(16px,4vw,24px) 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,.35)) ;
+      backdrop-filter:saturate(160%) blur(12px);
+      box-shadow: var(--shadow);
+      border-bottom:1px solid var(--border);
     }
-    header::after{
-      content:""; position:absolute; left:0; right:0; bottom:-12px; height:24px; pointer-events:none;
-      background: linear-gradient(180deg, color-mix(in oklab, var(--panel) 55%, transparent) 0%, transparent 100%);
-      filter: blur(2px); border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
+    .top h1{margin:0 0 4px; font: 800 28px/1.1 Inter, sans-serif;}
+    .top .sub{color:var(--muted); font-weight:600}
+
+    /* AI tip capsule */
+    .tip{
+      margin:12px clamp(16px,4vw,24px) 0; padding:14px 16px; border-radius:18px;
+      background: linear-gradient(90deg, #CFE1FF 0%, #E6D6FF 45%, #FFE4D3 100%);
+      color:#1a1f28; position:relative; display:flex; gap:10px; align-items:flex-start;
+      box-shadow: var(--shadow);
     }
-    main{ padding-top: calc(var(--header-h, 96px) + 16px); }
-    html.modal-open, body.modal-open{ overflow:hidden; } /* на будущее для модалок */
+    .tip .ico{width:22px; height:22px; border-radius:8px; background: #ffffffaa; display:inline-grid; place-items:center; font-weight:800}
+    .tip .act{margin-left:auto; opacity:.7; cursor:pointer}
+    .tip b{display:block;margin-bottom:2px}
+
+    /* Cards */
+    .content{padding:14px clamp(16px,4vw,24px) 96px}
+    .grid{display:grid; gap:12px; grid-template-columns:1fr 1fr; align-items:stretch}
+    @media (max-width:760px){ .grid{grid-template-columns:1fr} }
+
+    .card{
+      background: var(--card); border:1px solid var(--border); border-radius: var(--r);
+      padding:16px; box-shadow: var(--shadow);
+    }
+    .card h3{margin:0 0 6px; font: 800 18px/1.2 Inter;}
+    .card .sub{color:var(--muted)}
+    .meta{display:flex; gap:12px; margin-top:12px; color:#2b3240; font-weight:700}
+    .badge{padding:4px 8px; border-radius:10px; background:#F2F5FF; border:1px solid #E4EAFF}
+    .time{margin-left:auto; color:#2b3240}
+
+    /* Big wide card (первый блок дня) */
+    .card.wide{grid-column:1/-1}
+
+    /* FAB + bottom nav */
+    .fab{
+      position: fixed; right: 18px; bottom: 90px;
+      width:60px; height:60px; border-radius:18px; border:none;
+      background: linear-gradient(180deg, var(--primary), #2E4BEA);
+      color:#fff; font-size:28px; font-weight:700; cursor:pointer; box-shadow:0 14px 36px rgba(46,75,234,.35);
+    }
+    .nav{
+      position: fixed; left:0; right:0; bottom:0; z-index:6;
+      display:flex; gap:8px; justify-content:space-around; align-items:center;
+      padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);
+      background: rgba(255,255,255,.8); backdrop-filter: blur(14px) saturate(180%);
+      border-top:1px solid var(--border);
+    }
+    .nav .it{
+      flex:1; text-align:center; padding:10px 0; border-radius:14px; font-weight:700; color:#2c3342;
+    }
+    .nav .it.active{ background:#F2F5FF; border:1px solid #E4EAFF; }
+
+    /* Modal edit */
+    .modal{
+      position:fixed; inset:0; display:none; place-items:end; background:rgba(10,14,20,.4);
+    }
+    .modal.open{display:grid}
+    .sheet{
+      width:100%; background:#fff; border-radius: 26px 26px 0 0; padding:18px 16px 22px; box-shadow:0 -10px 40px rgba(0,0,0,.2);
+    }
+    .sheet h4{margin:0 0 8px; font:800 18px/1 Inter;}
+    .row{display:flex; gap:10px; align-items:center; margin:12px 0}
+    .inp, .btn{border:1px solid #E6E9F5; background:#FAFBFF; border-radius:14px; padding:12px 14px; font:600 15px/1 Inter; color:#111}
+    .inp{flex:1}
+    .chips{display:flex; gap:8px; flex-wrap:wrap}
+    .chip{
+      border-radius:12px; padding:10px 16px; font-weight:800; cursor:pointer; border:1px solid #0000;
+      transition: .15s transform;
+    }
+    .chip.A{background:#FFE5E2; border-color:#FFD2CD}
+    .chip.B{background:#FFF3D9; border-color:#FFE4AD}
+    .chip.C{background:#E9F8EF; border-color:#CFF4DD}
+    .chip.D{background:#ECF1FF; border-color:#D9E4FF}
+    .chip.active{outline:2px solid #202A; transform: translateY(-1px)}
+    .actions{display:flex; justify-content:space-between; margin-top:12px}
+    .btn.primary{background:#2F49F1; color:#fff}
+    .btn.ghost{background:#fff}
+
+    /* Small helpers */
+    .k{color:#8a93a9}
+    .ic{font-style:normal}
   </style>
 </head>
+<body>
 
-<body data-theme="light">
-  <!-- Фон -->
-  <div class="bg"></div>
-  <div class="bg-veil"></div>
-  <div class="noise"></div>
+  <!-- Верхняя полоса -->
+  <header class="top">
+    <div class="sub">Вторник, 4 ноября</div>
+    <h1>Сегодня</h1>
+  </header>
 
-  <div class="wrap">
-    <!-- Шапка -->
-    <header>
-      <div class="title">
-        <h1>Сегодня</h1>
-        <div class="date" id="todayDate">Вторник, 4 ноября</div>
-      </div>
-      <div class="controls">
-        <button class="icon-btn" id="themeToggle" aria-label="Переключить тему">
-          <svg id="sunIcon" viewBox="0 0 24 24" fill="none" stroke-width="1.8">
-            <circle cx="12" cy="12" r="4"></circle>
-            <path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l-1.5-1.5M19 19l1.5 1.5M19 5l1.5-1.5M5 19L3.5 20.5"></path>
-          </svg>
-          <svg id="moonIcon" viewBox="0 0 24 24" fill="none" stroke-width="1.8" style="display:none">
-            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
-          </svg>
-        </button>
-      </div>
-    </header>
+  <!-- AI-совет -->
+  <section class="tip" id="tip">
+    <div class="ico">✺</div>
+    <div>
+      <b>AI-совет:</b>
+      <span id="tipText">Запиши 3 задачи дня. Остальное — в бэклог. Чёткие границы уменьшают прокрастинацию.</span>
+    </div>
+    <button class="act" id="tipRefresh" title="Обновить">↻</button>
+  </section>
 
-    <main>
-      <!-- AI-совет (архитектура под реальный AI) -->
-      <section class="ai" data-ai-root>
-        <div class="ai-tip" id="aiTip" title="Обновить совет" data-ai-card>
-          <span class="ai-dot"></span>
-          <span id="aiText" data-ai-text>AI-совет загружается…</span>
-          <span class="ai-refresh" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20 11a8 8 0 1 1-2.34-5.66M20 4v7h-7"></path></svg>
-          </span>
+  <!-- Контент: карточки задач/событий -->
+  <main class="content">
+    <div class="grid" id="cards">
+      <!-- Широкая карточка — первая задача -->
+      <article class="card wide">
+        <h3>Разработка интерфейса</h3>
+        <div class="sub">UI прототип Weepl v3 — главная страница и навигация</div>
+        <div class="meta">
+          <span class="badge">Проект: Weepl</span>
+          <span class="time">09:00</span>
         </div>
-      </section>
+      </article>
 
-      <!-- Сетка задач (перетаскивание между A/B/C/D добавим в app.js) -->
-      <section class="grid" aria-labelledby="gridTitle" data-matrix-root>
-        <h2 id="gridTitle" class="sr-only">Задачи на сегодня</h2>
-        <div class="grid-inner" aria-label="Задачи на сегодня">
-          <article class="card wide" tabindex="0">
-            <div><h3>Разработка интерфейса</h3><p>UI прототип Weepl v4 — главная и матрица</p></div>
-            <div class="meta"><span>Проект: Weepl</span><span>09:00</span></div>
-          </article>
+      <article class="card" data-id="t2">
+        <h3>Кофе и планирование</h3>
+        <div class="sub">10 минут тишины, ревью задач</div>
+        <div class="meta"><span class="badge">Фокус</span><span class="time">11:00</span></div>
+      </article>
 
-          <article class="card square" tabindex="0">
-            <div><h3>Кофе и планирование</h3><p>10 минут тишины, ревью задач</p></div>
-            <div class="meta"><span>Фокус</span><span>11:00</span></div>
-          </article>
+      <article class="card" data-id="t3">
+        <h3>Митинг с Артёмом</h3>
+        <div class="sub">Дизайн-сессия: анимации и микроинтеракции</div>
+        <div class="meta"><span class="badge">Созвон</span><span class="time">13:30</span></div>
+      </article>
 
-          <article class="card tall" tabindex="0">
-            <div><h3>Митинг с Артёмом</h3><p>Микроанимации, матрица Эйзенхауэра</p></div>
-            <div class="meta"><span>Созвон</span><span>13:30</span></div>
-          </article>
+      <article class="card" data-id="t4">
+        <h3>Прогулка</h3>
+        <div class="sub">15-20 минут</div>
+        <div class="meta"><span class="badge">Здоровье</span><span class="time">17:00</span></div>
+      </article>
+    </div>
+  </main>
 
-          <article class="card square" tabindex="0">
-            <div><h3>Прогулка / перезагрузка</h3><p>Короткий спринт восстановления</p></div>
-            <div class="meta"><span>Здоровье</span><span>15:10</span></div>
-          </article>
-
-          <article class="card wide" tabindex="0">
-            <div><h3>Архив → разбор</h3><p>Что отдать в «завтра», а что закрыть сегодня</p></div>
-            <div class="meta"><span>Подведение итогов</span><span>17:00</span></div>
-          </article>
-        </div>
-      </section>
-
-      <!-- Привычки (виджет-превью + отдельная вкладка позже) -->
-      <section class="habits" data-habits-root>
-        <div class="habits-head">
-          <h2 style="font-family:var(--heading-font);font-size:22px">Привычки</h2>
-          <button class="link-btn" id="openHabits">Все</button>
-        </div>
-        <div class="habits-row" aria-label="Привычки дня">
-          <button class="habit chip" data-habit="water" aria-pressed="false">Вода 2л</button>
-          <button class="habit chip" data-habit="walk" aria-pressed="false">Прогулка 20 мин</button>
-          <button class="habit chip" data-habit="reading" aria-pressed="false">Чтение 15 мин</button>
-          <button class="habit chip" data-habit="phone" aria-pressed="false">Без телефона утром</button>
-        </div>
-      </section>
-    </main>
-  </div>
+  <!-- Плавающая кнопка добавления -->
+  <button class="fab" id="add">＋</button>
 
   <!-- Нижняя навигация -->
-  <nav>
-    <div class="dock wrap" role="tablist" aria-label="Основная навигация">
-      <button class="active" role="tab" aria-selected="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 10.5l9-7 9 7V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10.5z"/></svg>
-        Сегодня
-      </button>
-      <button role="tab">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6M7 16h5"/></svg>
-        Архив
-      </button>
-      <button role="tab">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 17s3-6 9-6 9 6 9 6"/><circle cx="12" cy="11" r="2"/></svg>
-        Аналитика
-      </button>
-      <button role="tab">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 5 15.4a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 3.7l.06.06A1.65 1.65 0 0 0 8.6 4.1"/></svg>
-        Настройки
-      </button>
-    </div>
+  <nav class="nav" role="tablist">
+    <div class="it active" data-tab="today">🏠<br><span class="k">Сегодня</span></div>
+    <div class="it" data-tab="archive">🗂️<br><span class="k">Архив</span></div>
+    <div class="it" data-tab="analytics">📈<br><span class="k">Аналитика</span></div>
+    <div class="it" data-tab="settings">⚙️<br><span class="k">Настройки</span></div>
   </nav>
 
-  <!-- Мини-скрипт: тема, дата, высота шапки (всё остальное — в app.js) -->
+  <!-- Модалка редактирования/создания -->
+  <div class="modal" id="modal">
+    <div class="sheet">
+      <h4 id="modalTitle">Редактирование задачи</h4>
+      <div class="row"><input class="inp" id="fTitle" placeholder="Заголовок"/></div>
+      <div class="row"><input class="inp" id="fDesc" placeholder="Описание"/></div>
+      <div class="row">
+        <input class="inp" id="fProject" placeholder="Проект"/>
+        <input class="inp" id="fTime" type="time" value="09:00"/>
+      </div>
+      <div class="row">
+        <div class="k" style="min-width:80px;font-weight:800">Важность</div>
+        <div class="chips" id="chips">
+          <div class="chip A" data-v="A">A</div>
+          <div class="chip B" data-v="B">B</div>
+          <div class="chip C" data-v="C">C</div>
+          <div class="chip D" data-v="D">D</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="delete" style="color:#d23">Удалить</button>
+        <div>
+          <button class="btn ghost" id="cancel">Отмена</button>
+          <button class="btn primary" id="save">Сохранить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
-    const body = document.body, toggle = document.getElementById('themeToggle');
-    const sun = document.getElementById('sunIcon'), moon = document.getElementById('moonIcon');
-    function setTheme(t){ body.dataset.theme=t; const d=t==='dark'; sun.style.display=d?'none':'block'; moon.style.display=d?'block':'none'; localStorage.setItem('weepl-theme',t);}
-    setTheme(localStorage.getItem('weepl-theme') || 'light');
-    toggle.addEventListener('click', ()=> setTheme(body.dataset.theme==='light'?'dark':'light'));
+    // --- Данные (MVP локально). Потом заменим на БД + импорт расписания.
+    let tasks = [
+      {id:"t1", title:"Разработка интерфейса", desc:"UI прототип Weepl v3 — главная страница и навигация", proj:"Weepl", time:"09:00", rank:"B"},
+      {id:"t2", title:"Кофе и планирование", desc:"10 минут тишины, ревью задач", proj:"Фокус", time:"11:00", rank:"B"},
+      {id:"t3", title:"Митинг с Артёмом", desc:"Дизайн-сессия: анимации и микроинтеракции", proj:"Созвон", time:"13:30", rank:"A"},
+      {id:"t4", title:"Прогулка", desc:"15-20 минут", proj:"Здоровье", time:"17:00", rank:"C"},
+    ];
 
-    function updateHeaderOffset(){
-      const h = document.querySelector('header').getBoundingClientRect().height;
-      document.documentElement.style.setProperty('--header-h', h + 'px');
+    const elCards = document.getElementById('cards');
+    function cardTemplate(t, wide=false){
+      return `
+      <article class="card ${wide?'wide':''}" data-id="${t.id}">
+        <h3>${t.title}</h3>
+        <div class="sub">${t.desc||''}</div>
+        <div class="meta">
+          <span class="badge">${t.proj||'Задачи'}</span>
+          <span class="time">${t.time||''}</span>
+        </div>
+      </article>`;
     }
-    window.addEventListener('load', updateHeaderOffset, {once:true});
-    window.addEventListener('resize', updateHeaderOffset);
-    window.addEventListener('orientationchange', ()=> setTimeout(updateHeaderOffset, 250));
+    function render(){
+      const [first, ...rest] = tasks;
+      elCards.innerHTML = cardTemplate(first, true) + rest.map(t=>cardTemplate(t)).join('');
+      // клики -> редактирование
+      elCards.querySelectorAll('.card').forEach(c=>{
+        c.addEventListener('click', ()=> openModal(tasks.find(x=>x.id===c.dataset.id)));
+      });
+    }
+    render();
 
-    // Локализация даты
-    const opts = {weekday:'long', day:'numeric', month:'long'};
-    const d = new Date(); document.getElementById('todayDate').textContent =
-      new Intl.DateTimeFormat('ru-RU', opts).format(d).replace(/^\w/u, c=>c.toUpperCase());
+    // --- AI Tip (эвристика под MVP)
+    const tips = [
+      "Запиши 3 задачи дня. Остальное — в бэклог.",
+      "Сделай 25-минутную сессию на самую важную задачу (A).",
+      "Перед созвоном набросай 3 тезиса — это экономит 15 минут обсуждения.",
+      "План-буфер: оставляй 10% слотов пустыми для форс-мажоров.",
+      "Собери единый входящий — мозгу легче, когда хаос в одном месте."
+    ];
+    document.getElementById('tipRefresh').onclick = ()=>{
+      const s = tips[Math.floor(Math.random()*tips.length)];
+      document.getElementById('tipText').textContent = s;
+    };
+
+    // --- Modal CRUD
+    const modal = document.getElementById('modal');
+    const fTitle = document.getElementById('fTitle');
+    const fDesc  = document.getElementById('fDesc');
+    const fProj  = document.getElementById('fProject');
+    const fTime  = document.getElementById('fTime');
+    const chips  = document.getElementById('chips');
+    const delBtn = document.getElementById('delete');
+
+    let current = null;
+
+    function openModal(data){
+      document.getElementById('modalTitle').textContent = data ? 'Редактирование задачи' : 'Новая задача';
+      current = data ? {...data} : {id:crypto.randomUUID(), title:'', desc:'', proj:'', time:'', rank:'C'};
+      fTitle.value = current.title||'';
+      fDesc.value  = current.desc||'';
+      fProj.value  = current.proj||'';
+      fTime.value  = current.time||'';
+      chips.querySelectorAll('.chip').forEach(c=>{
+        c.classList.toggle('active', c.dataset.v===current.rank);
+      });
+      delBtn.style.visibility = data ? 'visible' : 'hidden';
+      modal.classList.add('open');
+    }
+
+    // открыть модалку по FAB
+    document.getElementById('add').onclick = ()=> openModal(null);
+
+    // выбор ранга
+    chips.addEventListener('click', e=>{
+      const chip = e.target.closest('.chip'); if(!chip) return;
+      chips.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+      current.rank = chip.dataset.v;
+    });
+
+    // действия
+    document.getElementById('cancel').onclick = ()=> modal.classList.remove('open');
+    document.getElementById('save').onclick = ()=>{
+      current.title = fTitle.value.trim();
+      current.desc  = fDesc.value.trim();
+      current.proj  = fProj.value.trim();
+      current.time  = fTime.value;
+      const i = tasks.findIndex(x=>x.id===current.id);
+      if(i>=0) tasks[i]=current; else tasks.splice(1,0,current); // новые идут после первой широкой
+      modal.classList.remove('open'); render();
+    };
+    delBtn.onclick = ()=>{
+      tasks = tasks.filter(x=>x.id!==current.id);
+      modal.classList.remove('open'); render();
+    };
+
+    // клики вне листа — закрыть
+    modal.addEventListener('click', (e)=>{ if(e.target===modal) modal.classList.remove('open'); });
   </script>
-
-  <!-- Логика (после стилей подключим полноценный app.js) -->
-  <script src="app.js" defer></script>
 </body>
 </html>
