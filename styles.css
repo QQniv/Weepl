@@ -349,3 +349,42 @@ html[data-theme="dark"]{
   .content{ padding:0 4vw 100px; }
   .card{ padding:18px; }
 }
+/* --- Habits: горизонтальная карусель со scroll-snap --- */
+.habits-rail{
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(220px, 1fr);
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.habit-card{
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(255,255,255,0.22);
+  border-radius: 16px;
+  padding: 12px;
+  backdrop-filter: blur(10px);
+}
+
+/* --- Calendar full (простая сетка месяца) --- */
+.calendar-full .calendar-month{
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+.calendar-full .cal-cell{
+  min-height: 86px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 12px;
+  padding: 8px;
+}
+.calendar-full .cal-date{ font-weight: 600; opacity: .8; margin-bottom: 6px; font-size: .9rem; }
+.calendar-full .cal-item{ font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* --- SVG плюс в FAB всегда виден --- */
+.fab svg{ display:block; }
